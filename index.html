@@ -699,6 +699,12 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
       <div class="input-hint" id="m-filekey-hint"></div>
     </div>
     <div class="field">
+      <label>ライブラリ / マスターファイル URL <span style="color:var(--error)">*</span></label>
+      <input type="text" id="m-library-url" placeholder="https://www.figma.com/design/XXXXXX/Twomi-Master..." oninput="extractLibraryKey()">
+      <div class="input-hint" id="m-library-key-hint"></div>
+      <div class="input-hint">コンポーネントを取得するマスターファイル。プロダクト選択時にここからライブラリを引っ張ります</div>
+    </div>
+    <div class="field">
       <label>対象ページ名</label>
       <input type="text" id="m-page" placeholder="例: Page 1">
     </div>
@@ -937,6 +943,8 @@ function openModal(id) {
       document.getElementById('m-name').value = p.name || '';
       document.getElementById('m-figma-url').value = p.figmaFileKey || '';
       document.getElementById('m-filekey-hint').textContent = p.figmaFileKey ? `fileKey: ${p.figmaFileKey}` : '';
+      document.getElementById('m-library-url').value = p.libraryFileKey || '';
+      document.getElementById('m-library-key-hint').textContent = p.libraryFileKey ? `fileKey: ${p.libraryFileKey}` : '';
       document.getElementById('m-page').value = p.page || '';
       document.getElementById('m-library-name').value = p.libraryName || '';
       document.getElementById('m-header-key').value = p.headerKey || '';
@@ -945,10 +953,11 @@ function openModal(id) {
       document.getElementById('m-style-ref-2').value = (p.styleRefUrls || [])[1] || '';
     }
   } else {
-    ['m-name','m-figma-url','m-page','m-library-name','m-header-key','m-nav-key','m-style-ref-1','m-style-ref-2'].forEach(id => {
+    ['m-name','m-figma-url','m-library-url','m-page','m-library-name','m-header-key','m-nav-key','m-style-ref-1','m-style-ref-2'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('m-filekey-hint').textContent = '';
+    document.getElementById('m-library-key-hint').textContent = '';
   }
 
   document.getElementById('modal-overlay').classList.add('open');
@@ -969,6 +978,13 @@ function extractFileKey() {
   document.getElementById('m-filekey-hint').textContent = key && !val.includes('/') ? '' : (key ? `fileKey: ${key}` : '');
 }
 
+function extractLibraryKey() {
+  const val = document.getElementById('m-library-url').value;
+  const match = val.match(/figma\.com\/design\/([^/?]+)/);
+  const key = match ? match[1] : val.trim();
+  document.getElementById('m-library-key-hint').textContent = key && !val.includes('/') ? '' : (key ? `fileKey: ${key}` : '');
+}
+
 function getFileKey(val) {
   const match = val.match(/figma\.com\/design\/([^/?]+)/);
   return match ? match[1] : val.trim();
@@ -981,10 +997,12 @@ function saveProduct() {
   if (!figmaUrl) { alert('Figmaファイルを入力してください'); return; }
 
   const products = getProducts();
+  const libraryUrl = document.getElementById('m-library-url').value.trim();
   const data = {
     id: editingId || uid(),
     name,
     figmaFileKey: getFileKey(figmaUrl),
+    libraryFileKey: libraryUrl ? getFileKey(libraryUrl) : '',
     page: document.getElementById('m-page').value.trim() || 'Page 1',
     libraryName: document.getElementById('m-library-name').value.trim(),
     headerKey: document.getElementById('m-header-key').value.trim() || DEFAULT_HEADER_KEY,

@@ -91,11 +91,11 @@ export async function generateFigmaScript(input) {
     }
   }
 
-  // Fetch Figma component library
+  // Fetch Figma component library from master/library file
   let componentLibrary = [];
-  if (product.figmaFileKey) {
+  if (product.libraryFileKey) {
     try {
-      componentLibrary = await fetchFileComponents(product.figmaFileKey);
+      componentLibrary = await fetchFileComponents(product.libraryFileKey);
     } catch (err) {
       console.error('Component library fetch failed:', err.message);
     }
