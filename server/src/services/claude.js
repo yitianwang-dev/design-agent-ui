@@ -49,7 +49,19 @@ export async function generateFigmaScript(input) {
     }
   }
 
-  // Fetch Figma reference design
+  // Fetch style reference images (product-level, always included)
+  const styleRefImages = [];
+  for (const refUrl of (product.styleRefUrls || []).slice(0, 2)) {
+    try {
+      const { fileKey, nodeId } = parseFigmaUrl(refUrl);
+      const img = await fetchNodeImageAsBase64(fileKey, nodeId);
+      styleRefImages.push(img);
+    } catch (err) {
+      console.error('Style ref fetch failed:', err.message);
+    }
+  }
+
+  // Fetch specific design reference (per-request, optional)
   let figmaImageBase64 = null;
   let figmaStyleInfo = null;
   if (figmaRefUrl) {
@@ -61,7 +73,6 @@ export async function generateFigmaScript(input) {
       ]);
     } catch (err) {
       console.error('Figma reference fetch failed:', err.message);
-      // Non-fatal: proceed without reference
     }
   }
 
@@ -133,12 +144,25 @@ ${figmaStyleInfo ? `
 ${figmaImageBase64 ? '## 参照デザイン画像\n添付の画像がターゲットデザインです。この外観を再現するコードを生成してください。' : ''}`;
 
   // Build message content
-  const messageContent = figmaImageBase64
-    ? [
-        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: figmaImageBase64 } },
-        { type: 'text', text: userTextContent },
-      ]
-    : userTextContent;
+  const contentBlocks = [];
+
+  // Style references first (visual tone baseline)
+  if (styleRefImages.length > 0) {
+    contentBlocks.push({ type: 'text', text: `## このプロダクトのビジュアルスタイル基準（${styleRefImages.length}枚）\n以下の画像がこのアプリの既存デザインです。色・グラデーション・フォント・余白・コンポーネントのトーンをこれに合わせてください。` });
+    for (const img of styleRefImages) {
+      contentBlocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: img } });
+    }
+  }
+
+  // Specific design reference (optional)
+  if (figmaImageBase64) {
+    contentBlocks.push({ type: 'text', text: '## この画面の設計参照\n以下の画像がこの画面の参照デザインです。レイアウトと構造をこれに近づけてください。' });
+    contentBlocks.push({ type: 'image', source: { type: 'base64', media_type: 'image/png', data: figmaImageBase64 } });
+  }
+
+  contentBlocks.push({ type: 'text', text: userTextContent });
+
+  const messageContent = contentBlocks.length > 1 ? contentBlocks : userTextContent;
 
   const message = await client.messages.create({
     model: 'claude-opus-4-7',

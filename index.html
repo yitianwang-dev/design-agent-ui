@@ -707,6 +707,17 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
       <input type="text" id="m-library-name" placeholder="例: Library - Guideline">
     </div>
 
+    <div class="fieldset-title">スタイル参照（毎回の生成に使うビジュアルトーンの基準）</div>
+    <div class="field">
+      <label>スタイル参照 URL 1</label>
+      <input type="text" id="m-style-ref-1" placeholder="https://www.figma.com/design/XXXXX/...?node-id=49670-4476">
+      <div class="input-hint">このアプリらしい既存画面のURL。生成のたびに「このトーンに合わせろ」として渡します</div>
+    </div>
+    <div class="field">
+      <label>スタイル参照 URL 2（任意）</label>
+      <input type="text" id="m-style-ref-2" placeholder="https://www.figma.com/design/XXXXX/...?node-id=...">
+    </div>
+
     <div class="fieldset-title">コンポーネントキー（省略時はデフォルト値を使用）</div>
     <div class="field">
       <label>ヘッダーコンポーネントキー</label>
@@ -930,9 +941,11 @@ function openModal(id) {
       document.getElementById('m-library-name').value = p.libraryName || '';
       document.getElementById('m-header-key').value = p.headerKey || '';
       document.getElementById('m-nav-key').value = p.navKey || '';
+      document.getElementById('m-style-ref-1').value = (p.styleRefUrls || [])[0] || '';
+      document.getElementById('m-style-ref-2').value = (p.styleRefUrls || [])[1] || '';
     }
   } else {
-    ['m-name','m-figma-url','m-page','m-library-name','m-header-key','m-nav-key'].forEach(id => {
+    ['m-name','m-figma-url','m-page','m-library-name','m-header-key','m-nav-key','m-style-ref-1','m-style-ref-2'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('m-filekey-hint').textContent = '';
@@ -976,6 +989,10 @@ function saveProduct() {
     libraryName: document.getElementById('m-library-name').value.trim(),
     headerKey: document.getElementById('m-header-key').value.trim() || DEFAULT_HEADER_KEY,
     navKey: document.getElementById('m-nav-key').value.trim() || DEFAULT_NAV_KEY,
+    styleRefUrls: [
+      document.getElementById('m-style-ref-1').value.trim(),
+      document.getElementById('m-style-ref-2').value.trim(),
+    ].filter(Boolean),
   };
 
   if (editingId) {
