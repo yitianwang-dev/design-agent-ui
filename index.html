@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design Agent</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --teal: #35C1C6;
+      --teal-soft: #E8F9FA;
+      --teal-mid: #B2E8EA;
+      --gray-50: #F9FAFB;
+      --gray-100: #F3F4F6;
+      --gray-200: #E5E7EB;
+      --gray-400: #9CA3AF;
+      --gray-600: #4B5563;
+      --gray-800: #1F2937;
+      --gray-900: #111827;
+      --error: #EF4444;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--gray-50);
+      color: var(--gray-800);
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: #fff;
+      border-bottom: 1px solid var(--gray-200);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--gray-900);
+    }
+    .nav-brand-dot {
+      width: 8px; height: 8px;
+      background: var(--teal);
+      border-radius: 50%;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+    }
+    .nav-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: var(--gray-600);
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .nav-tab:hover { background: var(--gray-100); color: var(--gray-900); }
+    .nav-tab.active { background: var(--teal-soft); color: var(--teal); }
+
+    /* ── PAGES ── */
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* ── LAYOUT ── */
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+    .page-desc {
+      font-size: 14px;
+      color: var(--gray-400);
+      margin-bottom: 32px;
+    }
+
+    /* ── FORM SECTIONS ── */
+    .section {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .section-num {
+      width: 24px; height: 24px;
+      background: var(--teal);
+      color: #fff;
+      border-radius: 50%;
+      font-size: 12px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .section-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+    .section-hint {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-left: auto;
+    }
+
+    /* ── FORM ELEMENTS ── */
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+    .field { margin-bottom: 16px; }
+    .field:last-child { margin-bottom: 0; }
+
+    input[type="text"], textarea, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      color: var(--gray-900);
+      background: #fff;
+      transition: border-color 0.15s;
+      outline: none;
+      font-family: inherit;
+    }
+    input[type="text"]:focus,
+    textarea:focus,
+    select:focus { border-color: var(--teal); }
+    input.error, textarea.error { border-color: var(--error); }
+
+    .input-hint {
+      font-size: 12px;
+      color: var(--gray-400);
+      margin-top: 4px;
+    }
+    .input-hint code {
+      background: var(--gray-100);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+
+    textarea { resize: vertical; line-height: 1.6; }
+
+    /* ── TYPE CARDS ── */
+    .type-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .type-card {
+      border: 2px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      cursor: pointer;
+      transition: all 0.15s;
+      position: relative;
+    }
+    .type-card:hover { border-color: var(--teal-mid); background: var(--teal-soft); }
+    .type-card.selected { border-color: var(--teal); background: var(--teal-soft); }
+    .type-card-badge {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--teal);
+      margin-bottom: 6px;
+    }
+    .type-card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+    .type-card-desc {
+      font-size: 12px;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+    .type-card-examples {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-top: 6px;
+    }
+    .type-card .check {
+      position: absolute;
+      top: 10px; right: 10px;
+      width: 16px; height: 16px;
+      background: var(--teal);
+      border-radius: 50%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    .type-card.selected .check { display: flex; }
+    .check::after {
+      content: '';
+      width: 8px; height: 5px;
+      border-left: 2px solid #fff;
+      border-bottom: 2px solid #fff;
+      transform: rotate(-45deg) translate(1px, -1px);
+    }
+
+    /* ── TAB PILLS ── */
+    .tab-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tab-pill {
+      padding: 6px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 20px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #fff;
+      color: var(--gray-600);
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .tab-pill:hover { border-color: var(--teal-mid); color: var(--teal); }
+    .tab-pill.selected { border-color: var(--teal); background: var(--teal-soft); color: var(--teal); font-weight: 600; }
+    .tab-pill:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── GENERATE BUTTON ── */
+    .generate-btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+      transition: opacity 0.15s;
+    }
+    .generate-btn:hover { opacity: 0.9; }
+    .generate-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── OUTPUT ── */
+    #output-section {
+      display: none;
+      margin-top: 24px;
+    }
+    #output-section.visible { display: block; }
+
+    .output-box {
+      background: var(--gray-900);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .output-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .output-label {
+      font-size: 13px;
+      color: var(--gray-400);
+      font-weight: 500;
+    }
+    .copy-btn {
+      padding: 6px 12px;
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .copy-btn:hover { background: rgba(255,255,255,0.2); }
+    .copy-btn.copied { background: var(--teal); }
+
+    #output-text {
+      padding: 20px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 13px;
+      color: #E5E7EB;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    /* ── CONFIG SUMMARY ── */
+    .config-summary {
+      background: var(--teal-soft);
+      border: 1px solid var(--teal-mid);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--gray-800);
+      line-height: 1.8;
+    }
+    .config-summary strong { color: var(--teal); }
+
+    /* ── SETTINGS PAGE ── */
+    .products-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .product-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .product-card-info { flex: 1; min-width: 0; }
+    .product-card-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 4px;
+    }
+    .product-card-meta {
+      font-size: 12px;
+      color: var(--gray-400);
+      font-family: monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .product-card-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+    .btn-sm {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid var(--gray-200);
+      background: #fff;
+      color: var(--gray-600);
+      transition: all 0.15s;
+    }
+    .btn-sm:hover { background: var(--gray-100); }
+    .btn-sm.danger:hover { background: #FEF2F2; border-color: #FCA5A5; color: var(--error); }
+    .btn-add {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      border: 2px dashed var(--gray-200);
+      border-radius: var(--radius);
+      background: none;
+      color: var(--gray-400);
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      justify-content: center;
+      transition: all 0.15s;
+    }
+    .btn-add:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-soft); }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius);
+      padding: 28px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 16px;
+    }
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: var(--gray-900);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 24px;
+    }
+    .btn-primary {
+      padding: 10px 20px;
+      background: var(--teal);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      padding: 10px 20px;
+      background: #fff;
+      color: var(--gray-600);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--gray-400);
+      font-size: 14px;
+    }
+
+    .divider { height: 1px; background: var(--gray-200); margin: 20px 0; }
+
+    .fieldset-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-400);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">
+    <div class="nav-brand-dot"></div>
+    Design Agent
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('request')">リクエスト</button>
+    <button class="nav-tab" onclick="showPage('settings')">プロダクト設定</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     PAGE: REQUEST
+══════════════════════════════════════════ -->
+<div id="page-request" class="page active">
+  <div class="container">
+    <div class="page-title">デザイン生成リクエスト</div>
+    <div class="page-desc">必要な情報を入力してプロンプトを生成します</div>
+
+    <!-- 1. プロダクト -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">1</div>
+        <div class="section-title">プロダクト</div>
+      </div>
+      <div class="field">
+        <label>プロダクトを選択</label>
+        <select id="product-select" onchange="onProductChange()">
+          <option value="">-- 選択してください --</option>
+        </select>
+        <div class="input-hint">設定は「プロダクト設定」タブで登録できます</div>
+      </div>
+    </div>
+
+    <!-- 2. 画面名 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">2</div>
+        <div class="section-title">画面名</div>
+      </div>
+      <div class="field">
+        <label>スクリーン名 <span style="color:var(--error)">*</span></label>
+        <input type="text" id="screen-name" placeholder="例: packageSelect" oninput="validateScreenName()">
+        <div class="input-hint">camelCase で入力。例: <code>homeFeed</code> / <code>settingsTop</code> / <code>packageSelect</code></div>
+      </div>
+    </div>
+
+    <!-- 3. 画面タイプ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">3</div>
+        <div class="section-title">画面タイプ（スキャフォールド）</div>
+        <div class="section-hint">scaffold_a/b/c.js が自動選択されます</div>
+      </div>
+      <div class="type-cards">
+        <div class="type-card" onclick="selectType('A')" id="type-A">
+          <div class="check"></div>
+          <div class="type-card-badge">A</div>
+          <div class="type-card-title">Header + Scroll</div>
+          <div class="type-card-desc">白背景、スクロール型<br>BottomNav = Light</div>
+          <div class="type-card-examples">例: 設定、プロフィール、購入画面</div>
+        </div>
+        <div class="type-card" onclick="selectType('B')" id="type-B">
+          <div class="check"></div>
+          <div class="type-card-badge">B</div>
+          <div class="type-card-title">フルスクリーン</div>
+          <div class="type-card-desc">黒背景、動画背景型<br>BottomNav = Dark</div>
+          <div class="type-card-examples">例: ホームTL、有料コンテンツカード</div>
+        </div>
+        <div class="type-card" onclick="selectType('C')" id="type-C">
+          <div class="check"></div>
+          <div class="type-card-badge">C</div>
+          <div class="type-card-title">タブ型</div>
+          <div class="type-card-desc">BottomNav なし<br>フルスクリーン</div>
+          <div class="type-card-examples">例: アバタープロフィール (Self)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 選択タブ（A/Bのみ） -->
+    <div class="section" id="tab-section">
+      <div class="section-header">
+        <div class="section-num">4</div>
+        <div class="section-title">BottomNav 選択タブ</div>
+        <div class="section-hint">どのタブからこの画面に遷移するか</div>
+      </div>
+      <div class="tab-pills">
+        <div class="tab-pill" onclick="selectTab('Home')" id="tab-Home">Home</div>
+        <div class="tab-pill" onclick="selectTab('Search')" id="tab-Search">Search</div>
+        <div class="tab-pill" onclick="selectTab('Create')" id="tab-Create">Create</div>
+        <div class="tab-pill" onclick="selectTab('notes')" id="tab-notes">Notes</div>
+        <div class="tab-pill" onclick="selectTab('Profile')" id="tab-Profile">Profile</div>
+      </div>
+    </div>
+
+    <!-- 5. 仕様書 -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num">5</div>
+        <div class="section-title">仕様書（UIコンポーネント詳細）</div>
+      </div>
+      <div class="field">
+        <label>仕様書の Section 5「画面・UIコンポーネント詳細」を貼り付け <span style="color:var(--error)">*</span></label>
+        <textarea id="spec-text" rows="10" placeholder="【Section 5: 画面・UIコンポーネント詳細】
+
+- 背景: 暗転（背後で動画再生、黒オーバーレイ）
+- 上部: クリエイター情報（アイコン + 名前）+ フォローボタン（右）
+- 左上: 「人気！」バッジ
+- 中央: 🔐 絵文字 + 「{クリエイター名}さんの限定コンテンツをチェックしよう！」テキスト
+- 下部: アバター名 + エンゲージメント（保存数・シェア）
+
+Section 5がない場合は、わかる範囲で画面に表示する要素を箇条書きで記述してください"></textarea>
+        <div class="input-hint">Section 5がない仕様書の場合でも、表示要素を箇条書きで書けば生成できます</div>
+      </div>
+      <div class="field">
+        <label>参照 Figma node-id（任意）</label>
+        <input type="text" id="node-id" placeholder="例: 49425-179725">
+        <div class="input-hint">既存デザインを参照したい場合のみ。新規画面なら不要</div>
+      </div>
+    </div>
+
+    <button class="generate-btn" onclick="generatePrompt()">プロンプトを生成</button>
+
+    <!-- OUTPUT -->
+    <div id="output-section">
+      <div class="config-summary" id="config-summary"></div>
+      <div class="output-box">
+        <div class="output-header">
+          <span class="output-label">生成されたプロンプト（Claude Code に貼り付け）</span>
+          <button class="copy-btn" id="copy-btn" onclick="copyOutput()">コピー</button>
+        </div>
+        <div id="output-text"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     PAGE: SETTINGS
+══════════════════════════════════════════ -->
+<div id="page-settings" class="page">
+  <div class="container">
+    <div class="page-title">プロダクト設定</div>
+    <div class="page-desc">プロダクトごとに Figma ファイルやライブラリを登録します</div>
+
+    <div id="products-list" class="products-list"></div>
+    <button class="btn-add" onclick="openModal()">＋ プロダクトを追加</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL: ADD / EDIT PRODUCT
+══════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">プロダクトを追加</div>
+
+    <div class="field">
+      <label>プロダクト名 <span style="color:var(--error)">*</span></label>
+      <input type="text" id="m-name" placeholder="例: Twomi">
+    </div>
+
+    <div class="fieldset-title">Figma</div>
+    <div class="field">
+      <label>作業ファイル URL（または fileKey）<span style="color:var(--error)">*</span></label>
+      <input type="text" id="m-figma-url" placeholder="https://www.figma.com/design/XXXXXX/..." oninput="extractFileKey()">
+      <div class="input-hint" id="m-filekey-hint"></div>
+    </div>
+    <div class="field">
+      <label>対象ページ名</label>
+      <input type="text" id="m-page" placeholder="例: Page 1">
+    </div>
+    <div class="field">
+      <label>ライブラリ名</label>
+      <input type="text" id="m-library-name" placeholder="例: Library - Guideline">
+    </div>
+
+    <div class="fieldset-title">スキャフォールド（コンポーネントキー）</div>
+    <div class="field">
+      <label>Header バリアントキー（iOS26 / Transparent / After）</label>
+      <input type="text" id="m-header-key" placeholder="7ba6d4a58a3530c3b4102c5b883dce105e0c8f14">
+    </div>
+    <div class="field">
+      <label>NavigationLiquid バリアントキー（Home / Dark）</label>
+      <input type="text" id="m-nav-key" placeholder="250f4ab25c2aa2c1eced9b44b7c13056301ce6b7">
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal()">キャンセル</button>
+      <button class="btn-primary" onclick="saveProduct()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────
+let selectedType = null;
+let selectedTab = 'Home';
+let editingId = null;
+
+const DEFAULT_HEADER_KEY = '7ba6d4a58a3530c3b4102c5b883dce105e0c8f14';
+const DEFAULT_NAV_KEY    = '250f4ab25c2aa2c1eced9b44b7c13056301ce6b7';
+
+// ── STORAGE ────────────────────────────────
+function getProducts() {
+  try { return JSON.parse(localStorage.getItem('da_products') || '[]'); }
+  catch { return []; }
+}
+function saveProducts(products) {
+  localStorage.setItem('da_products', JSON.stringify(products));
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ── PAGES ──────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  const tabs = document.querySelectorAll('.nav-tab');
+  tabs[name === 'request' ? 0 : 1].classList.add('active');
+  if (name === 'settings') renderProducts();
+  if (name === 'request') populateProductSelect();
+}
+
+// ── PRODUCT SELECT ──────────────────────────
+function populateProductSelect() {
+  const sel = document.getElementById('product-select');
+  const products = getProducts();
+  sel.innerHTML = '<option value="">-- 選択してください --</option>';
+  products.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.id;
+    opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+}
+function onProductChange() { /* future: auto-fill defaults */ }
+
+// ── TYPE SELECTION ──────────────────────────
+function selectType(t) {
+  selectedType = t;
+  document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('type-' + t).classList.add('selected');
+  const tabSec = document.getElementById('tab-section');
+  tabSec.style.opacity = t === 'C' ? '0.4' : '1';
+  tabSec.style.pointerEvents = t === 'C' ? 'none' : 'auto';
+  const numEl = tabSec.querySelector('.section-num');
+  // renumber 4 stays
+}
+
+// ── TAB SELECTION ───────────────────────────
+function selectTab(t) {
+  selectedTab = t;
+  document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('selected'));
+  document.getElementById('tab-' + t).classList.add('selected');
+}
+
+// ── VALIDATION ──────────────────────────────
+function validateScreenName() {
+  const v = document.getElementById('screen-name').value;
+  const ok = /^[a-z][a-zA-Z0-9]*$/.test(v);
+  document.getElementById('screen-name').classList.toggle('error', v.length > 0 && !ok);
+}
+
+// ── GENERATE PROMPT ─────────────────────────
+function generatePrompt() {
+  const productId = document.getElementById('product-select').value;
+  const screenName = document.getElementById('screen-name').value.trim();
+  const specText = document.getElementById('spec-text').value.trim();
+  const nodeId = document.getElementById('node-id').value.trim();
+
+  // Validation
+  if (!screenName) { alert('画面名を入力してください'); return; }
+  if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('画面名はcamelCaseで入力してください'); return; }
+  if (!selectedType) { alert('画面タイプを選択してください'); return; }
+  if (!specText) { alert('仕様書（Section 5）を入力してください'); return; }
+
+  const products = getProducts();
+  const product = products.find(p => p.id === productId);
+
+  const headerKey = product?.headerKey || DEFAULT_HEADER_KEY;
+  const navKey = product?.navKey || DEFAULT_NAV_KEY;
+  const figmaFileKey = product?.figmaFileKey || '（Figmaファイルキーを入力）';
+  const page = product?.page || 'Page 1';
+
+  const typeDesc = {
+    A: 'Header+Scroll型（白背景 / NavigationLiquid DarkMode=Light）',
+    B: 'フルスクリーン型（黒背景 / NavigationLiquid DarkMode=Dark）',
+    C: 'フルスクリーン+タブ型（NavigationLiquid なし）',
+  };
+  const scaffoldFile = `scaffold_${selectedType.toLowerCase()}.js`;
+  const tabNote = selectedType !== 'C' ? `\n- 選択タブ: ${selectedTab}` : '';
+  const nodeNote = nodeId ? `\n- 参照 node-id: ${nodeId}（既存デザインの参照用）` : '';
+
+  const prompt = `## Design Agent リクエスト
+
+### 画面情報
+- 画面名: ${screenName}
+- 画面タイプ: ${selectedType}（${typeDesc[selectedType]}）${tabNote}
+- 対象 Figma ファイル: ${figmaFileKey}
+- 対象ページ: ${page}${nodeNote}
+
+### スキャフォールド
+\`~/outputs/figma-design-automation/scaffolds/${scaffoldFile}\` を実行して \`contentFrameNodeId\` を取得してください。
+スキャフォールド実行時の引数:
+- screenName: "${screenName}"${selectedType !== 'C' ? `\n- selectedTab: "${selectedTab}"` : ''}
+
+コンポーネントキー（scaffold内に定義済み）:
+- Header: ${headerKey}
+- NavigationLiquid: ${navKey}
+
+### 仕様書（Section 5 / UIコンポーネント詳細）
+${specText}
+
+### 実行手順
+1. Notion Edge Case DB（ID: 8bd11da8-e59b-414b-838a-c3e9cbb1ad33）でエッジケースを確認
+2. \`${scaffoldFile}\` を \`use_figma\` で実行 → \`contentFrameNodeId\` を取得
+3. 取得した \`contentFrameNodeId\` の中身だけを仕様書に従って設計
+4. \`mcp__figma__get_screenshot\` でスクリーンショットを取得して確認
+5. Human Review サマリーを作成（対応エッジケース・known_gaps・確認事項）`;
+
+  // Update UI
+  const summary = `<strong>プロダクト</strong>: ${product?.name || '未設定'}　<strong>画面</strong>: ${screenName}　<strong>タイプ</strong>: ${selectedType}${selectedType !== 'C' ? `　<strong>タブ</strong>: ${selectedTab}` : ''}　<strong>Figmaファイル</strong>: ${figmaFileKey}`;
+  document.getElementById('config-summary').innerHTML = summary;
+  document.getElementById('output-text').textContent = prompt;
+  document.getElementById('output-section').classList.add('visible');
+  document.getElementById('output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.getElementById('copy-btn').textContent = 'コピー';
+  document.getElementById('copy-btn').classList.remove('copied');
+}
+
+function copyOutput() {
+  const text = document.getElementById('output-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'コピーしました ✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ── SETTINGS ────────────────────────────────
+function renderProducts() {
+  const products = getProducts();
+  const list = document.getElementById('products-list');
+  if (products.length === 0) {
+    list.innerHTML = '<div class="empty-state">プロダクトがまだ登録されていません</div>';
+    return;
+  }
+  list.innerHTML = products.map(p => `
+    <div class="product-card">
+      <div class="product-card-info">
+        <div class="product-card-name">${escHtml(p.name)}</div>
+        <div class="product-card-meta">fileKey: ${escHtml(p.figmaFileKey || '未設定')} | lib: ${escHtml(p.libraryName || '未設定')} | page: ${escHtml(p.page || 'Page 1')}</div>
+      </div>
+      <div class="product-card-actions">
+        <button class="btn-sm" onclick="openModal('${p.id}')">編集</button>
+        <button class="btn-sm danger" onclick="deleteProduct('${p.id}')">削除</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function deleteProduct(id) {
+  if (!confirm('このプロダクトを削除しますか？')) return;
+  saveProducts(getProducts().filter(p => p.id !== id));
+  renderProducts();
+  populateProductSelect();
+}
+
+// ── MODAL ────────────────────────────────────
+function openModal(id) {
+  editingId = id || null;
+  document.getElementById('modal-title').textContent = id ? 'プロダクトを編集' : 'プロダクトを追加';
+
+  if (id) {
+    const p = getProducts().find(p => p.id === id);
+    if (p) {
+      document.getElementById('m-name').value = p.name || '';
+      document.getElementById('m-figma-url').value = p.figmaFileKey || '';
+      document.getElementById('m-filekey-hint').textContent = p.figmaFileKey ? `fileKey: ${p.figmaFileKey}` : '';
+      document.getElementById('m-page').value = p.page || '';
+      document.getElementById('m-library-name').value = p.libraryName || '';
+      document.getElementById('m-header-key').value = p.headerKey || '';
+      document.getElementById('m-nav-key').value = p.navKey || '';
+    }
+  } else {
+    ['m-name','m-figma-url','m-page','m-library-name','m-header-key','m-nav-key'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    document.getElementById('m-filekey-hint').textContent = '';
+  }
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+}
+
+function extractFileKey() {
+  const val = document.getElementById('m-figma-url').value;
+  const match = val.match(/figma\.com\/design\/([^/?]+)/);
+  const key = match ? match[1] : val.trim();
+  document.getElementById('m-filekey-hint').textContent = key && !val.includes('/') ? '' : (key ? `fileKey: ${key}` : '');
+}
+
+function getFileKey(val) {
+  const match = val.match(/figma\.com\/design\/([^/?]+)/);
+  return match ? match[1] : val.trim();
+}
+
+function saveProduct() {
+  const name = document.getElementById('m-name').value.trim();
+  const figmaUrl = document.getElementById('m-figma-url').value.trim();
+  if (!name) { alert('プロダクト名を入力してください'); return; }
+  if (!figmaUrl) { alert('Figmaファイルを入力してください'); return; }
+
+  const products = getProducts();
+  const data = {
+    id: editingId || uid(),
+    name,
+    figmaFileKey: getFileKey(figmaUrl),
+    page: document.getElementById('m-page').value.trim() || 'Page 1',
+    libraryName: document.getElementById('m-library-name').value.trim(),
+    headerKey: document.getElementById('m-header-key').value.trim() || DEFAULT_HEADER_KEY,
+    navKey: document.getElementById('m-nav-key').value.trim() || DEFAULT_NAV_KEY,
+  };
+
+  if (editingId) {
+    const idx = products.findIndex(p => p.id === editingId);
+    if (idx >= 0) products[idx] = data;
+  } else {
+    products.push(data);
+  }
+
+  saveProducts(products);
+  closeModal();
+  renderProducts();
+  populateProductSelect();
+}
+
+// ── INIT ────────────────────────────────────
+populateProductSelect();
+selectTab('Home');
+
+// Twomiがなければデフォルトで登録
+(function seedTwomi() {
+  const products = getProducts();
+  if (products.length === 0) {
+    products.push({
+      id: 'twomi',
+      name: 'Twomi',
+      figmaFileKey: 'HX2ZFoaRtpcrGgJoVKUTD1',
+      page: 'Page 1',
+      libraryName: 'Library - Guideline',
+      headerKey: DEFAULT_HEADER_KEY,
+      navKey: DEFAULT_NAV_KEY,
+    });
+    saveProducts(products);
+    populateProductSelect();
+  }
+})();
+</script>
+</body>
+</html>
