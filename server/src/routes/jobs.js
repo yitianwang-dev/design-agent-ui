@@ -4,12 +4,27 @@ import { generateFigmaScript } from '../services/claude.js';
 
 const router = Router();
 
+// 1日あたりの最大APIコール数（環境変数で上書き可能）
+const DAILY_LIMIT = parseInt(process.env.DAILY_API_LIMIT || '20', 10);
+
+async function checkDailyLimit() {
+  const { rows } = await query(
+    `SELECT COUNT(*) AS cnt FROM jobs
+     WHERE status NOT IN ('error') AND created_at >= NOW() - INTERVAL '24 hours'`
+  );
+  return parseInt(rows[0].cnt, 10) < DAILY_LIMIT;
+}
+
 // POST /jobs — フォーム送信→ジョブ作成→非同期でClaude実行
 router.post('/', async (req, res) => {
   const { userId, screenName, screenType, selectedTab, specUrl, specText, product } = req.body;
 
   if (!userId || !screenName || !screenType || (!specUrl && !specText)) {
     return res.status(400).json({ error: '必須パラメータが不足しています' });
+  }
+
+  if (!(await checkDailyLimit())) {
+    return res.status(429).json({ error: `1日の上限（${DAILY_LIMIT}件）に達しました。明日以降にお試しください。` });
   }
 
   const input = { screenName, screenType, selectedTab, specUrl, specText, product };
