@@ -1031,19 +1031,33 @@ populateProductSelect();
 selectTab('Home');
 document.getElementById('user-id').value = localStorage.getItem('da_userId') || '';
 
-// Twomiがなければデフォルトで登録
+// Twomiがなければデフォルトで登録、既存エントリにlibraryFileKeyがなければ補完
 (function seedTwomi() {
-  const products = getProducts();
+  let products = getProducts();
+  let changed = false;
   if (products.length === 0) {
     products.push({
       id: 'twomi',
       name: 'Twomi',
       figmaFileKey: 'HX2ZFoaRtpcrGgJoVKUTD1',
+      libraryFileKey: 'CPe64VQc7petbZawTE6J8o',
       page: 'Page 1',
       libraryName: 'Library - Guideline',
       headerKey: DEFAULT_HEADER_KEY,
       navKey: DEFAULT_NAV_KEY,
     });
+    changed = true;
+  } else {
+    // 既存のTwomiエントリにlibraryFileKeyがなければ補完
+    products = products.map(p => {
+      if (p.id === 'twomi' && !p.libraryFileKey) {
+        changed = true;
+        return { ...p, libraryFileKey: 'CPe64VQc7petbZawTE6J8o' };
+      }
+      return p;
+    });
+  }
+  if (changed) {
     saveProducts(products);
     populateProductSelect();
   }
