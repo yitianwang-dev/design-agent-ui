@@ -71,8 +71,8 @@
     <input type="text" id="userId" placeholder="you@example.com">
   </div>
 
-  <button class="btn btn-primary" id="startBtn" onclick="startPolling()">ジョブを待機する</button>
-  <button class="btn btn-stop" id="stopBtn" onclick="stopPolling()" style="display:none">停止</button>
+  <button class="btn btn-primary" id="startBtn">ジョブを待機する</button>
+  <button class="btn btn-stop" id="stopBtn" style="display:none">停止</button>
 
   <div class="divider"></div>
 
@@ -103,7 +103,7 @@ function setStatus(dotClass, text) {
 }
 
 function saveUserId() {
-  localStorage.setItem('da_userId', document.getElementById('userId').value);
+  try { localStorage.setItem('da_userId', document.getElementById('userId').value); } catch (e) {}
 }
 
 function startPolling() {
@@ -178,8 +178,15 @@ window.onmessage = async (event) => {
   }
 };
 
+document.getElementById('startBtn').addEventListener('click', startPolling);
+document.getElementById('stopBtn').addEventListener('click', stopPolling);
+
 // 保存済みのuserIdを復元
-document.getElementById('userId').value = localStorage.getItem('da_userId') || '';
+try {
+  document.getElementById('userId').value = localStorage.getItem('da_userId') || '';
+} catch (e) {
+  // localStorage not available in some contexts
+}
 </script>
 </body>
 </html>
