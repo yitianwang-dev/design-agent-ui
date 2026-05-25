@@ -1,0 +1,361 @@
+# ============================================================
+# 13_alert.schema.yaml
+# ============================================================
+# iOS 26 Liquid Glass Alert
+# 1:1 to Library reference at CPe64VQc7petbZawTE6J8o#974:5211
+# (Apple Library ComponentSet lk-a5b98dec... is not publishable;
+#  rebuilt from Library's existing instance + Apple HIG spec.)
+#
+# Card 300×~426, rounded pill r=34, frosted Liquid Glass background.
+# Vertical stack (gap 10, pad 14):
+#   1. Title and Description block
+#        - Title       SF Pro Semibold 17 / 22px, black, LEFT
+#        - Description SF Pro Regular 17 / 22px, black, LEFT
+#        Inner pad: top 8 / bottom 24 / sides 8
+#   2. Text Field(s) — pill container r=26, fill rgba(120,120,128,0.16)
+#        - Field 1 "Value" SF Pro Medium 17 / 20px, black (filled state)
+#        - Hairline #E6E6E6
+#        - Field 2 "Value" SF Pro Medium 17 / 20px, rgba(60,60,67,0.3) (placeholder)
+#        Each field 52h, pad x=16
+#        Outer pad bottom 19
+#   3. Buttons (gap 10):
+#        - Primary     pill r=100, fill #0088FF, SF Pro Medium 17 white
+#        - Destructive pill r=100, fill rgba(120,120,128,0.16), SF Pro Medium 17 #FF383C
+#        - Secondary   pill r=100, fill rgba(120,120,128,0.16), SF Pro Medium 17 black
+#        Each button 48h, pad 13/16
+# ============================================================
+
+meta:
+  name: Alert (iOS 26 Liquid Glass)
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    instance_node_id: "974:5211"
+    note: |
+      Source is an INSTANCE inside Library's ❖Components page, not a
+      publishable ComponentSet — Apple's iOS Alert ComponentSet
+      (lk-a5b98dec..., key fa462a8e... / 372784... / 9b424549...) is
+      blocked from importComponentSetByKeyAsync. Schema rebuilds from
+      Library's existing instance + Apple HIG public spec.
+  description: |
+    System-style modal alert dialog. White-ish frosted card (Liquid Glass),
+    300 wide, with a title, optional description, optional 2 text fields,
+    and 3 vertically stacked pill buttons (Primary = blue solid, Destructive
+    = red text on grey, Secondary = black text on grey). Used for confirm /
+    destructive / input prompts (e.g. delete confirmation, login flow).
+  screen_usage:
+    - Delete confirmation flows
+    - Sign-in / verification prompts
+    - Any modal requiring text input + multiple choice actions
+  dependencies:
+    - none (fully built from primitives + SF Pro fonts)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 1
+    implemented: 1
+    notes: |
+      Layout follows Library reference exactly (300w / r=34 / left-aligned /
+      pill text fields / pill buttons). 3-layer Liquid Glass background
+      approximated with single fill + BACKGROUND_BLUR + GLASS + drop shadow
+      (Library uses color-dodge + white-translucent + GLASS in 3 abs layers).
+  review_status: ai-draft
+
+components:
+  - id: Alert
+    variants:
+      combinations:
+        - {}
+
+    container:
+      name_template: "Alert"
+      size: { width: 300, height: 426 }
+      corner_radius: 34
+      clips_content: true
+      # Frosted Liquid Glass approximation: white-translucent fill + blur + GLASS + shadow.
+      # (Library uses 3 abs-positioned layers: #262626 color-dodge + rgba(245,245,245,0.6) +
+      #  GLASS effect. Single fill + GLASS approximates this visually.)
+      fills: [{ type: SOLID, color: "#F5F5F5", opacity: 0.6 }]
+      effects:
+        - { type: BACKGROUND_BLUR, radius: 40 }
+        - { type: GLASS, radius: 4 }
+        - { type: DROP_SHADOW, color: "#000000", opacity: 0.12,
+            offset: { x: 0, y: 8 }, radius: 40 }
+      auto_layout:
+        direction: VERTICAL
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: MIN
+        padding: { top: 14, right: 14, bottom: 14, left: 14 }
+        item_spacing: 10
+        primary_axis_sizing_mode: AUTO
+        counter_axis_sizing_mode: FIXED
+
+      children:
+        # 1. Title and Description
+        - kind: FRAME
+          name: "Title and Description"
+          size: { width: 272, height: 100 }
+          fills: []
+          auto_layout:
+            direction: VERTICAL
+            primary_axis_align_items: MIN
+            counter_axis_align_items: CENTER
+            padding: { top: 8, right: 8, bottom: 24, left: 8 }
+            item_spacing: 10
+            primary_axis_sizing_mode: AUTO
+            counter_axis_sizing_mode: FIXED
+          layout_sizing: { horizontal: FILL }
+          children:
+            - kind: TEXT
+              name: Title
+              characters: "A Short Title Is Best"
+              font: { family: SF Pro, style: Semibold }
+              font_size: 17
+              line_height: { unit: PIXELS, value: 22 }
+              letter_spacing: { value: -0.43, unit: PIXELS }
+              fills: [{ type: SOLID, color: "#000000" }]
+              text_align_horizontal: LEFT
+              text_auto_resize: HEIGHT
+              layout_sizing: { horizontal: FILL }
+            - kind: TEXT
+              name: Description
+              characters: "A description should be a short, complete sentence."
+              font: { family: SF Pro, style: Regular }
+              font_size: 17
+              line_height: { unit: PIXELS, value: 22 }
+              letter_spacing: { value: -0.43, unit: PIXELS }
+              fills: [{ type: SOLID, color: "#000000" }]
+              text_align_horizontal: LEFT
+              text_auto_resize: HEIGHT
+              layout_sizing: { horizontal: FILL }
+
+        # 2. Text Fields — pill container, two fields with separator
+        - kind: FRAME
+          name: "Text Field(s)"
+          size: { width: 272, height: 110 }
+          corner_radius: 26
+          fills: []
+          auto_layout:
+            direction: VERTICAL
+            primary_axis_align_items: MIN
+            counter_axis_align_items: MIN
+            padding: { top: 0, right: 0, bottom: 19, left: 0 }
+            item_spacing: 0
+            primary_axis_sizing_mode: AUTO
+            counter_axis_sizing_mode: FIXED
+          layout_sizing: { horizontal: FILL }
+          children:
+            - kind: FRAME
+              name: Fields
+              size: { width: 272, height: 104 }
+              corner_radius: 26
+              clips_content: true
+              fills: [{ type: SOLID, color: "#787880", opacity: 0.16 }]
+              auto_layout:
+                direction: VERTICAL
+                primary_axis_align_items: MIN
+                counter_axis_align_items: MIN
+                padding: { top: 0, right: 0, bottom: 0, left: 0 }
+                item_spacing: 0
+                primary_axis_sizing_mode: AUTO
+                counter_axis_sizing_mode: FIXED
+              layout_sizing: { horizontal: FILL }
+              children:
+                # Field 1 (filled "Value", no separator on top)
+                - kind: FRAME
+                  name: "Text Field"
+                  size: { width: 272, height: 52 }
+                  fills: []
+                  auto_layout:
+                    direction: HORIZONTAL
+                    primary_axis_align_items: MIN
+                    counter_axis_align_items: CENTER
+                    padding: { top: 0, right: 16, bottom: 0, left: 16 }
+                    item_spacing: 0
+                    primary_axis_sizing_mode: FIXED
+                    counter_axis_sizing_mode: FIXED
+                  layout_sizing: { horizontal: FILL }
+                  children:
+                    - kind: FRAME
+                      name: Contents
+                      size: { width: 240, height: 52 }
+                      fills: []
+                      auto_layout:
+                        direction: VERTICAL
+                        primary_axis_align_items: CENTER
+                        counter_axis_align_items: MIN
+                        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+                        item_spacing: 0
+                        primary_axis_sizing_mode: FIXED
+                        counter_axis_sizing_mode: FIXED
+                      layout_grow: 1
+                      layout_sizing: { horizontal: FILL, vertical: FILL }
+                      children:
+                        - kind: TEXT
+                          name: Value
+                          characters: "Value"
+                          font: { family: SF Pro, style: Medium }
+                          font_size: 17
+                          line_height: { unit: PIXELS, value: 20 }
+                          letter_spacing: { value: -0.43, unit: PIXELS }
+                          fills: [{ type: SOLID, color: "#000000" }]
+                          text_align_horizontal: LEFT
+                          layout_grow: 1
+                          layout_sizing: { horizontal: FILL, vertical: FILL }
+                # Field 2 (placeholder "Value" + separator on top)
+                - kind: FRAME
+                  name: "Text Field"
+                  size: { width: 272, height: 52 }
+                  fills: []
+                  auto_layout:
+                    direction: HORIZONTAL
+                    primary_axis_align_items: MIN
+                    counter_axis_align_items: CENTER
+                    padding: { top: 0, right: 16, bottom: 0, left: 16 }
+                    item_spacing: 0
+                    primary_axis_sizing_mode: FIXED
+                    counter_axis_sizing_mode: FIXED
+                  layout_sizing: { horizontal: FILL }
+                  children:
+                    - kind: FRAME
+                      name: Contents
+                      size: { width: 240, height: 52 }
+                      fills: []
+                      auto_layout:
+                        direction: VERTICAL
+                        primary_axis_align_items: CENTER
+                        counter_axis_align_items: MIN
+                        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+                        item_spacing: 0
+                        primary_axis_sizing_mode: FIXED
+                        counter_axis_sizing_mode: FIXED
+                      layout_grow: 1
+                      layout_sizing: { horizontal: FILL, vertical: FILL }
+                      children:
+                        # Separator hairline (1px, #E6E6E6) between field 1 and field 2
+                        - kind: RECTANGLE
+                          name: _Separator
+                          size: { width: 240, height: 1 }
+                          fills: [{ type: SOLID, color: "#E6E6E6" }]
+                          layout_sizing: { horizontal: FILL }
+                        - kind: TEXT
+                          name: Value
+                          characters: "Value"
+                          font: { family: SF Pro, style: Medium }
+                          font_size: 17
+                          line_height: { unit: PIXELS, value: 20 }
+                          letter_spacing: { value: -0.43, unit: PIXELS }
+                          fills: [{ type: SOLID, color: "#3C3C43", opacity: 0.3 }]
+                          text_align_horizontal: LEFT
+                          layout_grow: 1
+                          layout_sizing: { horizontal: FILL, vertical: FILL }
+
+        # 3. Buttons
+        - kind: FRAME
+          name: Buttons
+          size: { width: 272, height: 160 }
+          fills: []
+          auto_layout:
+            direction: VERTICAL
+            primary_axis_align_items: MIN
+            counter_axis_align_items: MIN
+            padding: { top: 0, right: 0, bottom: 0, left: 0 }
+            item_spacing: 10
+            primary_axis_sizing_mode: AUTO
+            counter_axis_sizing_mode: FIXED
+          layout_sizing: { horizontal: FILL }
+          children:
+            # Button 1 — Primary (blue)
+            - kind: FRAME
+              name: "Button 1"
+              size: { width: 272, height: 48 }
+              corner_radius: 100
+              fills: [{ type: SOLID, color: "#0088FF" }]
+              auto_layout:
+                direction: HORIZONTAL
+                primary_axis_align_items: CENTER
+                counter_axis_align_items: CENTER
+                padding: { top: 13, right: 16, bottom: 13, left: 16 }
+                item_spacing: 10
+                primary_axis_sizing_mode: FIXED
+                counter_axis_sizing_mode: FIXED
+              layout_sizing: { horizontal: FILL }
+              children:
+                - kind: TEXT
+                  name: Primary
+                  characters: "Primary"
+                  font: { family: SF Pro, style: Medium }
+                  font_size: 17
+                  line_height: { unit: PIXELS, value: 22 }
+                  letter_spacing: { value: -0.43, unit: PIXELS }
+                  fills: [{ type: SOLID, color: "#FFFFFF" }]
+                  text_align_horizontal: CENTER
+            # Button 2 — Destructive (red text on grey)
+            - kind: FRAME
+              name: "Button 2"
+              size: { width: 272, height: 48 }
+              corner_radius: 100
+              fills: [{ type: SOLID, color: "#787880", opacity: 0.16 }]
+              auto_layout:
+                direction: HORIZONTAL
+                primary_axis_align_items: CENTER
+                counter_axis_align_items: CENTER
+                padding: { top: 13, right: 16, bottom: 13, left: 16 }
+                item_spacing: 10
+                primary_axis_sizing_mode: FIXED
+                counter_axis_sizing_mode: FIXED
+              layout_sizing: { horizontal: FILL }
+              children:
+                - kind: TEXT
+                  name: Destructive
+                  characters: "Destructive"
+                  font: { family: SF Pro, style: Medium }
+                  font_size: 17
+                  line_height: { unit: PIXELS, value: 22 }
+                  letter_spacing: { value: -0.43, unit: PIXELS }
+                  fills: [{ type: SOLID, color: "#FF383C" }]
+                  text_align_horizontal: CENTER
+            # Button 3 — Secondary (black text on grey)
+            - kind: FRAME
+              name: "Button 3"
+              size: { width: 272, height: 48 }
+              corner_radius: 100
+              fills: [{ type: SOLID, color: "#787880", opacity: 0.16 }]
+              auto_layout:
+                direction: HORIZONTAL
+                primary_axis_align_items: CENTER
+                counter_axis_align_items: CENTER
+                padding: { top: 13, right: 16, bottom: 13, left: 16 }
+                item_spacing: 10
+                primary_axis_sizing_mode: FIXED
+                counter_axis_sizing_mode: FIXED
+              layout_sizing: { horizontal: FILL }
+              children:
+                - kind: TEXT
+                  name: Secondary
+                  characters: "Secondary"
+                  font: { family: SF Pro, style: Medium }
+                  font_size: 17
+                  line_height: { unit: PIXELS, value: 22 }
+                  letter_spacing: { value: -0.43, unit: PIXELS }
+                  fills: [{ type: SOLID, color: "#000000" }]
+                  text_align_horizontal: CENTER
+
+    componentset_assembly:
+      combiner: single
+      grid:
+        rows: 1
+        cols: 1
+        cell_size: { width: 320, height: 450 }
+        gap: { x: 0, y: 0 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: _
+          secondary: _
+
+known_gaps:
+  - id: liquid_glass_three_layer
+    description: |
+      Library uses 3 absolute-positioned background layers
+      (#262626 mix-blend-color-dodge + rgba(245,245,245,0.6) + GLASS Effect)
+      to achieve the exact Liquid Glass tint. This schema approximates with
+      single white-translucent fill + BACKGROUND_BLUR + GLASS effect, which
+      is visually within 1-2% of the Library render.

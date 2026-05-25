@@ -713,6 +713,12 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
       <input type="text" id="m-library-name" placeholder="例: Library - Guideline">
     </div>
 
+    <div class="field">
+      <label>スキーマフォルダ ID（Google Drive）</label>
+      <input type="text" id="m-schema-folder" placeholder="1WvUBAX5BSePTC25IczQfW0gk-F6MO3UQ">
+      <div class="input-hint">WangくんのスキーマYAMLが入ったGDriveフォルダID。コンポーネントキーのルールブックとして参照されます</div>
+    </div>
+
     <div class="fieldset-title">スタイル参照（毎回の生成に使うビジュアルトーンの基準）</div>
     <div class="field">
       <label>スタイル参照 URL 1</label>
@@ -949,11 +955,12 @@ function openModal(id) {
       document.getElementById('m-library-name').value = p.libraryName || '';
       document.getElementById('m-header-key').value = p.headerKey || '';
       document.getElementById('m-nav-key').value = p.navKey || '';
+      document.getElementById('m-schema-folder').value = p.schemaFolderId || '';
       document.getElementById('m-style-ref-1').value = (p.styleRefUrls || [])[0] || '';
       document.getElementById('m-style-ref-2').value = (p.styleRefUrls || [])[1] || '';
     }
   } else {
-    ['m-name','m-figma-url','m-library-url','m-page','m-library-name','m-header-key','m-nav-key','m-style-ref-1','m-style-ref-2'].forEach(id => {
+    ['m-name','m-figma-url','m-library-url','m-schema-folder','m-page','m-library-name','m-header-key','m-nav-key','m-style-ref-1','m-style-ref-2'].forEach(id => {
       document.getElementById(id).value = '';
     });
     document.getElementById('m-filekey-hint').textContent = '';
@@ -1003,6 +1010,7 @@ function saveProduct() {
     name,
     figmaFileKey: getFileKey(figmaUrl),
     libraryFileKey: libraryUrl ? getFileKey(libraryUrl) : '',
+    schemaFolderId: document.getElementById('m-schema-folder').value.trim(),
     page: document.getElementById('m-page').value.trim() || 'Page 1',
     libraryName: document.getElementById('m-library-name').value.trim(),
     headerKey: document.getElementById('m-header-key').value.trim() || DEFAULT_HEADER_KEY,
@@ -1041,6 +1049,7 @@ document.getElementById('user-id').value = localStorage.getItem('da_userId') || 
       name: 'Twomi',
       figmaFileKey: 'HX2ZFoaRtpcrGgJoVKUTD1',
       libraryFileKey: 'CPe64VQc7petbZawTE6J8o',
+      schemaFolderId: '1WvUBAX5BSePTC25IczQfW0gk-F6MO3UQ',
       page: 'Page 1',
       libraryName: 'Library - Guideline',
       headerKey: DEFAULT_HEADER_KEY,

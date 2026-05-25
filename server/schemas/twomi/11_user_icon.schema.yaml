@@ -1,0 +1,228 @@
+# ============================================================
+# 11_user_icon.schema.yaml
+# ============================================================
+# User icon ComponentSet (Library - Guideline)
+#   15 variants = State × type
+#     State ∈ {Profile, Comments, MiddleSearch, bottomNavi, Minimum}
+#     type  ∈ {Self, Other, Default}
+#
+# Sizes (per State):
+#   Profile=64, Comments=40, MiddleSearch=32, bottomNavi=24, Minimum=20
+#
+# Self/Other variants:
+#   - Outer container with gradient ring (LINEAR #E8B2E4 → #3CE0D1)
+#   - Inner round FRAME with IMAGE fill (different hash for Self vs Other)
+#
+# Default variants:
+#   - No stroke ring
+#   - Full-size inline SVG: GRADIENT_RADIAL teal circle + cute 0_0 face
+# ============================================================
+
+meta:
+  name: User icon
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+  description: |
+    User profile photo icon shown across the app at multiple sizes (20,
+    24, 32, 40, 64). type=Self uses the current user's avatar (lavender→
+    teal gradient ring around photo); type=Other uses target user's photo
+    (same ring); type=Default shows a generic teal circle with cute 0_0
+    face for placeholder / unset avatars. State (size context) controls
+    dimensions, stroke weight, padding.
+  screen_usage:
+    - bottomNavi tab (24x24, Self for current user)
+    - Profile screen header (Profile = 64x64)
+    - Comments (40x40)
+    - MiddleSearch results (32x32)
+    - Compact lists (Minimum = 20x20)
+  dependencies:
+    - Library image hashes for Self / Other avatar samples
+      (4320744b... Self, 3f65a5de... Other)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 15
+    implemented: 15
+    notes: |
+      Image hashes require the Library User icon set to have been imported
+      once into the target file. For new files, run an import first.
+  review_status: ai-draft
+
+components:
+  - id: User icon
+    variants:
+      combinations:
+        - { State: Profile,      type: Self    }
+        - { State: Profile,      type: Other   }
+        - { State: Profile,      type: Default }
+        - { State: Comments,     type: Self    }
+        - { State: Comments,     type: Other   }
+        - { State: Comments,     type: Default }
+        - { State: MiddleSearch, type: Self    }
+        - { State: MiddleSearch, type: Other   }
+        - { State: MiddleSearch, type: Default }
+        - { State: bottomNavi,   type: Self    }
+        - { State: bottomNavi,   type: Other   }
+        - { State: bottomNavi,   type: Default }
+        - { State: Minimum,      type: Self    }
+        - { State: Minimum,      type: Other   }
+        - { State: Minimum,      type: Default }
+
+    container:
+      name_template: "State=${State}, type=${type}"
+      size:
+        by_variant:
+          - when: { State: Profile }
+            value: { width: 64, height: 64 }
+          - when: { State: Comments }
+            value: { width: 40, height: 40 }
+          - when: { State: MiddleSearch }
+            value: { width: 32, height: 32 }
+          - when: { State: bottomNavi }
+            value: { width: 24, height: 24 }
+          - when: { State: Minimum }
+            value: { width: 20, height: 20 }
+      corner_radius:
+        by_variant:
+          - { when: { State: Profile },      value: 42.67 }
+          - { when: { State: Comments },     value: 26.67 }
+          - { when: { State: MiddleSearch }, value: 21.33 }
+          - { when: { State: bottomNavi },   value: 16 }
+          - { when: { State: Minimum },      value: 13.33 }
+      clips_content: true
+      fills: []
+
+      # Self/Other: gradient ring (LINEAR #E8B2E4 → #3CE0D1)
+      # Default: no stroke
+      stroke:
+        by_variant:
+          - when: { type: [Self, Other], State: Profile }
+            value:
+              paints: [{ type: GRADIENT_LINEAR,
+                stops: [{ pos: 0, color: "#E8B2E4" }, { pos: 1, color: "#3CE0D1" }] }]
+              weight: 2
+              align: INSIDE
+          - when: { type: [Self, Other], State: Comments }
+            value:
+              paints: [{ type: GRADIENT_LINEAR,
+                stops: [{ pos: 0, color: "#E8B2E4" }, { pos: 1, color: "#3CE0D1" }] }]
+              weight: 1.5
+              align: INSIDE
+          - when: { type: [Self, Other], State: MiddleSearch }
+            value:
+              paints: [{ type: GRADIENT_LINEAR,
+                stops: [{ pos: 0, color: "#E8B2E4" }, { pos: 1, color: "#3CE0D1" }] }]
+              weight: 2
+              align: INSIDE
+          - when: { type: [Self, Other], State: bottomNavi }
+            value:
+              paints: [{ type: GRADIENT_LINEAR,
+                stops: [{ pos: 0, color: "#E8B2E4" }, { pos: 1, color: "#3CE0D1" }] }]
+              weight: 1.5
+              align: INSIDE
+          - when: { type: [Self, Other], State: Minimum }
+            value:
+              paints: [{ type: GRADIENT_LINEAR,
+                stops: [{ pos: 0, color: "#E8B2E4" }, { pos: 1, color: "#3CE0D1" }] }]
+              weight: 1.25
+              align: INSIDE
+          - when: { type: Default }
+            value: null
+
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+        padding:
+          by_variant:
+            - { when: { State: Profile },      value: { top: 6.4, right: 6.4, bottom: 6.4, left: 6.4 } }
+            - { when: { State: Comments },     value: { top: 4,   right: 4,   bottom: 4,   left: 4   } }
+            - { when: { State: MiddleSearch }, value: { top: 3.2, right: 3.2, bottom: 3.2, left: 3.2 } }
+            - { when: { State: bottomNavi },   value: { top: 2.4, right: 2.4, bottom: 2.4, left: 2.4 } }
+            - { when: { State: Minimum },      value: { top: 2,   right: 2,   bottom: 2,   left: 2   } }
+        item_spacing: 0
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+
+      children:
+        # Self image
+        - kind: FRAME
+          name: user image
+          size:
+            by_variant:
+              - { when: { State: Profile },      value: { width: 51, height: 51 } }
+              - { when: { State: Comments },     value: { width: 32, height: 32 } }
+              - { when: { State: MiddleSearch }, value: { width: 26, height: 26 } }
+              - { when: { State: bottomNavi },   value: { width: 19, height: 19 } }
+              - { when: { State: Minimum },      value: { width: 16, height: 16 } }
+          corner_radius:
+            by_variant:
+              - { when: { State: Profile },      value: 26 }
+              - { when: { State: Comments },     value: 16 }
+              - { when: { State: MiddleSearch }, value: 13 }
+              - { when: { State: bottomNavi },   value: 10 }
+              - { when: { State: Minimum },      value: 8 }
+          clips_content: true
+          fills: [{ type: IMAGE, scale_mode: FILL,
+                    image_hash: "4320744b99e3c1532275658e62cdd1be5b8c91ce" }]
+          when: { type: Self }
+
+        # Other image — same shape, different image hash
+        - kind: FRAME
+          name: user image
+          size:
+            by_variant:
+              - { when: { State: Profile },      value: { width: 51, height: 51 } }
+              - { when: { State: Comments },     value: { width: 32, height: 32 } }
+              - { when: { State: MiddleSearch }, value: { width: 26, height: 26 } }
+              - { when: { State: bottomNavi },   value: { width: 19, height: 19 } }
+              - { when: { State: Minimum },      value: { width: 16, height: 16 } }
+          corner_radius:
+            by_variant:
+              - { when: { State: Profile },      value: 26 }
+              - { when: { State: Comments },     value: 16 }
+              - { when: { State: MiddleSearch }, value: 13 }
+              - { when: { State: bottomNavi },   value: 10 }
+              - { when: { State: Minimum },      value: 8 }
+          clips_content: true
+          fills: [{ type: IMAGE, scale_mode: FILL,
+                    image_hash: "3f65a5ded1d5783468eadfb806036e01c345e47b" }]
+          when: { type: Other }
+
+        # Default — full-size inline SVG per State (gradient + cute face)
+        # SVG strings stored in the .js paste-and-run as constants
+        # (omitted here to keep the YAML readable; see 11_user_icon.js).
+        - { kind: SVG, when: { type: Default, State: Profile },      size: { width: 64, height: 64 } }
+        - { kind: SVG, when: { type: Default, State: Comments },     size: { width: 40, height: 40 } }
+        - { kind: SVG, when: { type: Default, State: MiddleSearch }, size: { width: 32, height: 32 } }
+        - { kind: SVG, when: { type: Default, State: bottomNavi },   size: { width: 24, height: 24 } }
+        - { kind: SVG, when: { type: Default, State: Minimum },      size: { width: 20, height: 20 } }
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 5
+        cols: 3
+        cell_size: { width: 80, height: 80 }
+        gap: { x: 24, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: State
+          secondary: type
+
+known_gaps:
+  - id: library_image_hashes
+    description: |
+      Self/Other variants reference Library-provided IMAGE hashes
+      (4320744b... and 3f65a5de...). These hashes are valid only if
+      the User icon ComponentSet has been imported into the target
+      file at least once (which uploads the images). For a clean
+      destination file, import a User icon instance first to populate
+      the image cache, then run this schema.
+  - id: inline_svg_default_face
+    description: |
+      Default-type variants use inline SVGs (one per State size).
+      The gradient + face primitives could be rebuilt from RECTANGLE/
+      ELLIPSE primitives + GRADIENT_RADIAL fills, but using SVG keeps
+      the schema compact and visually identical.

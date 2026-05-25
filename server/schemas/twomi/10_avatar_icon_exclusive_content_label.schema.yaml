@@ -1,0 +1,116 @@
+# ============================================================
+# 10_avatar_icon_exclusive_content_label.schema.yaml
+# ============================================================
+# AvatarIcon ExclusiveContentLabel ComponentSet (Library - Guideline)
+#   6 variants = Tier × State
+#     Tier  ∈ {Tier1, Tier2, Tier3}
+#     State ∈ {Active, Disable}
+#
+# Layout (all variants identical structure):
+#   42x16 pill (r=10) — HORIZONTAL al, gap=2, pad [0,8,0,8], CENTER/CENTER
+#   - fill   : #F2F2F2 @ 0.7 (translucent grey)
+#   - stroke : #F2F2F2 @ 0.55, 1px INSIDE
+#   - effect : BACKGROUND_BLUR radius=10
+#   - child  : TierName TEXT — Noto Sans JP Bold 10
+#
+# Per-variant differences (only 2 dimensions):
+#   - text content  -> by Tier   (Tier1 / Tier2 / Tier3)
+#   - text fill     -> by State  (Active=#26A2A6 / Disable=#A4A4A4)
+#
+# Note: Library has a hidden "Membership" icon in every variant
+# (visible=false in all 6). Skipped here since it has no visual effect.
+# ============================================================
+
+meta:
+  name: AvatarIcon ExclusiveContentLabel
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "b35ec663d2dcb1c854c76b8ffce24dd355cf8964"
+  description: |
+    A small pill label showing exclusive content tier (Tier1/2/3) on top
+    of avatar cards. State controls text color (Active=teal/Disable=grey).
+    Library variants include a hidden Membership icon that gets toggled
+    visible by parent context — this schema skips the hidden icon since
+    it has no visual effect in any default render.
+  screen_usage:
+    - Avatar Card (overlaid on top-left corner)
+    - Avatar Pickup Button
+    - Anywhere showing tier-gated content access
+  dependencies:
+    - none (text-only render; hidden Membership icon skipped)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 6
+    implemented: 6
+    notes: |
+      Library has a typo in Tier=Tier3 State=Disable variant ("Tier2" text);
+      schema corrects to "Tier3". This is a Library bug that should be
+      reported upstream rather than mirrored in our schema.
+  review_status: ai-draft
+
+components:
+  - id: AvatarIcon ExclusiveContentLabel
+    variants:
+      combinations:
+        - { Tier: Tier1, State: Active  }
+        - { Tier: Tier1, State: Disable }
+        - { Tier: Tier2, State: Active  }
+        - { Tier: Tier2, State: Disable }
+        - { Tier: Tier3, State: Active  }
+        - { Tier: Tier3, State: Disable }
+
+    container:
+      name_template: "Tier=${Tier}, State=${State}"
+      size: { width: 42, height: 16 }
+      corner_radius: 10
+      clips_content: false
+      fills: [{ type: SOLID, color: "#F2F2F2", opacity: 0.7 }]
+      stroke:
+        paints: [{ type: SOLID, color: "#F2F2F2", opacity: 0.55 }]
+        weight: 1
+        align: INSIDE
+      effects:
+        - { type: BACKGROUND_BLUR, radius: 10 }
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+        padding: { top: 0, right: 8, bottom: 0, left: 8 }
+        item_spacing: 2
+        primary_axis_sizing_mode: AUTO
+        counter_axis_sizing_mode: FIXED
+
+      children:
+        - kind: TEXT
+          name: TierName
+          characters:
+            by_variant:
+              - when: { Tier: Tier1 }
+                value: "Tier1"
+              - when: { Tier: Tier2 }
+                value: "Tier2"
+              - when: { Tier: Tier3 }
+                value: "Tier3"
+          font: { family: Noto Sans JP, style: Bold }
+          font_size: 10
+          line_height: { unit: PERCENT, value: 100 }
+          text_align_horizontal: LEFT
+          fills:
+            by_variant:
+              - when: { State: Active }
+                paints: [{ type: SOLID, color: "#26A2A6" }]
+              - when: { State: Disable }
+                paints: [{ type: SOLID, color: "#A4A4A4" }]
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 3
+        cols: 2
+        cell_size: { width: 60, height: 30 }
+        gap: { x: 24, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: Tier
+          secondary: State

@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchFileComponents } from './figma.js';
+import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles } from './figma.js';
+import { loadProductSchemas } from './schemas.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -91,15 +92,8 @@ export async function generateFigmaScript(input) {
     }
   }
 
-  // Fetch Figma component library from master/library file
-  let componentLibrary = [];
-  if (product.libraryFileKey) {
-    try {
-      componentLibrary = await fetchFileComponents(product.libraryFileKey);
-    } catch (err) {
-      console.error('Component library fetch failed:', err.message);
-    }
-  }
+  // Load component schemas for this product
+  const schemaContent = await loadProductSchemas(product.id || 'twomi');
 
   // Fetch style reference images (product-level, always included)
   const styleRefImages = [];
@@ -159,8 +153,9 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 
 ## Figma Plugin JSのルール
 - scaffold を最初に実行し、返り値の contentFrameNodeId の中身だけを設計する
-- **コンポーネントライブラリが提供されている場合は、必ず `figma.importComponentByKeyAsync(key)` を使ってコンポーネントをインポートし、`.createInstance()` でインスタンス化すること**
-- コンポーネントが見つからない場合のみ自前でノードを作成する
+- **コンポーネントスキーマが提供されている場合は、必ずスキーマ内の `library_component_key` を使って `importComponentByKeyAsync` / `importComponentSetByKeyAsync` でインポートし `.createInstance()` でインスタンス化すること**
+- スキーマにないUI要素のみ自前でノードを作成する
+- `importComponentSetByKeyAsync` の場合は返り値の `.defaultVariant` または `.variants` から条件に合うバリアントを選ぶ
 - appendChild後にfillsを設定する
 - グラデーション: type:'GRADIENT_LINEAR', gradientStops, gradientTransform
 - ぼかし効果: effects = [{ type:'LAYER_BLUR', radius:25, visible:true }]
@@ -178,9 +173,8 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換えて使うこと。
 `;
 
-  const componentSection = componentLibrary.length > 0
-    ? `\n## 利用可能なFigmaコンポーネント（必ずimportComponentByKeyAsyncで使うこと）\n` +
-      componentLibrary.slice(0, 80).map(c => `- key: "${c.key}" / name: "${c.name}"${c.description ? ` / ${c.description}` : ''}`).join('\n')
+  const componentSection = schemaContent
+    ? `\n## コンポーネントスキーマ（このプロダクトの公式ライブラリ定義）\n以下のスキーマに定義された library_component_key を使って importComponentByKeyAsync / importComponentSetByKeyAsync でコンポーネントをインポートすること。独自ノードを作るのはスキーマにないUI要素のみ。\n\n${schemaContent}`
     : '';
 
   const userTextContent = `## リクエスト

@@ -1,0 +1,343 @@
+# ============================================================
+# 07_context_menu_en.schema.yaml
+# ============================================================
+# contextMenu ComponentSet (Library - Guideline) — Language=EN only
+#   7 variants by Purpose:
+#     LiveStreaming     (110×56)   — Report
+#     AvatarTop         (107×56)   — Delete
+#     otherUser         (110×112)  — Block, Report
+#     Unblock           (120×112)  — Unblock, Follow(Other)
+#     selfProfile       (186×224)  — Settings, Verification Badge,
+#                                    Share on SNS, Help Centre
+#     talkChat_Share    (178×224)  — Add to favourites (contextMenuFavorite),
+#                                    Customize, Follow(Self), Report
+#     call Option menu  (178×280)  — Add to favourites, Share on SNS,
+#                                    Customize, Follow(Self), Report
+#
+# Structure: each variant is a VERTICAL stack of "menu" FRAMEs (icon + text)
+# inside a rounded #EAEAEA container. Items use `when: { Purpose: [...] }`
+# filters; canonical order across variants is preserved.
+# ============================================================
+
+meta:
+  name: contextMenu (EN)
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "5a357e53ca44c716d553213dec9325620553847d"
+  description: |
+    The popover menu shown on long-press of various surfaces (other users,
+    own profile, live stream, talk chat, call). Each Purpose value matches
+    a UX context with a specific set of menu items in a canonical order
+    (Block / Settings / Share / Customize / Follow / Report / etc.).
+    Only Language=EN variants are implemented here; JP variants pending.
+  screen_usage:
+    - User profile context menu (Purpose=otherUser / Unblock / selfProfile)
+    - Live stream more menu (Purpose=LiveStreaming)
+    - Avatar top more menu (Purpose=AvatarTop)
+    - Talk chat sharing menu (Purpose=talkChat_Share)
+    - Call option menu (Purpose=call Option menu)
+  dependencies:
+    - Library icons: ShieldWarning / TrashBin / UserBlockRounded / Settings /
+      VerifiedBadge (Premium) / ForwardArrow / Help / MagicStick3 / UserIcon (Self/Other)
+    - contextMenuFavorite ComponentSet (nested INSTANCE for talkChat_Share + call)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 7
+    implemented: 7
+    notes: JP variants (7 more) intentionally skipped; user requested EN only.
+  review_status: ai-draft
+
+components:
+  - id: contextMenu (EN)
+    variants:
+      combinations:
+        - { Purpose: LiveStreaming }
+        - { Purpose: AvatarTop }
+        - { Purpose: otherUser }
+        - { Purpose: Unblock }
+        - { Purpose: selfProfile }
+        - { Purpose: talkChat_Share }
+        - { Purpose: "call Option menu" }
+
+    icon_refs:
+      - tab: ShieldWarning
+        asset_type: COMPONENT
+        library_component_key: "07f12a3a847821096182ec11b2c4c8b063f4e60b"
+        import_method: importComponentByKeyAsync
+      - tab: TrashBin
+        asset_type: COMPONENT
+        library_component_key: "23308b913fc80bd020a032a18375a26360bef10c"
+        import_method: importComponentByKeyAsync
+      - tab: UserBlockRounded
+        asset_type: COMPONENT
+        library_component_key: "cd86dc24aafd3954e70d870bd3e6505a493ca6f6"
+        import_method: importComponentByKeyAsync
+      - tab: Settings
+        asset_type: COMPONENT
+        library_component_key: "d52f7c06f522e85ba02ccfa8c63c6a4eb0cf725f"
+        import_method: importComponentByKeyAsync
+      - tab: VerifiedBadgePremium
+        asset_type: COMPONENT_SET
+        library_component_key: "abca5eab240949157d7e24cc64bc5a4feb4419f2"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { Type: Premium, Size: "24" }
+      - tab: ForwardArrow
+        asset_type: COMPONENT
+        library_component_key: "c7d58684904512d6d2aa1ff6ba32ca7ca89dd168"
+        import_method: importComponentByKeyAsync
+      - tab: Help
+        asset_type: COMPONENT
+        library_component_key: "b88499df5f562a875332b9c0f858cb6ea7fe9e3d"
+        import_method: importComponentByKeyAsync
+      - tab: MagicStick3
+        asset_type: COMPONENT
+        library_component_key: "8f65b7aa1ddef84eb69c58f3d2beb15aa86b8661"
+        import_method: importComponentByKeyAsync
+      - tab: UserIconOther
+        asset_type: COMPONENT_SET
+        library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { State: bottomNavi, type: Other }
+      - tab: UserIconSelf
+        asset_type: COMPONENT_SET
+        library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { State: bottomNavi, type: Self }
+      - tab: ContextMenuFavoriteAddEN
+        asset_type: COMPONENT_SET
+        library_component_key: "f4e5eaec7fd6cabef180694b84f2afcd3271a43e"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { State: AddFavorite, Language: EN }
+
+    container:
+      name_template: "Purpose=${Purpose}, Language=EN"
+
+      # Per-variant fixed size
+      size:
+        by_variant:
+          - when: { Purpose: LiveStreaming }
+            value: { width: 110, height: 56 }
+          - when: { Purpose: AvatarTop }
+            value: { width: 107, height: 56 }
+          - when: { Purpose: otherUser }
+            value: { width: 110, height: 112 }
+          - when: { Purpose: Unblock }
+            value: { width: 120, height: 112 }
+          - when: { Purpose: selfProfile }
+            value: { width: 186, height: 224 }
+          - when: { Purpose: talkChat_Share }
+            value: { width: 178, height: 224 }
+          - when: { Purpose: "call Option menu" }
+            value: { width: 178, height: 280 }
+
+      corner_radius: 16
+      clips_content: true
+      fills: [{ type: SOLID, color: "#EAEAEA" }]
+
+      auto_layout:
+        direction: VERTICAL
+        primary_axis_align_items: MIN
+        counter_axis_align_items: MIN
+        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+        item_spacing: 0
+        primary_axis_sizing_mode: AUTO
+        counter_axis_sizing_mode: FIXED
+
+      # All menu items use this shared structure (icon 24x24 + text Noto Sans JP Medium 14)
+      # Canonical order across variants (matches Library):
+      #   1. contextMenuFavorite (talkChat_Share, call)
+      #   2. Settings              (selfProfile)
+      #   3. Verification Badge    (selfProfile)
+      #   4. Block                 (otherUser)
+      #   5. Unblock               (Unblock)
+      #   6. Delete                (AvatarTop)
+      #   7. Share on SNS          (selfProfile, call)
+      #   8. Customize             (talkChat_Share, call)
+      #   9. Follow (Self)         (talkChat_Share, call)
+      #  10. Follow (Other)        (Unblock)
+      #  11. Help Centre           (selfProfile)
+      #  12. Report                (LiveStreaming, otherUser, talkChat_Share, call)
+      children:
+        - kind: INSTANCE
+          ref: "icon_refs[tab=ContextMenuFavoriteAddEN]"
+          layout_sizing: { horizontal: FILL }
+          when: { Purpose: [talkChat_Share, "call Option menu"] }
+
+        # menu(iconTab, text, purposes) — repeated for each row
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=Settings]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Settings",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [selfProfile] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=VerifiedBadgePremium]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Verification Badge",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [selfProfile] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=UserBlockRounded]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Block",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [otherUser] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=UserBlockRounded]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Unblock",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [Unblock] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=TrashBin]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Delete",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [AvatarTop] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=ForwardArrow]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Share on SNS",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [selfProfile, "call Option menu"] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=MagicStick3]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Customize",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [talkChat_Share, "call Option menu"] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=UserIconSelf]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Follow",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [talkChat_Share, "call Option menu"] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=UserIconOther]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Follow",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [Unblock] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=Help]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Help Centre",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [selfProfile] } }
+
+        - { kind: FRAME, name: menu, size: { height: 56 }, fills: [],
+            auto_layout: { direction: HORIZONTAL, item_spacing: 8,
+              padding: { top: 16, right: 16, bottom: 16, left: 16 },
+              primary_axis_align_items: MIN, counter_axis_align_items: CENTER,
+              primary_axis_sizing_mode: FIXED, counter_axis_sizing_mode: AUTO },
+            layout_sizing: { horizontal: FILL },
+            children: [
+              { kind: INSTANCE, ref: "icon_refs[tab=ShieldWarning]", size: { width: 24, height: 24 } },
+              { kind: TEXT, name: text, characters: "Report",
+                font: { family: Noto Sans JP, style: Medium }, font_size: 14,
+                line_height: { unit: PERCENT, value: 100 },
+                fills: [{ type: SOLID, color: "#2E2E2E" }], text_align_horizontal: LEFT },
+            ],
+            when: { Purpose: [LiveStreaming, otherUser, talkChat_Share, "call Option menu"] } }
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 1
+        cols: 7
+        cell_size: { width: 220, height: 300 }
+        gap: { x: 24, y: 24 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: Purpose
+          secondary: Purpose

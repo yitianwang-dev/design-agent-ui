@@ -1,0 +1,613 @@
+# ============================================================
+# Schema PJ — headMenu + headMenu/SingleButton (multi-component rebuild)
+# ============================================================
+# Generated: 2026-05-20  (incremental: SingleButton complete, headMenu Batch 1)
+#
+# This schema rebuilds two related components from primitives:
+#   1. headMenu/SingleButton (8 variants, complete)
+#   2. headMenu (41 variants total, being added in 4 batches)
+#      - Batch 1: simple states (Arrow only / Close only / Arrow+Name / onlyTitle)
+#                 × Light/Dark = 8 variants  ← current
+#      - Batch 2: middle/right button states (Three Dot / ThreeLine / Settings)
+#      - Batch 3: complex (Credit / Cloth / ticketDisplay)
+#      - Batch 4: Title position=Left (Search / Studio)
+#
+# Runtime requirements: v0.3+ with variants.combinations + generic
+# resolveByVariant + when supports arrays + variant_to_select interpolation.
+# ============================================================
+
+meta:
+  name: headMenu + headMenu/SingleButton
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "f5ed07919150302ef05f6608dde1f552e4037bcc"  # headMenu key
+    secondary_component_set_key: "a43345d9c0c498ffb7a4d34c260edb53f8ae3003"  # SingleButton
+  description: |
+    Top-of-screen header bar component (headMenu) used on every Twomi screen
+    (Home, Profile, Comments, AvatarTop, etc.) for back navigation + title +
+    optional right action (dots / hamburger / settings / credit pill / ticket
+    display). Built from primitives + Library SingleButton with inner icon swap.
+    SingleButton is the round 44/32 button used for back/menu/settings actions.
+  screen_usage:
+    - Home - Self (via Header After)
+    - Profile - Self / Other
+    - Comments
+    - AvatarTop
+    - call / live screens (Title position=Left variants)
+  dependencies:
+    - Library SingleButton (a43345d9...) — outer button with Liquid Glass
+    - MenuDots / Hamburger / SettingsIcon / StarCircle / SearchMagnifier / TrashBin
+      Library COMPONENTs (for right-action icon swap)
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "headMenu/SingleButton": 8
+      "headMenu": 41
+    implemented: full
+    notes: |
+      headMenu rebuilt from primitives (not library_set import). SingleButton
+      imported as inner Library COMPONENT_SET so its bound color variables
+      auto-resolve in Light/Dark mode.
+  review_status: ai-draft
+
+components:
+  - id: headMenu/SingleButton
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "325:1748"
+
+    # 8 explicit combinations (sparse matrix — not all 2×2×2×2 exist in Library)
+    variants:
+      combinations:
+        - { mode: Light, OS: iOS26,  State: Default,  Size: 44 }
+        - { mode: Light, OS: iOS26,  State: Default,  Size: 32 }
+        - { mode: Light, OS: Older,  State: Default,  Size: 44 }
+        - { mode: Dark,  OS: iOS26,  State: Default,  Size: 44 }
+        - { mode: Dark,  OS: iOS26,  State: Default,  Size: 32 }
+        - { mode: Dark,  OS: iOS26,  State: Disabled, Size: 44 }
+        - { mode: Dark,  OS: iOS26,  State: Disabled, Size: 32 }
+        - { mode: Dark,  OS: Older,  State: Default,  Size: 44 }
+
+    container:
+      node_type: COMPONENT
+      name_template: "mode=${mode}, OS=${OS}, State=${State}, Size=${Size}"
+
+      size:
+        by_variant:
+          - { when: { Size: 44 }, value: { width: 44, height: 44 } }
+          - { when: { Size: 32 }, value: { width: 32, height: 32 } }
+
+      corner_radius:
+        by_variant:
+          - { when: { Size: 44 }, value: 22 }
+          - { when: { Size: 32 }, value: 16 }
+
+      clips_content: false
+
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+        item_spacing: 0
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+
+      # Bg fills approximate Liquid Glass (iOS26) or transparent (Older)
+      fills:
+        by_variant:
+          - when: { mode: Light, OS: iOS26 }
+            paints: [{ type: SOLID, color: "#FFFFFF", opacity: 0.7 }]
+          - when: { mode: Dark, OS: iOS26 }
+            paints: [{ type: SOLID, color: "#666666", opacity: 0.7 }]
+          - when: { mode: Light, OS: Older }
+            paints: []
+          - when: { mode: Dark, OS: Older }
+            paints: []
+
+      # Drop shadow only on iOS26 (Liquid Glass depth cue)
+      effects:
+        by_variant:
+          - when: { OS: iOS26 }
+            value:
+              - type: DROP_SHADOW
+                color: "#000000"
+                opacity: 0.1
+                offset: { x: 0, y: 1 }
+                radius: 4
+                blend_mode: NORMAL
+                show_shadow_behind_node: false
+          - when: { OS: Older }
+            value: []
+
+      children:
+        # Alt Arrow Left — dark color for Light mode
+        - kind: SVG
+          name: arrow_left
+          svg: |
+            <svg preserveAspectRatio="none" width="100%" height="100%" viewBox="0 0 7.5 15.5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.23809 0.180571C7.55259 0.450138 7.58901 0.923613 7.31944 1.23811L1.73781 7.75001L7.31944 14.2619C7.58901 14.5764 7.55259 15.0499 7.23809 15.3195C6.9236 15.589 6.45012 15.5526 6.18056 15.2381L0.180558 8.23811C-0.0601858 7.95724 -0.0601858 7.54279 0.180558 7.26192L6.18056 0.26192C6.45012 -0.0525743 6.9236 -0.0889955 7.23809 0.180571Z" fill="#2E2E2E"/></svg>
+          size:
+            by_variant:
+              - { when: { Size: 44 }, value: { width: 12, height: 24 } }
+              - { when: { Size: 32 }, value: { width: 9,  height: 18 } }
+          opacity:
+            by_variant:
+              - { when: { State: Disabled }, value: 0.5 }
+              - { otherwise: 1 }
+          when: { mode: Light }
+
+        # Alt Arrow Left — white color for Dark mode
+        - kind: SVG
+          name: arrow_left
+          svg: |
+            <svg preserveAspectRatio="none" width="100%" height="100%" viewBox="0 0 7.5 15.5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.23809 0.180571C7.55259 0.450138 7.58901 0.923613 7.31944 1.23811L1.73781 7.75001L7.31944 14.2619C7.58901 14.5764 7.55259 15.0499 7.23809 15.3195C6.9236 15.589 6.45012 15.5526 6.18056 15.2381L0.180558 8.23811C-0.0601858 7.95724 -0.0601858 7.54279 0.180558 7.26192L6.18056 0.26192C6.45012 -0.0525743 6.9236 -0.0889955 7.23809 0.180571Z" fill="#FFFFFF"/></svg>
+          size:
+            by_variant:
+              - { when: { Size: 44 }, value: { width: 12, height: 24 } }
+              - { when: { Size: 32 }, value: { width: 9,  height: 18 } }
+          opacity:
+            by_variant:
+              - { when: { State: Disabled }, value: 0.5 }
+              - { otherwise: 1 }
+          when: { mode: Dark }
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 4
+        cols: 2
+        cell_size: { width: 50, height: 50 }
+        gap: { x: 20, y: 20 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: mode      # Light variants in col 0, Dark in col 1
+          secondary: Size    # rows within each col
+
+  # ─── headMenu (Batch 1 + 2 + 3 + 4: 41/41 variants — COMPLETE) ────────
+  - id: headMenu
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "95:6725"
+      note: |
+        Batch 1 (8):  Arrow only / Close only / Arrow+Name / onlyTitle × Light/Dark
+        Batch 2 (14): ThreeDot/ThreeLine/Settings family × Light/Dark
+        Batch 3 (12): Credit family (Name+Credit, Arrow+Credit, Arrow+Name+Credit,
+                      Arrow+Name+ThreeDot+credit, Cloth+Credit, ticketDisplay) × Light/Dark
+        Batch 4 (7):  Title position=Left (Arrow only, Arrow+Name, Arrow+Name+ThreeDot,
+                      Arrow+Name+ThreeLine, Search, Search+Cancel, Studio) — Light only
+        Total: 41 — matches Library
+
+    variants:
+      combinations:
+        # ─ Light center (col 0 in grid) ─ Batch 1 + 2 + 3 ─
+        - { State: "Arrow only", titlePosition: center, mode: Light }
+        - { State: "Close only", titlePosition: center, mode: Light }
+        - { State: "Arrow+Name", titlePosition: center, mode: Light }
+        - { State: "onlyTitle",  titlePosition: center, mode: Light }
+        - { State: "Arrow+Name+ThreeDot",  titlePosition: center, mode: Light }
+        - { State: "Arrow+ThreeDot",       titlePosition: center, mode: Light }
+        - { State: "Arrow+Name+ThreeLine", titlePosition: center, mode: Light }
+        - { State: "Arrow+Name+Settings",  titlePosition: center, mode: Light }
+        - { State: "Close + ThreeDot",     titlePosition: center, mode: Light }
+        - { State: "Name+ThreeLine",       titlePosition: center, mode: Light }
+        - { State: "ThreeLine",            titlePosition: center, mode: Light }
+        - { State: "Name + Credit",              titlePosition: center, mode: Light }
+        - { State: "Arrow + Credit",             titlePosition: center, mode: Light }
+        - { State: "Arrow + Name + Credit",      titlePosition: center, mode: Light }
+        - { State: "Arrow+Name+ThreeDot+credit", titlePosition: center, mode: Light }
+        - { State: "Cloth + Credit",             titlePosition: center, mode: Light }
+        - { State: "ticketDisplay",              titlePosition: center, mode: Light }
+        # ─ Dark center (col 1 in grid) ─
+        - { State: "Arrow only", titlePosition: center, mode: Dark }
+        - { State: "Close only", titlePosition: center, mode: Dark }
+        - { State: "Arrow+Name", titlePosition: center, mode: Dark }
+        - { State: "onlyTitle",  titlePosition: center, mode: Dark }
+        - { State: "Arrow+Name+ThreeDot",  titlePosition: center, mode: Dark }
+        - { State: "Arrow+ThreeDot",       titlePosition: center, mode: Dark }
+        - { State: "Arrow+Name+ThreeLine", titlePosition: center, mode: Dark }
+        - { State: "Arrow+Name+Settings",  titlePosition: center, mode: Dark }
+        - { State: "Close + ThreeDot",     titlePosition: center, mode: Dark }
+        - { State: "Name+ThreeLine",       titlePosition: center, mode: Dark }
+        - { State: "ThreeLine",            titlePosition: center, mode: Dark }
+        - { State: "Name + Credit",              titlePosition: center, mode: Dark }
+        - { State: "Arrow + Credit",             titlePosition: center, mode: Dark }
+        - { State: "Arrow + Name + Credit",      titlePosition: center, mode: Dark }
+        - { State: "Arrow+Name+ThreeDot+credit", titlePosition: center, mode: Dark }
+        - { State: "Cloth + Credit",             titlePosition: center, mode: Dark }
+        - { State: "ticketDisplay",              titlePosition: center, mode: Dark }
+        # ─ Batch 4 — Light Left (col 2 in grid) ─
+        - { State: "Arrow only",           titlePosition: Left, mode: Light }
+        - { State: "Arrow+Name",           titlePosition: Left, mode: Light }
+        - { State: "Arrow+Name+ThreeDot",  titlePosition: Left, mode: Light }
+        - { State: "Arrow+Name+ThreeLine", titlePosition: Left, mode: Light }
+        - { State: "Search",               titlePosition: Left, mode: Light }
+        - { State: "Search+Cancel",        titlePosition: Left, mode: Light }
+        - { State: "Studio",               titlePosition: Left, mode: Light }
+
+    # ALL buttons (left + right) use the SAME Library SingleButton component.
+    # Right buttons swap the inner Alt Arrow Left → MenuDots/Hamburger/SettingsIcon.
+    # This matches Library's actual structure (no separate XxxButton components).
+    icon_refs:
+      - tab: SingleButton
+        asset_type: COMPONENT_SET
+        library_component_key: "a43345d9c0c498ffb7a4d34c260edb53f8ae3003"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select:
+          mode: "${mode}"     # auto-tracks parent's mode for Light/Dark wrapping
+          OS: iOS26
+          State: Default
+          Size: 44
+      # Icon refs for swap_inner — single COMPONENTs (not ComponentSets)
+      - tab: MenuDots
+        asset_type: COMPONENT
+        library_component_key: "21869df323b7e995cc19bb1b8a27f0ca2d7dd405"
+        import_method: importComponentByKeyAsync
+      - tab: Hamburger
+        asset_type: COMPONENT
+        library_component_key: "f540592f1f2e471088bd784e2d3c9e28110aeee9"
+        import_method: importComponentByKeyAsync
+      - tab: SettingsIcon
+        asset_type: COMPONENT
+        library_component_key: "d52f7c06f522e85ba02ccfa8c63c6a4eb0cf725f"
+        import_method: importComponentByKeyAsync
+      # ─ Batch 3 icons ─
+      - tab: StarCircle
+        asset_type: COMPONENT
+        library_component_key: "68f1a729723998258a21ad085910cbe68c80b4d8"
+        import_method: importComponentByKeyAsync
+      # Ticker Bold + Liner Plus are inlined as teal-tinted SVG (not imported)
+      # ─ Batch 4 icons ─
+      - tab: SearchMagnifier
+        asset_type: COMPONENT
+        library_component_key: "c6a3de98298c7fce29bfd669168c6feaf2af7898"
+        import_method: importComponentByKeyAsync
+      - tab: TrashBin
+        asset_type: COMPONENT
+        library_component_key: "23308b913fc80bd020a032a18375a26360bef10c"
+        import_method: importComponentByKeyAsync
+
+    container:
+      node_type: COMPONENT
+      name_template: "State=${State}, Title position=${titlePosition}, mode=${mode}"
+      # Container height differs: center=48, Left=36
+      size:
+        by_variant:
+          - { when: { titlePosition: "center" }, value: { width: 402, height: 48 } }
+          - { when: { titlePosition: "Left" },   value: { width: 402, height: 36 } }
+      clips_content: false
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: SPACE_BETWEEN
+        counter_axis_align_items: CENTER
+        padding: { top: 0, right: 16, bottom: 4, left: 16 }
+        item_spacing: 10
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+      fills: []
+
+      children:
+        # =========== center variants ===========
+        # 1. Left BackButton — SingleButton with default Alt Arrow Left
+        - kind: INSTANCE
+          ref: "icon_refs[tab=SingleButton]"
+          name: BackButton
+          when:
+            titlePosition: center
+            State: ["Arrow only", "Close only", "Arrow+Name",
+                    "Arrow+Name+ThreeDot", "Arrow+ThreeDot", "Arrow+Name+ThreeLine",
+                    "Arrow+Name+Settings", "Close + ThreeDot",
+                    "Arrow + Credit", "Arrow + Name + Credit",
+                    "Arrow+Name+ThreeDot+credit", "Cloth + Credit"]
+
+        # 2. LeftSpacer (when no left button — keeps SPACE_BETWEEN balanced)
+        - kind: FRAME
+          name: LeftSpacer
+          size: { width: 44, height: 44 }
+          fills: []
+          when:
+            titlePosition: center
+            State: ["Name+ThreeLine", "ThreeLine", "Name + Credit", "ticketDisplay"]
+
+        # 3. Title (center)
+        - kind: TEXT
+          name: Title
+          characters: "Current title"
+          font: { family: Noto Sans JP, style: Bold }
+          font_size: 17
+          line_height: { unit: PERCENT, value: 100 }
+          fills:
+            by_variant:
+              - { when: { mode: Light }, paints: [{ type: SOLID, color: "#2E2E2E" }] }
+              - { when: { mode: Dark },  paints: [{ type: SOLID, color: "#FFFFFF" }] }
+          text_align_horizontal: CENTER
+          text_auto_resize: HEIGHT
+          layout_grow: 1
+          layout_sizing: { horizontal: FILL }
+          when:
+            titlePosition: center
+            State: ["Arrow+Name", "onlyTitle",
+                    "Arrow+Name+ThreeDot", "Arrow+Name+ThreeLine",
+                    "Arrow+Name+Settings", "Name+ThreeLine",
+                    "Name + Credit", "Arrow + Name + Credit", "Arrow+Name+ThreeDot+credit"]
+
+        # 4. Right button — SAME SingleButton, inner icon varies by state.
+        # Library has no separate "MenuDotsButton" / "HamburgerButton" / "SettingsButton" —
+        # it's always one BackButton (SingleButton), only the icon inside differs.
+        - kind: INSTANCE
+          ref: "icon_refs[tab=SingleButton]"
+          name: BackButton
+          swap_inner:
+            target_name: "Alt Arrow Left"
+            with_ref:
+              by_variant:
+                - when: { State: ["Arrow+Name+ThreeDot", "Arrow+ThreeDot", "Close + ThreeDot",
+                                  "Arrow+Name+ThreeDot+credit"] }
+                  value: "icon_refs[tab=MenuDots]"
+                - when: { State: ["Arrow+Name+ThreeLine", "Name+ThreeLine", "ThreeLine"] }
+                  value: "icon_refs[tab=Hamburger]"
+                - when: { State: ["Arrow+Name+Settings"] }
+                  value: "icon_refs[tab=SettingsIcon]"
+          when:
+            titlePosition: center
+            State: ["Arrow+Name+ThreeDot", "Arrow+ThreeDot", "Close + ThreeDot",
+                    "Arrow+Name+ThreeLine", "Name+ThreeLine", "ThreeLine",
+                    "Arrow+Name+Settings", "Arrow+Name+ThreeDot+credit"]
+
+        # 5. Credit pill (Batch 3) — white pill with star icon + "4" number
+        - kind: FRAME
+          name: Credit
+          size: { width: 50, height: 24 }
+          corner_radius: 20
+          fills:
+            - { type: SOLID, color: "#FFFFFF" }
+          stroke:
+            paints: [{ type: SOLID, color: "#C4C4C4" }]
+            weight: 0.5
+            align: INSIDE
+          auto_layout:
+            direction: HORIZONTAL
+            primary_axis_align_items: CENTER
+            counter_axis_align_items: CENTER
+            item_spacing: 4
+            padding: { top: 0, right: 8, bottom: 0, left: 8 }
+            primary_axis_sizing_mode: FIXED
+            counter_axis_sizing_mode: FIXED
+          children:
+            - kind: INSTANCE
+              ref: "icon_refs[tab=StarCircle]"
+              size: { width: 16, height: 16 }
+            - kind: TEXT
+              characters: "4"
+              font: { family: Noto Sans JP, style: Medium }
+              font_size: 11
+              line_height: { unit: PERCENT, value: 100 }
+              fills: [{ type: SOLID, color: "#2E2E2E" }]
+          when:
+            titlePosition: center
+            State: ["Name + Credit", "Arrow + Credit", "Arrow + Name + Credit",
+                    "Arrow+Name+ThreeDot+credit", "Cloth + Credit"]
+
+        # 6. TicketDisplay (Batch 3) — two dark pills: ticketCount + ticketPlus
+        - kind: FRAME
+          name: TicketDisplay
+          auto_layout:
+            direction: HORIZONTAL
+            primary_axis_align_items: CENTER
+            counter_axis_align_items: CENTER
+            item_spacing: 4
+            padding: { top: 0, right: 0, bottom: 0, left: 0 }
+          fills: []
+          children:
+            - kind: FRAME
+              name: ticketCount
+              size: { width: 90, height: 24 }
+              corner_radius: 12
+              fills: [{ type: SOLID, color: "#181818", opacity: 0.7 }]
+              stroke:
+                paints: [{ type: SOLID, color: "#FFFFFF", opacity: 0.7 }]
+                weight: 1
+                align: INSIDE
+              auto_layout:
+                direction: HORIZONTAL
+                primary_axis_align_items: CENTER
+                counter_axis_align_items: CENTER
+                item_spacing: 4
+                padding: { top: 0, right: 16, bottom: 0, left: 16 }
+                primary_axis_sizing_mode: FIXED
+                counter_axis_sizing_mode: FIXED
+              children:
+                - kind: SVG
+                  name: "Ticker Bold"
+                  svg: |
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M29.7762 9.46467V13.7204C28.1709 13.708 26.8643 15.0146 26.8643 16.6199C26.8643 18.2376 28.1709 19.5442 29.7762 19.5442V23.7874C29.7762 26.0771 28.5568 27.2717 26.2421 27.2717L5.47805 27.3262C3.15105 27.3262 1.944 26.1315 1.944 23.8418V19.5986C3.54926 19.5986 4.85586 18.292 4.85586 16.6743C4.85586 15.0815 3.54926 13.7749 1.944 13.7749V9.51908C1.944 7.24186 3.15105 6.04725 5.47805 6.04725L26.2421 5.99284C28.5568 5.99284 29.7762 7.18745 29.7762 9.46467ZM20.7669 20.8508V25.2061H22.3348V20.8508H20.7669ZM20.7669 14.2306V19.0588H22.3348V14.2306H20.7669ZM20.7669 8.05851V12.4387H22.3348V8.05851H20.7669Z" fill="#35C1C6"/></svg>
+                  size: { width: 18, height: 18 }
+                - kind: TEXT
+                  characters: "1000"
+                  font: { family: Noto Sans JP, style: Bold }
+                  font_size: 13
+                  line_height: { unit: PERCENT, value: 100 }
+                  fills: [{ type: SOLID, color: "#FDFEFF" }]
+            - kind: FRAME
+              name: ticketPlus
+              size: { width: 32, height: 24 }
+              corner_radius: 12
+              fills: [{ type: SOLID, color: "#181818", opacity: 0.7 }]
+              stroke:
+                paints: [{ type: SOLID, color: "#FFFFFF", opacity: 0.7 }]
+                weight: 1
+                align: INSIDE
+              auto_layout:
+                direction: HORIZONTAL
+                primary_axis_align_items: CENTER
+                counter_axis_align_items: CENTER
+                padding: { top: 0, right: 0, bottom: 0, left: 0 }
+                primary_axis_sizing_mode: FIXED
+                counter_axis_sizing_mode: FIXED
+              children:
+                - kind: SVG
+                  name: "Liner Plus"
+                  svg: |
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12.9355 19.2441V4.86914C12.9355 4.40039 12.5352 4 12.0566 4C11.5781 4 11.1875 4.40039 11.1875 4.86914V19.2441C11.1875 19.7129 11.5781 20.1133 12.0566 20.1133C12.5352 20.1133 12.9355 19.7129 12.9355 19.2441ZM4.86914 12.9258H19.2441C19.7129 12.9258 20.1133 12.5352 20.1133 12.0566C20.1133 11.5781 19.7129 11.1777 19.2441 11.1777H4.86914C4.40039 11.1777 4 11.5781 4 12.0566C4 12.5352 4.40039 12.9258 4.86914 12.9258Z" fill="#35C1C6"/></svg>
+                  size: { width: 18, height: 18 }
+          when:
+            titlePosition: center
+            State: ["ticketDisplay"]
+
+        # =========== Batch 4: Title position=Left variants ===========
+        # 7. backAndCurrent — inline Alt Arrow Left SVG + Title text (left-aligned).
+        # Used by Arrow only / Arrow+Name / Arrow+Name+ThreeDot / Arrow+Name+ThreeLine / Studio.
+        - kind: FRAME
+          name: backAndCurrent
+          auto_layout:
+            direction: HORIZONTAL
+            item_spacing: 8
+            primary_axis_align_items: CENTER
+            counter_axis_align_items: CENTER
+            padding: { top: 0, right: 0, bottom: 0, left: 0 }
+          fills: []
+          children:
+            - kind: SVG
+              name: "Alt Arrow Left"
+              svg: |
+                <svg preserveAspectRatio="none" width="100%" height="100%" viewBox="0 0 7.5 15.5" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.23809 0.180571C7.55259 0.450138 7.58901 0.923613 7.31944 1.23811L1.73781 7.75001L7.31944 14.2619C7.58901 14.5764 7.55259 15.0499 7.23809 15.3195C6.9236 15.589 6.45012 15.5526 6.18056 15.2381L0.180558 8.23811C-0.0601858 7.95724 -0.0601858 7.54279 0.180558 7.26192L6.18056 0.26192C6.45012 -0.0525743 6.9236 -0.0889955 7.23809 0.180571Z" fill="#2E2E2E"/></svg>
+              size: { width: 12, height: 24 }
+            - kind: TEXT
+              name: Title
+              characters: "Current title"
+              font: { family: Noto Sans JP, style: Bold }
+              font_size: 17
+              line_height: { unit: PERCENT, value: 100 }
+              fills: [{ type: SOLID, color: "#2E2E2E" }]
+              when:
+                State: ["Arrow+Name", "Arrow+Name+ThreeDot", "Arrow+Name+ThreeLine", "Studio"]
+          when:
+            titlePosition: Left
+            State: ["Arrow only", "Arrow+Name", "Arrow+Name+ThreeDot",
+                    "Arrow+Name+ThreeLine", "Studio"]
+
+        # 8. Right naked MenuDots icon (Left/Arrow+Name+ThreeDot)
+        - kind: SVG
+          name: "Menu Dots"
+          svg: |
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7 12C7 13.1046 6.10457 14 5 14C3.89543 14 3 13.1046 3 12C3 10.8954 3.89543 10 5 10C6.10457 10 7 10.8954 7 12Z" fill="#2E2E2E"/><path d="M14 12C14 13.1046 13.1046 14 12 14C10.8954 14 10 13.1046 10 12C10 10.8954 10.8954 10 12 10C13.1046 10 14 10.8954 14 12Z" fill="#2E2E2E"/><path d="M21 12C21 13.1046 20.1046 14 19 14C17.8954 14 17 13.1046 17 12C17 10.8954 17.8954 10 19 10C20.1046 10 21 10.8954 21 12Z" fill="#2E2E2E"/></svg>
+          size: { width: 24, height: 24 }
+          when:
+            titlePosition: Left
+            State: ["Arrow+Name+ThreeDot"]
+
+        # 9. Right naked Hamburger icon (Left/Arrow+Name+ThreeLine)
+        - kind: SVG
+          name: "Hamburger Menu"
+          svg: |
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" clip-rule="evenodd" d="M20.75 7C20.75 7.41421 20.4142 7.75 20 7.75L4 7.75C3.58579 7.75 3.25 7.41421 3.25 7C3.25 6.58579 3.58579 6.25 4 6.25L20 6.25C20.4142 6.25 20.75 6.58579 20.75 7Z" fill="#2E2E2E"/><path fill-rule="evenodd" clip-rule="evenodd" d="M20.75 12C20.75 12.4142 20.4142 12.75 20 12.75L4 12.75C3.58579 12.75 3.25 12.4142 3.25 12C3.25 11.5858 3.58579 11.25 4 11.25L20 11.25C20.4142 11.25 20.75 11.5858 20.75 12Z" fill="#2E2E2E"/><path fill-rule="evenodd" clip-rule="evenodd" d="M20.75 17C20.75 17.4142 20.4142 17.75 20 17.75L4 17.75C3.58579 17.75 3.25 17.4142 3.25 17C3.25 16.5858 3.58579 16.25 4 16.25L20 16.25C20.4142 16.25 20.75 16.5858 20.75 17Z" fill="#2E2E2E"/></svg>
+          size: { width: 24, height: 24 }
+          when:
+            titlePosition: Left
+            State: ["Arrow+Name+ThreeLine"]
+
+        # 10. SearchField (Left/Search + Search+Cancel)
+        - kind: FRAME
+          name: SearchField
+          size: { width: 200, height: 36 }
+          corner_radius: 10
+          fills: [{ type: SOLID, color: "#767680", opacity: 0.12 }]
+          auto_layout:
+            direction: HORIZONTAL
+            primary_axis_align_items: MIN
+            counter_axis_align_items: CENTER
+            item_spacing: 6
+            padding: { top: 7, right: 8, bottom: 7, left: 8 }
+            primary_axis_sizing_mode: FIXED
+            counter_axis_sizing_mode: FIXED
+          layout_grow: 1
+          layout_sizing: { horizontal: FILL }
+          children:
+            - kind: INSTANCE
+              ref: "icon_refs[tab=SearchMagnifier]"
+              size: { width: 16, height: 16 }
+            - kind: TEXT
+              characters: "検索"
+              font: { family: Noto Sans JP, style: Regular }
+              font_size: 17
+              line_height: { unit: PERCENT, value: 100 }
+              fills: [{ type: SOLID, color: "#3C3C43", opacity: 0.6 }]
+              text_auto_resize: HEIGHT
+              layout_grow: 1
+              layout_sizing: { horizontal: FILL }
+          when:
+            titlePosition: Left
+            State: ["Search", "Search+Cancel"]
+
+        # 11. Cancel text (Left/Search+Cancel)
+        - kind: TEXT
+          name: Cancel
+          characters: "キャンセル"
+          font: { family: SF Pro, style: Regular }
+          font_size: 17
+          line_height: { unit: PIXELS, value: 22 }
+          fills: [{ type: SOLID, color: "#2E2E2E" }]
+          when:
+            titlePosition: Left
+            State: ["Search+Cancel"]
+
+        # 12. deleteButton (Left/Studio) — bordered pill with trash + "DELETE"
+        - kind: FRAME
+          name: deleteButton
+          size: { width: 80, height: 32 }
+          corner_radius: 20
+          fills: []
+          stroke:
+            paints: [{ type: SOLID, color: "#C1C1C1" }]
+            weight: 1
+            align: INSIDE
+          auto_layout:
+            direction: HORIZONTAL
+            primary_axis_align_items: CENTER
+            counter_axis_align_items: CENTER
+            item_spacing: 5
+            padding: { top: 0, right: 8, bottom: 0, left: 8 }
+            primary_axis_sizing_mode: FIXED
+            counter_axis_sizing_mode: FIXED
+          children:
+            - kind: INSTANCE
+              ref: "icon_refs[tab=TrashBin]"
+              size: { width: 16, height: 16 }
+            - kind: TEXT
+              characters: "DELETE"
+              font: { family: Noto Sans JP, style: Medium }
+              font_size: 10
+              line_height: { unit: PIXELS, value: 12 }
+              fills: [{ type: SOLID, color: "#2E2E2E" }]
+          when:
+            titlePosition: Left
+            State: ["Studio"]
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      # mid-grey bg so Library SingleButton's Liquid Glass translucent fills
+      # resolve to correct visual contrast for both Light + Dark mode variants
+      fill: { type: SOLID, color: "#BDBDBD" }
+      grid:
+        rows: 17
+        cols: 3
+        cell_size: { width: 410, height: 56 }
+        gap: { x: 24, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          # combos already ordered: Light center (17) → Dark center (17) → Light Left (7)
+          # Grid fills col-by-col: col 0 = Light center, col 1 = Dark center, col 2 = Light Left
+          primary: titlePosition
+          secondary: State
+
+known_gaps:
+  - id: liquid_glass_approximation
+    description: |
+      iOS26 Liquid Glass effect (mask + backdrop blur + mix-blend modes)
+      uses Figma features that can't be scripted faithfully via plugin API.
+      Approximated with white/dark fill + soft drop shadow.
+  - id: variant_order_in_grid
+    description: |
+      Library order doesn't strictly map to our 4×2 grid layout. Order is
+      "best effort" by primary=mode, secondary=Size.

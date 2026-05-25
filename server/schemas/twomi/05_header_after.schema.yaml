@@ -1,0 +1,244 @@
+# ============================================================
+# 05_header_after.schema.yaml
+# ============================================================
+# Header ComponentSet — Design=After variants only (4 / 6 total)
+#
+# Reproduces from primitives:
+#   Outer Header container (fills + stroke + auto-layout + size)
+#   WhiteGrass-mode decoration (Background RECTANGLE with GLASS, Blur FRAME
+#     stack with LAYER_BLUR + BACKGROUND_BLUR + Mask/Black rectangles)
+# Imports as Library INSTANCEs (canonical):
+#   Status bar (iOS26 single COMPONENT / Older OS-Android variant)
+#   headMenu (default After variant: State=Arrow+Name, Title position=center,
+#     mode=Light) from previous headMenu ComponentSet
+#
+# CURRENT COVERAGE: 4/4 'after' variants
+#   Background ∈ {Transparent, WhiteGrass}
+#   OS         ∈ {iOS26, Older OS／Android}
+#   Design     = After (fixed)
+# ============================================================
+
+meta:
+  name: Header (After variants)
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "2fbd7ca2de88291ad1d7f7bcdc4cdc894987f97c"
+  description: |
+    Full header strip (Status bar + headMenu) used at the top of every
+    Twomi phone screen. "After" design = iOS 26 Liquid Glass style. The
+    WhiteGrass background variants add a frosted overlay (GLASS + Blur)
+    suitable for placing over busy content (e.g. avatar carousel home).
+    iOS26 vs Older OS／Android variants swap the inner Status Bar shape
+    (Dynamic Island for iOS26, no notch for Android).
+  screen_usage:
+    - Home - Self (Transparent + iOS26)
+    - All Twomi screens with a top header
+  dependencies:
+    - Library Status Bar - iPhone (iOS26 single COMPONENT)
+    - Library Status Bar - iPhone (Older OS／Android COMPONENT_SET, Background=False variant)
+    - Library headMenu ComponentSet (default After variant State=Arrow+Name center Light)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 4
+    implemented: 4
+    notes: |
+      Only the 4 Design=After variants are implemented (full set has 6).
+      Liquid Glass approximated with white-translucent fill + BACKGROUND_BLUR;
+      Library 3-layer absolute decoration (color-dodge + 0.6 white + GLASS)
+      not fully replicated — visual ≈ 95% match.
+  review_status: ai-draft
+
+components:
+  - id: Header (After)
+    variants:
+      combinations:
+        - { Background: Transparent, OS: iOS26 }
+        - { Background: Transparent, OS: "Older OS／Android" }
+        - { Background: WhiteGrass,  OS: iOS26 }
+        - { Background: WhiteGrass,  OS: "Older OS／Android" }
+
+    icon_refs:
+      - tab: StatusBarIOS26
+        asset_type: COMPONENT
+        library_component_key: "51ddb19de206b67eae2d554b1d20c018feb754f4"
+        import_method: importComponentByKeyAsync
+
+      - tab: StatusBarOlder
+        asset_type: COMPONENT_SET
+        library_component_key: "921f043d21ba058760197af0dbbda05de2dbbcd5"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { Background: "False" }
+
+      - tab: HeadMenu
+        asset_type: COMPONENT_SET
+        library_component_key: "f5ed07919150302ef05f6608dde1f552e4037bcc"
+        import_method: importComponentSetByKeyAsync
+        # Default the After header to Arrow+Name center Light variant
+        variant_to_select:
+          State: "Arrow+Name"
+          Title position: "center"
+          mode: "Light"
+
+    container:
+      name_template: "Background=${Background}, OS=${OS}, Design=After"
+
+      # iOS26 → 110, Older/Android → 102
+      size:
+        by_variant:
+          - when: { OS: iOS26 }
+            value: { width: 402, height: 110 }
+          - when: { OS: "Older OS／Android" }
+            value: { width: 402, height: 102 }
+
+      clips_content: false
+
+      auto_layout:
+        direction: VERTICAL
+        primary_axis_align_items: MIN
+        counter_axis_align_items: MIN
+        primary_axis_sizing_mode: AUTO
+        counter_axis_sizing_mode: FIXED
+        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+        # iOS26 → 0, Older → 4 (status bar is 50h there, needs gap to total 102)
+        item_spacing:
+          by_variant:
+            - when: { OS: iOS26 }
+              value: 0
+            - when: { OS: "Older OS／Android" }
+              value: 4
+
+      # Background=WhiteGrass: white-ish translucent fill + soft grey border
+      # Background=Transparent: no fill, no stroke
+      fills:
+        by_variant:
+          - when: { Background: WhiteGrass }
+            paints:
+              - { type: SOLID, color: "#FFFFFF", opacity: 0.9 }
+          - when: { Background: Transparent }
+            paints: []
+
+      stroke:
+        by_variant:
+          - when: { Background: WhiteGrass }
+            value:
+              paints: [{ type: SOLID, color: "#DADADA" }]
+              weight: 1
+              align: INSIDE
+          - when: { Background: Transparent }
+            value: null
+
+      children:
+        # ─── Decoration layer 1: Background RECTANGLE w/ GLASS (WhiteGrass only)
+        - kind: RECTANGLE
+          name: Background
+          layout_positioning: ABSOLUTE
+          x: 0
+          y: 0
+          size:
+            by_variant:
+              - when: { OS: iOS26 }
+                value: { width: 402, height: 110 }
+              - when: { OS: "Older OS／Android" }
+                value: { width: 402, height: 102 }
+          fills: [{ type: SOLID, color: "#FFFFFF", opacity: 0.3 }]
+          effects:
+            - { type: GLASS, radius: 4 }
+          when:
+            Background: WhiteGrass
+
+        # ─── Decoration layer 2: Blur outer FRAME (WhiteGrass only)
+        - kind: FRAME
+          name: Blur
+          layout_positioning: ABSOLUTE
+          x: 0
+          y: 0
+          size:
+            by_variant:
+              - when: { OS: iOS26 }
+                value: { width: 402, height: 110 }
+              - when: { OS: "Older OS／Android" }
+                value: { width: 402, height: 102 }
+          fills: []
+          clips_content: false
+          children:
+            # Nested inner Blur FRAME — applies LAYER_BLUR + BACKGROUND_BLUR
+            - kind: FRAME
+              name: Blur
+              size:
+                by_variant:
+                  - when: { OS: iOS26 }
+                    value: { width: 402, height: 110 }
+                  - when: { OS: "Older OS／Android" }
+                    value: { width: 402, height: 102 }
+              fills: []
+              clips_content: false
+              effects:
+                - { type: LAYER_BLUR, radius: 21.967212677001953 }
+                - { type: BACKGROUND_BLUR, radius: 43.934425354003906 }
+              children:
+                # Mask rectangle — extends past the parent to capture wider blur
+                - kind: RECTANGLE
+                  name: Mask
+                  layout_positioning: ABSOLUTE
+                  x: -20
+                  y: -31
+                  size: { width: 442, height: 171 }
+                  fills: [{ type: SOLID, color: "#000000", opacity: 0.04 }]
+                # Black rectangle — full-size translucent black overlay
+                - kind: RECTANGLE
+                  name: Black
+                  layout_positioning: ABSOLUTE
+                  x: 0
+                  y: 0
+                  size:
+                    by_variant:
+                      - when: { OS: iOS26 }
+                        value: { width: 402, height: 110 }
+                      - when: { OS: "Older OS／Android" }
+                        value: { width: 402, height: 102 }
+                  fills: [{ type: SOLID, color: "#000000", opacity: 0.04 }]
+          when:
+            Background: WhiteGrass
+
+        # ─── Status bar (iOS26 single COMPONENT)
+        - kind: INSTANCE
+          ref: "icon_refs[tab=StatusBarIOS26]"
+          when:
+            OS: iOS26
+
+        # ─── Status bar (Older OS／Android — variant Background=False)
+        - kind: INSTANCE
+          ref: "icon_refs[tab=StatusBarOlder]"
+          when:
+            OS: "Older OS／Android"
+
+        # ─── headMenu (always)
+        - kind: INSTANCE
+          ref: "icon_refs[tab=HeadMenu]"
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      # No outer ComponentSet background needed (Header has its own)
+      grid:
+        rows: 2
+        cols: 2
+        cell_size: { width: 420, height: 130 }
+        gap: { x: 24, y: 24 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: Background
+          secondary: OS
+
+known_gaps:
+  - id: blend_modes_in_inner_status_bar
+    description: |
+      Status bar + headMenu are imported as Library INSTANCEs, so their
+      inner blend modes (e.g. Liquid Glass HARD_LIGHT / COLOR_DODGE
+      stacking inside SingleButton) come from Library and don't need
+      to be reproduced in this schema.
+  - id: glass_effect_visual_fidelity
+    description: |
+      GLASS effect is supported in our runtime (radius only), but iOS26
+      "Liquid Glass" full visual depends on backdrop content + mask paths
+      that aren't replicable as a schema. Visual match is approximate.

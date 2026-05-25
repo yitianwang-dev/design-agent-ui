@@ -1,0 +1,85 @@
+# ============================================================
+# 09_send_toggle.schema.yaml
+# ============================================================
+# Send Toggle ComponentSet (Library - Guideline)
+#   2 variants by Toggle: False / True
+#
+# Layout:
+#   24x24 round button (r=30 = fully circular)
+#   Fill:
+#     False -> #000000 @ 0.3 opacity (translucent dark)
+#     True  -> #26A2A6 (Twomi teal)
+#   Inner icon: Outline / Messages, Conversation / Plain (16x16 white)
+# ============================================================
+
+meta:
+  name: Send Toggle
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "3cf48549e3d03311fbf0edf536b879bd4524ca62"
+  description: |
+    A small (24×24) round toggle button shown next to a text/message input
+    field to enable/disable send action. False = translucent dark (inactive),
+    True = Twomi teal (ready to send). Used wherever a quick send/no-send
+    toggle is needed (comment composer, chat input).
+  screen_usage:
+    - Comment composer
+    - Live stream chat input
+    - Talk chat message input
+  dependencies:
+    - Plain Message icon (Library COMPONENT 348777f2...)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 2
+    implemented: 2
+  review_status: ai-draft
+
+components:
+  - id: Send Toggle
+    variants:
+      combinations:
+        - { Toggle: "False" }
+        - { Toggle: "True" }
+
+    icon_refs:
+      - tab: PlainMessage
+        asset_type: COMPONENT
+        library_component_key: "348777f2cca5f910dcfbb486d8e379ab3ad95dd6"
+        import_method: importComponentByKeyAsync
+
+    container:
+      name_template: "Toggle=${Toggle}"
+      size: { width: 24, height: 24 }
+      corner_radius: 30
+      clips_content: false
+      fills:
+        by_variant:
+          - when: { Toggle: "False" }
+            paints: [{ type: SOLID, color: "#000000", opacity: 0.3 }]
+          - when: { Toggle: "True" }
+            paints: [{ type: SOLID, color: "#26A2A6" }]
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: MIN
+        counter_axis_align_items: CENTER
+        padding: { top: 4, right: 4, bottom: 4, left: 4 }
+        item_spacing: 10
+        primary_axis_sizing_mode: AUTO
+        counter_axis_sizing_mode: FIXED
+      children:
+        - kind: INSTANCE
+          ref: "icon_refs[tab=PlainMessage]"
+          size: { width: 16, height: 16 }
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 1
+        cols: 2
+        cell_size: { width: 40, height: 40 }
+        gap: { x: 24, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: Toggle
+          secondary: Toggle

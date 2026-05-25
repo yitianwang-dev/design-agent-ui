@@ -1,0 +1,186 @@
+# ============================================================
+# 12_avatar_icon.schema.yaml
+# ============================================================
+# Avatar icon ComponentSet (Library - Guideline)
+#   14 variants = Context (7 sizes) × State (Active / Disable)
+#
+# Common structure (all variants visually identical):
+#   - Container: rounded rectangle, white stroke, subtle drop shadow
+#   - 1 Image RECTANGLE child:
+#       fills: white SOLID + IMAGE (CROP, library sample avatar)
+#       BACKGROUND_BLUR effect (radius scales with size)
+#   - 1 hidden MembershipLabel GROUP (skipped — only shows when prop true)
+#
+# State Active vs Disable produce visually identical output when
+# MembershipLabel#1769:0 prop = false (default). Both included for
+# variant axis completeness; user gets all 14 named variants.
+#
+# Per-Context dimensions:
+#   18x18 LiveStream   18×18      r=3.375  strokeW=1.20  shadow_r=1.125
+#   20x20 Notification 20×20      r=3.75   strokeW=1.33  shadow_r=1.25
+#   32x32 search       32×32      r=6      strokeW=2.13  shadow_r=2
+#   48x48              48×48      r=9      strokeW=2.25  shadow_r=3
+#   64x64              64×64      r=12     strokeW=3     shadow_r=4
+#   100x100            100×100    r=18.75  strokeW=3     shadow_r=6.25
+#   116x119 Search Large 116.67×119 r=22.31  strokeW=3.57  shadow_r=7.44
+# ============================================================
+
+meta:
+  name: Avatar icon
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "cdd946a03ddc4f89c12cc5e597bfd8af63311f8a"
+  description: |
+    A user's AI Avatar thumbnail (cropped portrait with backdrop blur)
+    displayed in multiple contexts at different sizes. Unlike User icon
+    (which shows the user's profile photo), Avatar icon shows the avatar
+    creation thumbnail. Always rounded-rectangle (not circle) with white
+    inner stroke + subtle drop shadow. Used for avatar selection / showcase
+    surfaces. MembershipLabel boolean property toggles a tier badge overlay
+    (hidden by default — schema currently skips it).
+  screen_usage:
+    - LiveStream entry list (18x18)
+    - Notifications list (20x20)
+    - Search results small (32x32)
+    - List rows (48x48)
+    - Carousel cards (64x64)
+    - Profile feature (100x100)
+    - Search large hero (116x119)
+  dependencies:
+    - Library sample avatar image hash (aaa2a2f75a40bf24dbd5d2c340a01183c723a1fd)
+    - AvatarIcon ExclusiveContentLabel (only when MembershipLabel=true; currently skipped)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 14
+    implemented: 14
+    notes: |
+      Active vs Disable visually identical when MembershipLabel=false
+      (default). Image fill uses scalingFactor=0.5 + Library imageTransform
+      to crop the avatar to face area. Requires Library Avatar icon set
+      to have been imported once to populate file image cache.
+  review_status: ai-draft
+
+components:
+  - id: Avatar icon
+    variants:
+      combinations:
+        - { Context: "18x18 LiveStream",    State: Active  }
+        - { Context: "18x18 LiveStream",    State: Disable }
+        - { Context: "20x20 Notification",  State: Active  }
+        - { Context: "20x20 Notification",  State: Disable }
+        - { Context: "32x32 search",        State: Active  }
+        - { Context: "32x32 search",        State: Disable }
+        - { Context: "48x48",               State: Active  }
+        - { Context: "48x48",               State: Disable }
+        - { Context: "64x64",               State: Active  }
+        - { Context: "64x64",               State: Disable }
+        - { Context: "100x100",             State: Active  }
+        - { Context: "100x100",             State: Disable }
+        - { Context: "116x119 Search Large", State: Active  }
+        - { Context: "116x119 Search Large", State: Disable }
+
+    container:
+      name_template: "Context=${Context}, State=${State}"
+      size:
+        by_variant:
+          - { when: { Context: "18x18 LiveStream" },    value: { width: 18,     height: 18 } }
+          - { when: { Context: "20x20 Notification" },  value: { width: 20,     height: 20 } }
+          - { when: { Context: "32x32 search" },        value: { width: 32,     height: 32 } }
+          - { when: { Context: "48x48" },               value: { width: 48,     height: 48 } }
+          - { when: { Context: "64x64" },               value: { width: 64,     height: 64 } }
+          - { when: { Context: "100x100" },             value: { width: 100,    height: 100 } }
+          - { when: { Context: "116x119 Search Large" }, value: { width: 116.67, height: 119 } }
+      corner_radius:
+        by_variant:
+          - { when: { Context: "18x18 LiveStream" },    value: 3.375 }
+          - { when: { Context: "20x20 Notification" },  value: 3.75 }
+          - { when: { Context: "32x32 search" },        value: 6 }
+          - { when: { Context: "48x48" },               value: 9 }
+          - { when: { Context: "64x64" },               value: 12 }
+          - { when: { Context: "100x100" },             value: 18.75 }
+          - { when: { Context: "116x119 Search Large" }, value: 22.31 }
+      clips_content: true
+      fills: []
+      stroke:
+        by_variant:
+          - { when: { Context: "18x18 LiveStream" },    value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 1.2,  align: INSIDE } }
+          - { when: { Context: "20x20 Notification" },  value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 1.33, align: INSIDE } }
+          - { when: { Context: "32x32 search" },        value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 2.13, align: INSIDE } }
+          - { when: { Context: "48x48" },               value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 2.25, align: INSIDE } }
+          - { when: { Context: "64x64" },               value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 3,    align: INSIDE } }
+          - { when: { Context: "100x100" },             value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 3,    align: INSIDE } }
+          - { when: { Context: "116x119 Search Large" }, value: { paints: [{ type: SOLID, color: "#FFFFFF" }], weight: 3.57, align: INSIDE } }
+      effects:
+        by_variant:
+          - { when: { Context: "18x18 LiveStream" },    value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 1.125 }] }
+          - { when: { Context: "20x20 Notification" },  value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 1.25 }] }
+          - { when: { Context: "32x32 search" },        value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 2 }] }
+          - { when: { Context: "48x48" },               value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 3 }] }
+          - { when: { Context: "64x64" },               value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 4 }] }
+          - { when: { Context: "100x100" },             value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 6.25 }] }
+          - { when: { Context: "116x119 Search Large" }, value: [{ type: DROP_SHADOW, color: "#000000", opacity: 0.1, offset: { x: 0, y: 0 }, radius: 7.44 }] }
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: MIN
+        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+        item_spacing: 0
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+
+      children:
+        # Image RECTANGLE: 2x taller than container (full-body avatar photo)
+        # gets clipped by container's rounded corners (clips_content: true)
+        # White SOLID fill behind IMAGE in case image fails to load.
+        - kind: RECTANGLE
+          name: Image
+          size:
+            by_variant:
+              - { when: { Context: "18x18 LiveStream" },    value: { width: 17.44,  height: 38.94 } }
+              - { when: { Context: "20x20 Notification" },  value: { width: 19.38,  height: 43.27 } }
+              - { when: { Context: "32x32 search" },        value: { width: 31,     height: 69 } }
+              - { when: { Context: "48x48" },               value: { width: 46.5,   height: 103.85 } }
+              - { when: { Context: "64x64" },               value: { width: 62,     height: 138 } }
+              - { when: { Context: "100x100" },             value: { width: 96.88,  height: 216.35 } }
+              - { when: { Context: "116x119 Search Large" }, value: { width: 115.28, height: 257.46 } }
+          fills:
+            - { type: SOLID, color: "#FFFFFF" }
+            - { type: IMAGE, scale_mode: CROP,
+                image_hash: "aaa2a2f75a40bf24dbd5d2c340a01183c723a1fd" }
+          effects:
+            by_variant:
+              - { when: { Context: "18x18 LiveStream" },    value: [{ type: BACKGROUND_BLUR, radius: 13.22 }] }
+              - { when: { Context: "20x20 Notification" },  value: [{ type: BACKGROUND_BLUR, radius: 14.69 }] }
+              - { when: { Context: "32x32 search" },        value: [{ type: BACKGROUND_BLUR, radius: 23.51 }] }
+              - { when: { Context: "48x48" },               value: [{ type: BACKGROUND_BLUR, radius: 35.26 }] }
+              - { when: { Context: "64x64" },               value: [{ type: BACKGROUND_BLUR, radius: 47.01 }] }
+              - { when: { Context: "100x100" },             value: [{ type: BACKGROUND_BLUR, radius: 73.46 }] }
+              - { when: { Context: "116x119 Search Large" }, value: [{ type: BACKGROUND_BLUR, radius: 87.41 }] }
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 2
+        cols: 7
+        cell_size: { width: 140, height: 140 }
+        gap: { x: 16, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: State
+          secondary: Context
+
+known_gaps:
+  - id: membership_label_skipped
+    description: |
+      The hidden MembershipLabel GROUP inside each variant (which would
+      wrap an AvatarIcon ExclusiveContentLabel instance) is not generated.
+      Library hides it by default (MembershipLabel#1769:0 = false), so
+      visual output matches. If you need to show it, add a child INSTANCE
+      with ref to that Library ComponentSet under a `when: { MembershipLabel: true }`
+      filter, and add MembershipLabel as a third variant axis.
+  - id: library_image_hash
+    description: |
+      Image fill uses Library hash aaa2a2f75a40bf24dbd5d2c340a01183c723a1fd.
+      Requires the Avatar icon set to have been imported into the target
+      file at least once (uploads the image to file cache).

@@ -1,0 +1,217 @@
+# ============================================================
+# 01_navigation_liquid.schema.yaml
+# ============================================================
+# Schema PJ — navigation_liquid v3 (deterministic spec)
+#
+# Generated: 2026-05-20 (meta + format unified 2026-05-21)
+# Status:    Reference implementation (matches v2 build pixel-for-pixel)
+# Source:    Library - Guideline / ComponentSet 95:6575
+#
+# Goal: Any AI executing this schema should produce a Figma ComponentSet
+# visually equivalent to the hand-coded v2. Every numeric / structural
+# decision is fixed here — zero inference required.
+#
+# Companion file: 01_navigation_liquid.js (paste-and-run)
+# ============================================================
+
+meta:
+  name: navigation_liquid
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "95:6575"
+    component_set_key: "5f9dd63978f760903a37af0a6f8a9c255cb863bc"
+  description: |
+    Twomi's iOS 26 Liquid Glass bottom navigation bar (pill-shaped, 366×56).
+    Used at the bottom of every main app screen. The selected tab gets a
+    white pill + drop shadow inside the larger glass capsule. 5 tabs +
+    DarkMode = 10 variants. (`notes` is a Library-legacy lowercase tab name
+    that should be normalized upstream.)
+  screen_usage:
+    - All Home / Search / Create / Notifications / Profile screens
+    - Wherever an iOS 26-style frosted nav is needed
+  dependencies:
+    - 4 Library icon COMPONENTs (Home/Search/Create/notes — see icon_refs)
+    - User icon COMPONENT_SET (variant State=bottomNavi, type=Self) for Profile tab
+  runtime_version: v0.5
+  coverage:
+    total_variants: 10
+    implemented: 10
+    notes: |
+      tabs_order is a fixed array. Selected state styling is computed per
+      tab via `by_state.when: { tab: "${Selected}" }`.
+  review_status: ai-draft
+
+# ============================================================
+# Schema definition
+# ============================================================
+components:
+  - id: navigation_liquid
+
+    # ─── Variants (10 combinations = 5 × 2) ──────────────────────
+    variants:
+      axes:
+        - name: Selected
+          values: [Home, Search, Create, notes, Profile]   # ※ 'notes' lowercase is Library legacy
+        - name: DarkMode
+          values: [Light, Dark]
+      enumeration: cross_product
+
+    # ─── Per-variant container ───────────────────────────────────
+    container:
+      node_type: COMPONENT
+      name_template: "Selected=${Selected}, DarkMode=${DarkMode}"
+      size: { width: 366, height: 56, mode: FIXED }
+      corner_radius: 48
+      clips_content: true
+      auto_layout:
+        direction: HORIZONTAL
+        padding: { top: 4, right: 4, bottom: 4, left: 4 }
+        item_spacing: 0
+        primary_axis_align_items: SPACE_BETWEEN
+        counter_axis_align_items: CENTER
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+      stroke:
+        paints: [{ type: SOLID, color: "#FFFFFF", opacity: 0.4 }]
+        weight: 1
+        align: INSIDE
+      fills:
+        by_variant:
+          - when: { DarkMode: Light }
+            paints: [{ type: SOLID, color: "#E0E0E0", opacity: 0.9 }]   # rgb(0.88×255)
+          - when: { DarkMode: Dark }
+            paints: [{ type: SOLID, color: "#646464", opacity: 0.95 }]  # rgb(0.39×255)
+
+    # ─── Tab order (fixed) ───────────────────────────────────────
+    tabs_order: [Home, Search, Create, notes, Profile]
+
+    # ─── Nav item template (loop 5 times per variant) ──────────
+    nav_item:
+      node_type: FRAME
+      name_template: "NavItem_${tab}${ifSelected('_selected', '')}"
+      size: { width: 70, height: 48 }
+      layout_sizing: { horizontal: FILL, vertical: FIXED }   # FILL inside container
+      corner_radius: 30
+      auto_layout:
+        direction: VERTICAL
+        padding: { top: 8, bottom: 8, left: 0, right: 0 }
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+
+      by_state:
+        - when: { tab: "${Selected}" }   # this item is selected
+          fills:
+            - { type: SOLID, color: "#FFFFFF" }
+          effects:
+            - type: DROP_SHADOW
+              color: "#000000"
+              opacity: 0.25
+              offset: { x: 0, y: 0 }
+              radius: 2.5
+              blend_mode: NORMAL
+              show_shadow_behind_node: false
+        - otherwise:
+            fills: []
+            effects: []
+
+      child:
+        kind: INSTANCE
+        ref: "icon_refs[tab=${tab}]"
+
+    # ─── Icon refs (Library imports) ───────────────────────────
+    icon_refs:
+      - tab: Home
+        asset_type: COMPONENT
+        library_component_key: "e48fb0411cff37d255fcfdc63243970eca0ec1e0"
+        import_method: importComponentByKeyAsync
+
+      - tab: Search
+        asset_type: COMPONENT
+        library_component_key: "c6a3de98298c7fce29bfd669168c6feaf2af7898"
+        import_method: importComponentByKeyAsync
+
+      - tab: Create
+        asset_type: COMPONENT
+        library_component_key: "f0ce3f2dbac2d52f1b153bc3d9dac01965e96182"
+        import_method: importComponentByKeyAsync
+
+      - tab: notes
+        asset_type: COMPONENT
+        library_component_key: "932725592fbca5ac13c4e6c4ce6ba81d782d651c"
+        import_method: importComponentByKeyAsync
+
+      - tab: Profile
+        asset_type: COMPONENT_SET
+        library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { State: bottomNavi, type: Self }
+        variant_match_strategy: name_contains_all_kv
+
+    # ─── ComponentSet assembly ─────────────────────────────────
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 5         # one per Selected value
+        cols: 2         # one per DarkMode value
+        cell_size: { width: 366, height: 56 }
+        gap: { x: 24, y: 24 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: DarkMode      # outer loop (column)
+          secondary: Selected    # inner loop (row)
+
+# ─── Build pipeline (executable steps — supplementary docs) ─────────────
+build:
+  steps:
+    - id: import_assets
+      action: for_each icon_refs → call import_method(library_component_key)
+
+    - id: enumerate_variants
+      action: cross_product(variants.axes) → 10 combinations
+
+    - id: build_components
+      action: |
+        for each combination:
+          create container per spec, name from template
+          set fills using fills.by_variant matching DarkMode
+          for tab in tabs_order:
+            create nav_item per template
+            apply by_state rules with isSelected = (tab == combination.Selected)
+            attach icon instance (variant_to_select if applicable)
+          collect component
+
+    - id: combine
+      action: figma.combineAsVariants(all_components, current_page)
+
+    - id: layout_grid
+      action: |
+        set componentset.layoutMode = NONE
+        for each variant at index i:
+          col = i // 5      # rows per col
+          row = i % 5
+          x = padding.left + col * (cell_size.width + gap.x)
+          y = padding.top  + row * (cell_size.height + gap.y)
+        resize componentset to fit
+
+  postconditions:
+    - componentset has 10 children with names matching name_template
+    - each variant is 366×56
+    - selected nav_item has white fill + drop shadow
+    - all other nav_items have empty fills
+    - icons are real Library instances (not redrawn)
+
+# ─── Known schema gaps (surfaced by strict execution 2026-05-20) ───
+known_gaps:
+  - id: output_placement
+    description: Schema does not specify where on the page the resulting ComponentSet lands
+    impact: Defaults to (0, 0); risks overlapping existing content
+    proposed_fix: Add top-level `output.placement: { page_id, x, y }` field
+
+  - id: legacy_top_level_format
+    description: |
+      This schema was originally written before the format unification
+      (component: dict at top level). Converted 2026-05-21 to the standard
+      components: [...] array format. The semantic content is unchanged.
+    impact: None (format-only fix, runtime understands both)
+    proposed_fix: Done — already converted.

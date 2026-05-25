@@ -1,0 +1,176 @@
+# ============================================================
+# 02_search_field.schema.yaml
+# ============================================================
+# Schema PJ — SearchField (iOS HIG search bar)
+#
+# Generated: 2026-05-20 (meta + format unified 2026-05-21)
+# Source:    Library - Guideline / SearchField (node 95:43)
+# Note:      SearchField is an iOS HIG pattern. The actual icon assets in
+#            the Library file are baked-in iOS SF Symbols (images, not
+#            Library components). This schema substitutes the magnifier
+#            with a Library - Guideline icon and inlines the mic SVG.
+# ============================================================
+
+meta:
+  name: SearchField
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_node_id: "95:43"
+    note: |
+      Original SearchField is an iOS HIG pattern — not a Library-published
+      ComponentSet. Reconstructed from primitives (FRAME + TEXT + magnifier
+      INSTANCE + inline mic SVG).
+  description: |
+    iOS-style search input bar (343×36): rounded grey input box with
+    magnifier icon, placeholder text, optional dictation mic on the right,
+    and an optional blue Cancel link after the box. Used wherever the app
+    needs a system-style search affordance (search tab, modal search,
+    in-list filter). No real variants — configurability via slots
+    (cancel / dictation booleans, query string).
+  screen_usage:
+    - Search tab (top of feed)
+    - In-list filter bars
+    - Modal search overlays
+  dependencies:
+    - Outline Search Magnifier icon (Library COMPONENT c6a3de98...)
+    - SF Pro font family
+  runtime_version: v0.5
+  coverage:
+    total_variants: 1
+    implemented: 1
+    notes: |
+      No variant axes. Slots: cancel (bool, default true), dictation (bool,
+      default true), query (string, default "Search").
+  review_status: ai-draft
+
+# ============================================================
+# Schema definition
+# ============================================================
+components:
+  - id: SearchField
+
+    # ─── Variants (no real axes — slots cover configurability) ───
+    variants:
+      axes: []
+      enumeration: cross_product
+
+    # ─── Slots (v0.2) ───────────────────────────────────────────
+    slots:
+      cancel:    { type: boolean, default: true }
+      dictation: { type: boolean, default: true }
+      query:     { type: string,  default: "Search" }
+
+    # ─── Icon refs (Library imports) ─────────────────────────────
+    icon_refs:
+      - tab: magnifier
+        asset_type: COMPONENT
+        library_component_key: "c6a3de98298c7fce29bfd669168c6feaf2af7898"
+        import_method: importComponentByKeyAsync
+        note: "Outline / Search magnifer (24×24 source)"
+      # NOTE: microphone is now an inline SVG (kind=SVG in children below).
+      # Library substitution removed — using the real iOS SF Symbol shipped
+      # inside the source SearchField.
+
+    # ─── Container (outer wrapper) ───────────────────────────────
+    container:
+      node_type: COMPONENT
+      name_template: SearchField
+      size: { width: 343, height: 36, mode: FIXED }
+      fills: []
+      auto_layout:
+        direction: HORIZONTAL
+        padding: { top: 0, right: 0, bottom: 0, left: 0 }
+        item_spacing: 14
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+
+      children:
+        # Inner rounded search box (grey bg, contains icon + text + mic)
+        - kind: FRAME
+          name: SearchBox
+          corner_radius: 10
+          fills:
+            - { type: SOLID, color: "#767680", opacity: 0.12 }
+          auto_layout:
+            direction: HORIZONTAL
+            padding: { top: 7, right: 8, bottom: 7, left: 8 }
+            item_spacing: 6
+            primary_axis_align_items: MIN
+            counter_axis_align_items: CENTER
+          layout_grow: 1
+          layout_sizing: { horizontal: FILL, vertical: HUG }
+          children:
+            - kind: INSTANCE
+              ref: "icon_refs[tab=magnifier]"
+              size: { width: 16, height: 16 }
+
+            - kind: TEXT
+              name: query
+              characters: "${query}"
+              font: { family: SF Pro, style: Regular }
+              font_size: 17
+              line_height: { unit: PIXELS, value: 22 }
+              letter_spacing: { unit: PIXELS, value: -0.408 }
+              fills: [{ type: SOLID, color: "#3C3C43", opacity: 0.6 }]
+              text_auto_resize: HEIGHT
+              layout_grow: 1
+              layout_sizing: { horizontal: FILL }
+
+            - kind: SVG
+              name: microphone
+              source:
+                type: figma_mcp_asset
+                url: "https://www.figma.com/api/mcp/asset/fc968fd3-3c96-4bf9-90cc-7c7d0574cff1"
+                note: |
+                  7-day signed URL. Re-pull via get_design_context on SearchField
+                  instance if expired. Content is inlined below as `svg:`.
+              svg: |
+                <svg preserveAspectRatio="none" width="100%" height="100%" overflow="visible" style="display: block;" viewBox="0 0 11.8784 17.6807" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path id="SF Symbol / microphone" d="M5.94336 11.563C7.59521 11.563 8.70752 10.3262 8.70752 8.55811V3.00488C8.70752 1.22852 7.59521 0 5.94336 0C4.2832 0 3.1709 1.22852 3.1709 3.00488V8.55811C3.1709 10.3262 4.2832 11.563 5.94336 11.563ZM0 8.69092C0 11.9448 2.1499 14.2275 5.3125 14.4932V16.4272H2.23291C1.88428 16.4272 1.60205 16.7095 1.60205 17.0581C1.60205 17.4067 1.88428 17.6807 2.23291 17.6807H9.64551C9.99414 17.6807 10.2764 17.4067 10.2764 17.0581C10.2764 16.7095 9.99414 16.4272 9.64551 16.4272H6.56592V14.4932C9.73682 14.2275 11.8784 11.9448 11.8784 8.69092V7.00586C11.8784 6.65723 11.6045 6.3833 11.2559 6.3833C10.9072 6.3833 10.625 6.65723 10.625 7.00586V8.64111C10.625 11.4717 8.78223 13.3477 5.94336 13.3477C3.09619 13.3477 1.25342 11.4717 1.25342 8.64111V7.00586C1.25342 6.65723 0.979492 6.3833 0.622559 6.3833C0.273926 6.3833 0 6.65723 0 7.00586V8.69092Z" fill="#3C3C43" fill-opacity="0.6"/>
+                </svg>
+              size: { width: 12, height: 18 }
+              when: { dictation: true }
+
+        # Cancel link (right of search box)
+        - kind: TEXT
+          name: Cancel
+          characters: "Cancel"
+          font: { family: SF Pro, style: Regular }
+          font_size: 17
+          line_height: { unit: PIXELS, value: 22 }
+          letter_spacing: { unit: PIXELS, value: -0.408 }
+          fills: [{ type: SOLID, color: "#007AFF" }]
+          when: { cancel: true }
+
+    # ─── No componentset_assembly (single component, no variants) ───
+
+build:
+  postconditions:
+    - root component is named SearchField
+    - root component width is 343
+
+# ─── Known schema/runtime gaps surfaced here ────────────────
+known_gaps:
+  - id: icon_asset_substitution
+    description: |
+      iOS HIG SF Symbols (magnifier, microphone) are baked-in images in source.
+      Magnifier substituted with Library - Guideline icon component;
+      microphone inlined as SVG path. Visually identical to source.
+
+  - id: font_substitution
+    description: |
+      Source uses "SF Pro Display"; this system only has "SF Pro" available.
+      Substituted to "SF Pro / Regular" (similar visual, same family).
+
+  - id: icon_aspect_distortion
+    description: |
+      Microphone resize 12×18 (non-square) on a 24×24 source distorts the glyph.
+      Could be mitigated by adding `preserve_aspect_ratio: true` to icon spec.
+
+  - id: legacy_top_level_format
+    description: |
+      Originally written before format unification (component: dict at top
+      level). Converted 2026-05-21 to standard components: [...] array.
+      Semantic content unchanged.

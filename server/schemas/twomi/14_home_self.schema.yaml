@@ -1,0 +1,187 @@
+# ============================================================
+# 14_home_self.schema.yaml
+# ============================================================
+# Home - Self screen (Library reference: CPe64VQc7petbZawTE6J8o#423:3909
+#   contains 418:33194 Dark + 423:3551 Light)
+#
+# 2 variants: Mode ∈ {Light, Dark}
+# Each variant is a 402×874 phone screen (r=32, clips_content) composed of:
+#   1. Container — empty content placeholder (Contents frame)
+#   2. Footer — 402×102 at bottom, contains NavigationLiquid centered at
+#      bottom 37 from screen (Selected=Home, DarkMode=variant,
+#      BadgeNotification=true)
+#   3. Header — Library Header instance (Background=Transparent, OS=iOS26,
+#      Design=After) absolutely positioned at top
+#
+# Dark mode handling (post_build step on Header instance ONLY):
+#   For the Dark variant, call setExplicitVariableModeForCollection on
+#   the Header instance with:
+#     - Apple Colors  ("Labels/Primary"  → Dark mode 404:1)
+#     - Twomi Theme   ("Theme"           → Dark mode 102:1)
+#   This flips bound text colors to white (Status bar "9:41" + headMenu
+#   "Current title"). It is NOT applied to the whole container — the
+#   navigation_liquid Dark variant already has its own Dark-mode colors
+#   baked in; flipping the container would double-invert it and make the
+#   selected pill's gallery icon white-on-white (invisible).
+#
+# NavigationLiquid component properties:
+#   - "Badge Notification#98:0" → true   (shows red dot on bell icon)
+# ============================================================
+
+meta:
+  name: Home - Self (Light + Dark)
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    parent_frame_id: "423:3909"   # Dark/Light wrapper
+    light_node_id: "423:3551"
+    dark_node_id: "418:33194"
+  description: |
+    The self-user Home screen (402×874 phone frame, r=32) — Twomi's main
+    feed entry point when the current user views their own home tab. Light
+    + Dark variants share the same Header (After Transparent iOS26) and
+    NavigationLiquid (Selected=Home + Badge), differing only in background
+    color and Header text color resolution. Content area is currently empty;
+    the actual feed cards belong in a separate carousel/feed schema.
+  screen_usage:
+    - Twomi app Home tab (own user)
+  dependencies:
+    - Library Header ComponentSet (2fbd7ca2de...) variant Transparent/iOS26/After
+    - Library navigation_liquid ComponentSet (5f9dd63978...) variants Home/Light + Home/Dark
+  runtime_version: v0.5
+  coverage:
+    total_variants: 2
+    implemented: 2
+    notes: |
+      Dark variant requires setExplicitVariableModeForCollection on the
+      Header INSTANCE ONLY (not the whole container) — see known_gaps.
+  review_status: ai-draft
+
+components:
+  - id: Home - Self
+    variants:
+      combinations:
+        - { Mode: Light }
+        - { Mode: Dark }
+
+    icon_refs:
+      - tab: HeaderAfter
+        asset_type: COMPONENT_SET
+        library_component_key: "2fbd7ca2de88291ad1d7f7bcdc4cdc894987f97c"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select:
+          Background: Transparent
+          OS: iOS26
+          Design: After
+
+      - tab: NavLight
+        asset_type: COMPONENT_SET
+        library_component_key: "5f9dd63978f760903a37af0a6f8a9c255cb863bc"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select:
+          Selected: Home
+          DarkMode: Light
+        component_properties:
+          "Badge Notification#98:0": true
+
+      - tab: NavDark
+        asset_type: COMPONENT_SET
+        library_component_key: "5f9dd63978f760903a37af0a6f8a9c255cb863bc"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select:
+          Selected: Home
+          DarkMode: Dark
+        component_properties:
+          "Badge Notification#98:0": true
+
+    container:
+      name_template: "Mode=${Mode}"
+      size: { width: 402, height: 874 }
+      corner_radius: 32
+      clips_content: true
+      fills:
+        by_variant:
+          - when: { Mode: Light }
+            paints: [{ type: SOLID, color: "#FFFFFF" }]
+          - when: { Mode: Dark }
+            paints: [{ type: SOLID, color: "#000000" }]
+      # No outer auto_layout — 3 absolutely-positioned children layers
+
+      children:
+        # 1. Container — empty Contents placeholder
+        - kind: FRAME
+          name: Container
+          x: 0
+          y: 0
+          size: { width: 402, height: 874 }
+          fills: []
+          children:
+            - kind: FRAME
+              name: Contents
+              size: { width: 402, height: 874 }
+              fills: []
+
+        # 2. Footer with NavigationLiquid (absolute bottom)
+        - kind: FRAME
+          name: Footer
+          x: 1
+          y: 772        # 874 - 102
+          size: { width: 402, height: 102 }
+          fills: []
+          clips_content: true
+          children:
+            # Centered nav: x = (402 - 366) / 2 = 18, y = 102 - 37 - 56 = 9
+            - kind: INSTANCE
+              ref: "icon_refs[tab=NavLight]"
+              x: 18
+              y: 9
+              when: { Mode: Light }
+            - kind: INSTANCE
+              ref: "icon_refs[tab=NavDark]"
+              x: 18
+              y: 9
+              when: { Mode: Dark }
+
+        # 3. Header (Library After Transparent iOS26)
+        - kind: INSTANCE
+          name: Header
+          ref: "icon_refs[tab=HeaderAfter]"
+          x: 0
+          y: 0
+          # Post-build hook: flip color variables to Dark mode for Dark variant
+          post_build:
+            when: { Mode: Dark }
+            action: setExplicitVariableModeForCollection
+            collections:
+              - id: "VariableCollectionId:0f8f6921a9a4bfc5bade1f3d7d9f01bf5dd3f77f/5720:155"
+                mode: "404:1"   # Apple Colors → Dark
+              - id: "VariableCollectionId:f2ae928191769227a34559820677c75c11f6166b/102:15"
+                mode: "102:1"   # Twomi Theme → Dark
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 1
+        cols: 2
+        cell_size: { width: 420, height: 894 }
+        gap: { x: 24, y: 0 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: Mode
+          secondary: Mode
+
+known_gaps:
+  - id: post_build_hook_required
+    description: |
+      The schema's `post_build` action (setExplicitVariableModeForCollection)
+      is not native to the generic runtime — it's inlined in the JS
+      paste-and-run script. To express this in a more general runtime, a
+      post-build phase would need to be added that runs after each variant
+      component is built.
+  - id: scope_dark_mode_to_header_only
+    description: |
+      The Dark mode variable flip MUST be applied to the Header instance
+      only — not the whole Dark variant container. Applying it on the
+      container double-inverts the nav: navigation_liquid DarkMode=Dark
+      already has its colors set, and flipping again makes the selected
+      tab's gallery icon resolve to white-on-white (invisible).

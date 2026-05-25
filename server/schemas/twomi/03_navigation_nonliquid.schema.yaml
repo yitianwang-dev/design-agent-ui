@@ -1,0 +1,177 @@
+# ============================================================
+# 03_navigation_nonliquid.schema.yaml
+# ============================================================
+# Schema PJ — navigation_NonLiquid
+#
+# Generated: 2026-05-20 (meta + format unified 2026-05-21)
+# Source:    Library - Guideline / ComponentSet 95:7246
+# Note:      Single-axis variant of nav_liquid (only Selected, no DarkMode).
+#            Same icons + nav_item structure as nav_liquid. Different
+#            container styling: white@80% bg + drop shadow + blend layers.
+# ============================================================
+
+meta:
+  name: navigation_NonLiquid
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "95:7246"
+  description: |
+    Older-style (pre-Liquid Glass) bottom navigation bar (366×56) — solid
+    white-tinted background with multi-layer blend modes and a drop shadow.
+    Used in places where Liquid Glass isn't appropriate (e.g. Android-style
+    screens, low-power renders, opaque content overlays). Same 5 tabs and
+    icons as navigation_liquid but no Dark mode variants (single axis).
+  screen_usage:
+    - Android-style screens (when not using Liquid Glass theme)
+    - Anywhere Liquid Glass is intentionally avoided
+  dependencies:
+    - 4 Library icon COMPONENTs (Home/Search/Create/notes)
+    - User icon COMPONENT_SET (variant State=bottomNavi, type=Self) for Profile tab
+  runtime_version: v0.5
+  coverage:
+    total_variants: 5
+    implemented: 5
+    notes: |
+      Container uses 3-layer fill stack (white 80% + grey COLOR_BURN +
+      grey LINEAR_DODGE) for a textured plate look. blend_mode on each
+      paint must be supported by runtime.
+  review_status: ai-draft
+
+# ============================================================
+# Schema definition
+# ============================================================
+components:
+  - id: navigation_NonLiquid
+
+    # ─── Variants (5 = single axis) ──────────────────────────────
+    variants:
+      axes:
+        - name: Selected
+          values: [Home, Search, Create, notes, Profile]   # ※ 'notes' lowercase, same Library legacy
+      enumeration: cross_product
+
+    # ─── Per-variant component ───────────────────────────────────
+    container:
+      node_type: COMPONENT
+      name_template: "Selected=${Selected}"
+      size: { width: 366, height: 56, mode: FIXED }
+      corner_radius: 48
+      clips_content: true
+      auto_layout:
+        direction: HORIZONTAL
+        padding: { top: 4, right: 4, bottom: 4, left: 4 }
+        item_spacing: 0
+        primary_axis_align_items: SPACE_BETWEEN
+        counter_axis_align_items: CENTER
+        primary_axis_sizing_mode: FIXED
+        counter_axis_sizing_mode: FIXED
+      fills:
+        - { type: SOLID, color: "#FFFFFF", opacity: 0.8 }
+        - { type: SOLID, color: "#1D1D1D", opacity: 0.1, blend_mode: COLOR_BURN }
+        - { type: SOLID, color: "#1D1D1D", opacity: 1.0, blend_mode: LINEAR_DODGE }
+      stroke:
+        paints: [{ type: SOLID, color: "#FFFFFF" }]
+        weight: 1
+        align: INSIDE
+      effects:
+        - type: DROP_SHADOW
+          color: "#858585"
+          opacity: 0.25
+          offset: { x: 0, y: 0 }
+          radius: 21
+          blend_mode: NORMAL
+          show_shadow_behind_node: false
+
+    # ─── Tab order (fixed) ───────────────────────────────────────
+    tabs_order: [Home, Search, Create, notes, Profile]
+
+    # ─── Nav item template (identical to nav_liquid) ─────────────
+    nav_item:
+      node_type: FRAME
+      name_template: "NavItem_${tab}${ifSelected('_selected', '')}"
+      size: { width: 70, height: 48 }
+      layout_sizing: { horizontal: FILL, vertical: FIXED }
+      corner_radius: 30
+      auto_layout:
+        direction: VERTICAL
+        padding: { top: 8, bottom: 8, left: 0, right: 0 }
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+
+      by_state:
+        - when: { tab: "${Selected}" }
+          fills:
+            - { type: SOLID, color: "#FFFFFF" }
+          effects:
+            - type: DROP_SHADOW
+              color: "#000000"
+              opacity: 0.25
+              offset: { x: 0, y: 0 }
+              radius: 2.5
+              blend_mode: NORMAL
+              show_shadow_behind_node: false
+        - otherwise:
+            fills: []
+            effects: []
+
+      child:
+        kind: INSTANCE
+        ref: "icon_refs[tab=${tab}]"
+
+    # ─── Icon refs (same 5 as nav_liquid) ────────────────────────
+    icon_refs:
+      - tab: Home
+        asset_type: COMPONENT
+        library_component_key: "e48fb0411cff37d255fcfdc63243970eca0ec1e0"
+        import_method: importComponentByKeyAsync
+
+      - tab: Search
+        asset_type: COMPONENT
+        library_component_key: "c6a3de98298c7fce29bfd669168c6feaf2af7898"
+        import_method: importComponentByKeyAsync
+
+      - tab: Create
+        asset_type: COMPONENT
+        library_component_key: "f0ce3f2dbac2d52f1b153bc3d9dac01965e96182"
+        import_method: importComponentByKeyAsync
+
+      - tab: notes
+        asset_type: COMPONENT
+        library_component_key: "932725592fbca5ac13c4e6c4ce6ba81d782d651c"
+        import_method: importComponentByKeyAsync
+
+      - tab: Profile
+        asset_type: COMPONENT_SET
+        library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+        import_method: importComponentSetByKeyAsync
+        variant_to_select: { State: bottomNavi, type: Self }
+        variant_match_strategy: name_contains_all_kv
+
+    # ─── ComponentSet assembly ─────────────────────────────────
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 5
+        cols: 1
+        cell_size: { width: 366, height: 56 }
+        gap: { x: 0, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: Selected
+
+build:
+  postconditions:
+    - componentset has 5 children with names matching name_template
+    - each variant is 366×56
+    - selected nav_item has white fill + drop shadow
+
+known_gaps:
+  - id: output_placement
+    description: Same as nav_liquid — schema has no `output.placement` field
+
+  - id: legacy_top_level_format
+    description: |
+      Originally written before format unification (component: dict at top
+      level). Converted 2026-05-21 to standard components: [...] array.
+      Semantic content unchanged.

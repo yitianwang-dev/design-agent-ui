@@ -1,0 +1,160 @@
+# ============================================================
+# 06_context_menu_favorite.schema.yaml
+# ============================================================
+# contextMenuFavorite ComponentSet (Library - Guideline)
+#   4 variants = State × Language
+#     State    ∈ {AddFavorite, RemoveFavorite}
+#     Language ∈ {JP, EN}
+#
+# Per-variant differences:
+#   - icon: Outline Bookmark (Add) / Bold Bookmark (Remove)
+#   - text: お気に入り登録 / Add to favourites / お気に入り解除 / Remove to Favorite
+#   - width: JP fixed 162px / EN AUTO (hugs text content)
+# ============================================================
+
+meta:
+  name: contextMenuFavorite
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "f4e5eaec7fd6cabef180694b84f2afcd3271a43e"
+  description: |
+    A single-row context menu item showing a bookmark icon + text label
+    for adding/removing favourites. Used as one menu item inside the
+    larger contextMenu (long-press on user avatar / content card).
+    State controls icon (outline vs bold bookmark) + text wording.
+    Language controls localised text + width sizing mode.
+  screen_usage:
+    - contextMenu (Purpose=talkChat_Share / call Option menu) — embedded as INSTANCE
+  dependencies:
+    - Outline Bookmark icon (aa56dc16...)
+    - Bold Bookmark icon (e9845958...)
+  runtime_version: v0.5
+  coverage:
+    total_variants: 4
+    implemented: 4
+  review_status: ai-draft
+
+components:
+  - id: contextMenuFavorite
+    variants:
+      combinations:
+        - { State: AddFavorite,    Language: JP }
+        - { State: AddFavorite,    Language: EN }
+        - { State: RemoveFavorite, Language: JP }
+        - { State: RemoveFavorite, Language: EN }
+
+    icon_refs:
+      - tab: OutlineBookmark
+        asset_type: COMPONENT
+        library_component_key: "aa56dc16f1070fca480c5e840986adfb243202e0"
+        import_method: importComponentByKeyAsync
+      - tab: BoldBookmark
+        asset_type: COMPONENT
+        library_component_key: "e9845958510174b9b68e5089488b50c44260f2d5"
+        import_method: importComponentByKeyAsync
+
+    container:
+      name_template: "State=${State}, Language=${Language}"
+
+      # JP variants are 162×56 with primary FIXED.
+      # EN variants AUTO-hug horizontally — initial 200 gets overridden by autolayout.
+      size:
+        by_variant:
+          - when: { Language: JP }
+            value: { width: 162, height: 56 }
+          - when: { Language: EN }
+            value: { width: 200, height: 56 }
+
+      clips_content: false
+
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: MIN
+        counter_axis_align_items: CENTER
+        padding: { top: 16, right: 16, bottom: 16, left: 16 }
+        item_spacing: 8
+        primary_axis_sizing_mode:
+          by_variant:
+            - when: { Language: JP }
+              value: FIXED
+            - when: { Language: EN }
+              value: AUTO
+        counter_axis_sizing_mode: AUTO
+
+      fills: []
+
+      children:
+        # Icon: Outline Bookmark for Add, Bold Bookmark for Remove
+        - kind: INSTANCE
+          ref: "icon_refs[tab=OutlineBookmark]"
+          size: { width: 24, height: 24 }
+          when:
+            State: AddFavorite
+
+        - kind: INSTANCE
+          ref: "icon_refs[tab=BoldBookmark]"
+          size: { width: 24, height: 24 }
+          when:
+            State: RemoveFavorite
+
+        # Text: 1 TEXT child per (State, Language) combination
+        - kind: TEXT
+          name: text
+          characters: "お気に入り登録"
+          font: { family: Noto Sans JP, style: Medium }
+          font_size: 14
+          line_height: { unit: PERCENT, value: 100 }
+          fills: [{ type: SOLID, color: "#2E2E2E" }]
+          text_align_horizontal: LEFT
+          when:
+            State: AddFavorite
+            Language: JP
+
+        - kind: TEXT
+          name: text
+          characters: "Add to favourites"
+          font: { family: Noto Sans JP, style: Medium }
+          font_size: 14
+          line_height: { unit: PERCENT, value: 100 }
+          fills: [{ type: SOLID, color: "#2E2E2E" }]
+          text_align_horizontal: LEFT
+          when:
+            State: AddFavorite
+            Language: EN
+
+        - kind: TEXT
+          name: text
+          characters: "お気に入り解除"
+          font: { family: Noto Sans JP, style: Medium }
+          font_size: 14
+          line_height: { unit: PERCENT, value: 100 }
+          fills: [{ type: SOLID, color: "#2E2E2E" }]
+          text_align_horizontal: LEFT
+          when:
+            State: RemoveFavorite
+            Language: JP
+
+        - kind: TEXT
+          name: text
+          characters: "Remove to Favorite"
+          font: { family: Noto Sans JP, style: Medium }
+          font_size: 14
+          line_height: { unit: PERCENT, value: 100 }
+          fills: [{ type: SOLID, color: "#2E2E2E" }]
+          text_align_horizontal: LEFT
+          when:
+            State: RemoveFavorite
+            Language: EN
+
+    componentset_assembly:
+      combiner: combineAsVariants
+      internal_layout: manual_grid
+      grid:
+        rows: 2
+        cols: 2
+        cell_size: { width: 220, height: 70 }
+        gap: { x: 24, y: 16 }
+        padding: { top: 20, right: 20, bottom: 20, left: 20 }
+        order:
+          primary: State
+          secondary: Language
