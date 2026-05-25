@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
+import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles } from './figma.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -12,7 +13,6 @@ async function loadScaffold(type) {
 }
 
 async function fetchSpecFromUrl(url) {
-  // Google Docs: export as plain text
   const gdocMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
   if (gdocMatch) {
     const docId = gdocMatch[1];
@@ -20,10 +20,9 @@ async function fetchSpecFromUrl(url) {
     const res = await fetch(exportUrl);
     if (!res.ok) throw new Error(`Google Doc の取得に失敗しました (${res.status})`);
     const text = await res.text();
-    return text.slice(0, 12000); // 長すぎる場合は先頭12000文字
+    return text.slice(0, 12000);
   }
 
-  // Generic URL
   const res = await fetch(url, { headers: { 'User-Agent': 'DesignAgent/1.0' } });
   if (!res.ok) throw new Error(`URL の取得に失敗しました (${res.status})`);
   const text = await res.text();
@@ -31,19 +30,34 @@ async function fetchSpecFromUrl(url) {
 }
 
 export async function generateFigmaScript(input) {
-  const { screenName, screenType, selectedTab, specUrl, specText, product } = input;
+  const { screenName, screenType, selectedTab, specUrl, specText, figmaRefUrl, product } = input;
 
   const scaffoldCode = await loadScaffold(screenType);
 
-  // Fetch spec URL content if provided
+  // Fetch spec URL content
   let specContent = specText || '';
   if (specUrl) {
     try {
       const fetched = await fetchSpecFromUrl(specUrl);
       specContent = `【仕様書本文（${specUrl} より取得）】\n${fetched}${specText ? `\n\n【補足】\n${specText}` : ''}`;
     } catch (err) {
-      // Fallback: pass URL as-is with error note
       specContent = `仕様書URL: ${specUrl}\n（自動取得失敗: ${err.message}）${specText ? `\n\n補足:\n${specText}` : ''}`;
+    }
+  }
+
+  // Fetch Figma reference design
+  let figmaImageBase64 = null;
+  let figmaStyleInfo = null;
+  if (figmaRefUrl) {
+    try {
+      const { fileKey, nodeId } = parseFigmaUrl(figmaRefUrl);
+      [figmaImageBase64, figmaStyleInfo] = await Promise.all([
+        fetchNodeImageAsBase64(fileKey, nodeId),
+        fetchNodeStyles(fileKey, nodeId),
+      ]);
+    } catch (err) {
+      console.error('Figma reference fetch failed:', err.message);
+      // Non-fatal: proceed without reference
     }
   }
 
@@ -54,29 +68,27 @@ export async function generateFigmaScript(input) {
   };
 
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書に基づいてFigma Plugin JavaScriptとして生成します。
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。
 
 ## Twomiとは
-- 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系のショート動画）
-- クリエイターがAIアバターで動画を投稿し、視聴者がチケットを購入して限定コンテンツを閲覧できる
-- カラー: 背景 #000000〜#1C1C1E（ダーク系）、アクセント #35C1C6 または #3BC9CF（ティール）
-- UIスタイル: iOS風、角丸、Liquid Glass、Noto Sans JP / Inter フォント使用
-- ボトムナビ: Gallery / Search / Create / Notification / Profile の5タブ
+- 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）
+- クリエイターがAIアバターで動画投稿、視聴者がチケット購入で限定コンテンツを閲覧
+- カラー: 背景 #000000〜#2E2E2E（ダーク）、アクセント #35C1C6（ティール）
+- UIスタイル: iOS風、Noto Sans JP / Inter フォント
 
-## 重要なUI要素
-- "人気！" バッジ: 角丸の薄白背景、小さめフォント
-- クリエイターアイコン: 円形、グレー背景のプレースホルダー
-- "フォロー" ボタン: ティール系の角丸ボタン
-- CTA ボタン: ティール系背景 (#35C1C6)、白テキスト、角丸26px
-- ロックアイコン: 🔒 または 🔐 の絵文字テキスト
-- エンゲージメント: 💎 アイコン + 数字（例: 1.2k）+ シェア数
+## 参照デザインがある場合の鉄則
+- 添付画像が「正解のデザイン」。ビジュアルを最大限忠実に再現すること
+- 色・フォントサイズ・レイアウト・余白・コンポーネントの配置を参照画像から読み取る
+- テキスト内容はプレースホルダー（UserName、creator_nameなど）でOK
 
-## ルール
+## Figma Plugin JSのルール
 - scaffold を最初に実行し、返り値の contentFrameNodeId の中身だけを設計する
-- layout定数（y=110, y=772など）はscaffoldが保証するため自分で設定しない
-- 絵文字はFigmaの textNode で characters に直接セットできる
-- appendChild後にfillsを設定する（appendChild前は設定無効）
-- 生成するのはJavaScriptコードのみ。説明文・コメントは最小限に
+- layout定数はscaffoldが保証するため自分で設定しない
+- appendChild後にfillsを設定する
+- グラデーション: type:'GRADIENT_LINEAR', gradientStops, gradientTransform
+- ぼかし効果: effects = [{ type:'LAYER_BLUR', radius:25, visible:true }]
+- 絵文字: textNode.characters に直接セット可能
+- 生成するのはJavaScriptコードのみ
 
 ## 出力形式
 \`\`\`javascript
@@ -87,11 +99,11 @@ Twomiというアプリのスクリーンを、仕様書に基づいてFigma Plu
 \`\`\`
 `;
 
-  const userMessage = `## リクエスト
+  const userTextContent = `## リクエスト
 - 画面名: ${screenName}
 - 画面タイプ: ${screenType}（${typeDesc[screenType]}）
 ${screenType !== 'C' ? `- 選択タブ: ${selectedTab}` : ''}
-- Figmaファイル: ${product.figmaFileKey}
+- Figmaファイル: ${product.figmaFileKey || '未指定'}
 
 ## Scaffoldコード
 \`\`\`javascript
@@ -100,13 +112,27 @@ ${scaffoldCode}
 
 ## 仕様書・UI要件
 ${specContent}
-`;
+${figmaStyleInfo ? `
+## 参照デザインのスタイル情報
+- ノード名: ${figmaStyleInfo.name}
+- 使用カラー: ${figmaStyleInfo.colors.join(', ')}
+- テキスト要素: ${figmaStyleInfo.texts.join(' / ')}
+` : ''}
+${figmaImageBase64 ? '## 参照デザイン画像\n添付の画像がターゲットデザインです。この外観を再現するコードを生成してください。' : ''}`;
+
+  // Build message content
+  const messageContent = figmaImageBase64
+    ? [
+        { type: 'image', source: { type: 'base64', media_type: 'image/png', data: figmaImageBase64 } },
+        { type: 'text', text: userTextContent },
+      ]
+    : userTextContent;
 
   const message = await client.messages.create({
     model: 'claude-opus-4-7',
     max_tokens: 8192,
     system: systemPrompt,
-    messages: [{ role: 'user', content: userMessage }],
+    messages: [{ role: 'user', content: messageContent }],
   });
 
   const content = message.content[0].text;

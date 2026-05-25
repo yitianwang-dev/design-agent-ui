@@ -645,9 +645,9 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
         <div class="input-hint">URLがない場合は、表示要素を箇条書きで書いてもOKです</div>
       </div>
       <div class="field">
-        <label>参照する既存デザインの node-id（任意）</label>
-        <input type="text" id="node-id" placeholder="例: 49425-179725">
-        <div class="input-hint">Figma上の既存画面を参照したい場合のみ。新規画面なら空欄でOK</div>
+        <label>参照する既存デザインの Figma URL（任意・推奨）</label>
+        <input type="text" id="figma-ref-url" placeholder="https://www.figma.com/design/XXXXX/...?node-id=49670-4476">
+        <div class="input-hint">Figmaで参照したいフレームを選択してURLをコピー＆ペースト。あると精度が大幅に上がります</div>
       </div>
     </div>
 
@@ -810,7 +810,7 @@ async function submitJob() {
   const screenName = document.getElementById('screen-name').value.trim();
   const specUrl = document.getElementById('spec-url').value.trim();
   const specText = document.getElementById('spec-text').value.trim();
-  const nodeId = document.getElementById('node-id').value.trim();
+  const figmaRefUrl = document.getElementById('figma-ref-url').value.trim();
 
   if (!userId) { alert('メールアドレスを入力してください'); return; }
   if (!screenName) { alert('画面名を入力してください'); return; }
@@ -828,7 +828,7 @@ async function submitJob() {
     const res = await fetch(`${API_BASE}/jobs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, screenName, screenType: selectedType, selectedTab, specUrl, specText, nodeId, product }),
+      body: JSON.stringify({ userId, screenName, screenType: selectedType, selectedTab, specUrl, specText, figmaRefUrl, product }),
     });
     if (!res.ok) {
       const err = await res.json();

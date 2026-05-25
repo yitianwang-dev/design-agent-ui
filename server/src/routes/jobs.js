@@ -17,7 +17,7 @@ async function checkDailyLimit() {
 
 // POST /jobs — フォーム送信→ジョブ作成→非同期でClaude実行
 router.post('/', async (req, res) => {
-  const { userId, screenName, screenType, selectedTab, specUrl, specText, product } = req.body;
+  const { userId, screenName, screenType, selectedTab, specUrl, specText, figmaRefUrl, product } = req.body;
 
   if (!userId || !screenName || !screenType || (!specUrl && !specText)) {
     return res.status(400).json({ error: '必須パラメータが不足しています' });
@@ -27,7 +27,7 @@ router.post('/', async (req, res) => {
     return res.status(429).json({ error: `1日の上限（${DAILY_LIMIT}件）に達しました。明日以降にお試しください。` });
   }
 
-  const input = { screenName, screenType, selectedTab, specUrl, specText, product };
+  const input = { screenName, screenType, selectedTab, specUrl, specText, figmaRefUrl, product };
   const { rows } = await query(
     'INSERT INTO jobs (user_id, input) VALUES ($1, $2) RETURNING id, status, created_at',
     [userId, JSON.stringify(input)]

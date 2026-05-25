@@ -4,6 +4,7 @@
   "api": "1.0.0",
   "main": "code.js",
   "ui": "ui.html",
+  "editorType": ["figma"],
   "networkAccess": {
     "allowedDomains": ["https://design-agent-ui-production.up.railway.app"],
     "reasoning": "Design Agent サーバーからジョブを取得し、完了を報告するために必要"
