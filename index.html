@@ -740,7 +740,7 @@ function generatePrompt() {
 
   // Validation
   if (!screenName) { alert('画面名を入力してください'); return; }
-  if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('画面名はcamelCaseで入力してください'); return; }
+  if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('画面名の形式が正しくありません。\n\n英語の単語をつなげて、先頭は小文字にしてください。\n例: packageSelect / homeFeed / settingsTop\n\nスペース・記号・日本語は使えません'); return; }
   if (!selectedType) { alert('画面タイプを選択してください'); return; }
   if (!specText) { alert('仕様書・UI要件を入力してください'); return; }
 
