@@ -478,6 +478,37 @@
       margin-bottom: 12px;
       margin-top: 20px;
     }
+
+    /* ── JOB STATUS ── */
+    .job-status {
+      display: none;
+      margin-top: 24px;
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .job-status.visible { display: block; }
+    .job-status-header {
+      display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+    }
+    .job-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .job-dot.pending  { background: #F59E0B; animation: pulse 1.2s infinite; }
+    .job-dot.processing { background: #3B82F6; animation: pulse 0.8s infinite; }
+    .job-dot.waiting  { background: #8B5CF6; animation: pulse 1s infinite; }
+    .job-dot.done     { background: #10B981; }
+    .job-dot.error    { background: #EF4444; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+    .job-status-title { font-size: 15px; font-weight: 600; }
+    .job-status-desc  { font-size: 13px; color: var(--gray-600); margin-top: 4px; }
+    .job-figma-link {
+      display: inline-block; margin-top: 12px; padding: 10px 18px;
+      background: var(--teal); color: #fff; border-radius: var(--radius-sm);
+      font-size: 14px; font-weight: 600; text-decoration: none;
+    }
+    .job-figma-link:hover { opacity: 0.85; }
   </style>
 </head>
 <body>
@@ -500,6 +531,18 @@
   <div class="container">
     <div class="page-title">デザイン生成リクエスト</div>
     <div class="page-desc">必要な情報を入力してプロンプトを生成します</div>
+
+    <!-- 0. ユーザーID -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-num" style="background:var(--gray-400)">✉</div>
+        <div class="section-title">あなたのメールアドレス</div>
+      </div>
+      <div class="field">
+        <input type="email" id="user-id" placeholder="you@example.com" oninput="saveUserId()">
+        <div class="input-hint">Figmaプラグインと紐づけるために使います。Figmaプラグイン側にも同じアドレスを入力してください</div>
+      </div>
+    </div>
 
     <!-- 1. プロダクト -->
     <div class="section">
@@ -608,18 +651,18 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
       </div>
     </div>
 
-    <button class="generate-btn" onclick="generatePrompt()">プロンプトを生成</button>
+    <button class="generate-btn" id="submit-btn" onclick="submitJob()">デザインを生成</button>
 
-    <!-- OUTPUT -->
-    <div id="output-section">
-      <div class="config-summary" id="config-summary"></div>
-      <div class="output-box">
-        <div class="output-header">
-          <span class="output-label">生成されたプロンプト（Claude Code に貼り付け）</span>
-          <button class="copy-btn" id="copy-btn" onclick="copyOutput()">コピー</button>
+    <!-- JOB STATUS -->
+    <div class="job-status" id="job-status">
+      <div class="job-status-header">
+        <div class="job-dot" id="job-dot"></div>
+        <div>
+          <div class="job-status-title" id="job-status-title"></div>
+          <div class="job-status-desc" id="job-status-desc"></div>
         </div>
-        <div id="output-text"></div>
       </div>
+      <a id="figma-link" class="job-figma-link" href="#" target="_blank" style="display:none">Figmaで確認 →</a>
     </div>
   </div>
 </div>
@@ -753,83 +796,90 @@ function validateScreenName() {
   document.getElementById('screen-name').classList.toggle('error', v.length > 0 && !ok);
 }
 
-// ── GENERATE PROMPT ─────────────────────────
-function generatePrompt() {
+// ── SUBMIT JOB ──────────────────────────────
+const API_BASE = 'https://design-agent-ui-production.up.railway.app';
+let pollTimer = null;
+
+function saveUserId() {
+  localStorage.setItem('da_userId', document.getElementById('user-id').value);
+}
+
+async function submitJob() {
+  const userId = document.getElementById('user-id').value.trim();
   const productId = document.getElementById('product-select').value;
   const screenName = document.getElementById('screen-name').value.trim();
   const specUrl = document.getElementById('spec-url').value.trim();
   const specText = document.getElementById('spec-text').value.trim();
   const nodeId = document.getElementById('node-id').value.trim();
 
-  // Validation
+  if (!userId) { alert('メールアドレスを入力してください'); return; }
   if (!screenName) { alert('画面名を入力してください'); return; }
   if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('画面名の形式が正しくありません。\n\n英語の単語をつなげて、先頭は小文字にしてください。\n例: packageSelect / homeFeed / settingsTop\n\nスペース・記号・日本語は使えません'); return; }
-  if (!selectedType) { alert('画面タイプを選択してください'); return; }
+  if (!selectedType) { alert('画面の基本構造を選択してください'); return; }
   if (!specUrl && !specText) { alert('仕様書のURLか、内容を入力してください'); return; }
 
   const products = getProducts();
-  const product = products.find(p => p.id === productId);
+  const product = products.find(p => p.id === productId) || {};
 
-  const headerKey = product?.headerKey || DEFAULT_HEADER_KEY;
-  const navKey = product?.navKey || DEFAULT_NAV_KEY;
-  const figmaFileKey = product?.figmaFileKey || '（Figmaファイルキーを入力）';
-  const page = product?.page || 'Page 1';
+  document.getElementById('submit-btn').disabled = true;
+  setJobStatus('pending', 'リクエスト送信中...', '');
 
-  const typeDesc = {
-    A: 'Header+Scroll型（白背景 / NavigationLiquid DarkMode=Light）',
-    B: 'フルスクリーン型（黒背景 / NavigationLiquid DarkMode=Dark）',
-    C: 'フルスクリーン+タブ型（NavigationLiquid なし）',
-  };
-  const scaffoldFile = `scaffold_${selectedType.toLowerCase()}.js`;
-  const tabNote = selectedType !== 'C' ? `\n- 選択タブ: ${selectedTab}` : '';
-  const nodeNote = nodeId ? `\n- 参照 node-id: ${nodeId}（既存デザインの参照用）` : '';
-
-  const prompt = `## Design Agent リクエスト
-
-### 画面情報
-- 画面名: ${screenName}
-- 画面タイプ: ${selectedType}（${typeDesc[selectedType]}）${tabNote}
-- 対象 Figma ファイル: ${figmaFileKey}
-- 対象ページ: ${page}${nodeNote}
-
-### スキャフォールド
-\`~/outputs/figma-design-automation/scaffolds/${scaffoldFile}\` を実行して \`contentFrameNodeId\` を取得してください。
-スキャフォールド実行時の引数:
-- screenName: "${screenName}"${selectedType !== 'C' ? `\n- selectedTab: "${selectedTab}"` : ''}
-
-コンポーネントキー（scaffold内に定義済み）:
-- Header: ${headerKey}
-- NavigationLiquid: ${navKey}
-
-### 仕様書・UI要件
-${specUrl ? `仕様書URL: ${specUrl}
-上記URLを読み込んで、この画面に関係するUI要件・表示要素を確認してください。` : ''}${specUrl && specText ? '\n\n補足メモ:\n' : ''}${specText}
-
-### 実行手順
-1. Notion Edge Case DB（ID: 8bd11da8-e59b-414b-838a-c3e9cbb1ad33）でエッジケースを確認
-2. \`${scaffoldFile}\` を \`use_figma\` で実行 → \`contentFrameNodeId\` を取得
-3. 取得した \`contentFrameNodeId\` の中身だけを仕様書に従って設計
-4. \`mcp__figma__get_screenshot\` でスクリーンショットを取得して確認
-5. Human Review サマリーを作成（対応エッジケース・known_gaps・確認事項）`;
-
-  // Update UI
-  const summary = `<strong>プロダクト</strong>: ${product?.name || '未設定'}　<strong>画面</strong>: ${screenName}　<strong>タイプ</strong>: ${selectedType}${selectedType !== 'C' ? `　<strong>タブ</strong>: ${selectedTab}` : ''}　<strong>Figmaファイル</strong>: ${figmaFileKey}`;
-  document.getElementById('config-summary').innerHTML = summary;
-  document.getElementById('output-text').textContent = prompt;
-  document.getElementById('output-section').classList.add('visible');
-  document.getElementById('output-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  document.getElementById('copy-btn').textContent = 'コピー';
-  document.getElementById('copy-btn').classList.remove('copied');
+  try {
+    const res = await fetch(`${API_BASE}/jobs`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, screenName, screenType: selectedType, selectedTab, specUrl, specText, nodeId, product }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || 'サーバーエラー');
+    }
+    const { jobId } = await res.json();
+    setJobStatus('processing', 'AIがデザインを生成中...', '数分かかる場合があります');
+    pollJob(jobId);
+  } catch (err) {
+    setJobStatus('error', 'エラー', err.message);
+    document.getElementById('submit-btn').disabled = false;
+  }
 }
 
-function copyOutput() {
-  const text = document.getElementById('output-text').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copy-btn');
-    btn.textContent = 'コピーしました ✓';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('copied'); }, 2000);
-  });
+function pollJob(jobId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/jobs/${jobId}`);
+      const job = await res.json();
+
+      if (job.status === 'pending_plugin') {
+        setJobStatus('waiting', 'Figmaプラグインで実行中...', 'FigmaのDesign Agentプラグインを起動してください');
+      } else if (job.status === 'done') {
+        clearInterval(pollTimer);
+        setJobStatus('done', 'デザインが完成しました！', 'Figmaで確認してください');
+        document.getElementById('submit-btn').disabled = false;
+        const product = getProducts().find(p => p.id === document.getElementById('product-select').value);
+        if (product?.figmaFileKey) {
+          const link = document.getElementById('figma-link');
+          link.href = `https://www.figma.com/design/${product.figmaFileKey}`;
+          link.style.display = 'inline-block';
+        }
+      } else if (job.status === 'error') {
+        clearInterval(pollTimer);
+        setJobStatus('error', '生成に失敗しました', job.error || '');
+        document.getElementById('submit-btn').disabled = false;
+      }
+    } catch (e) { /* ネットワークエラーは無視してリトライ */ }
+  }, 3000);
+}
+
+function setJobStatus(state, title, desc) {
+  const box = document.getElementById('job-status');
+  const dot = document.getElementById('job-dot');
+  box.classList.add('visible');
+  dot.className = `job-dot ${state}`;
+  document.getElementById('job-status-title').textContent = title;
+  document.getElementById('job-status-desc').textContent = desc;
+  if (state !== 'done') document.getElementById('figma-link').style.display = 'none';
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // ── SETTINGS ────────────────────────────────
@@ -944,6 +994,7 @@ function saveProduct() {
 // ── INIT ────────────────────────────────────
 populateProductSelect();
 selectTab('Home');
+document.getElementById('user-id').value = localStorage.getItem('da_userId') || '';
 
 // Twomiがなければデフォルトで登録
 (function seedTwomi() {
