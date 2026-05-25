@@ -232,7 +232,11 @@ ${figmaStyleInfo ? `
 
   const generated = message.content[0].text;
   const match = generated.match(/```javascript\n([\s\S]*?)```/);
-  if (!match) throw new Error('JavaScriptコードの生成に失敗しました');
+  if (!match) {
+    console.error('[claude] no code block found. response length:', generated.length);
+    console.error('[claude] response preview:', generated.slice(0, 500));
+    throw new Error('JavaScriptコードの生成に失敗しました');
+  }
 
   const rawCode = match[1].trim();
 
