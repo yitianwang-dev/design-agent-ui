@@ -453,6 +453,22 @@
 
     .divider { height: 1px; background: var(--gray-200); margin: 20px 0; }
 
+    .or-divider {
+      text-align: center;
+      font-size: 12px;
+      color: var(--gray-400);
+      margin: 12px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .or-divider::before, .or-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--gray-200);
+    }
+
     .fieldset-title {
       font-size: 12px;
       font-weight: 600;
@@ -567,8 +583,14 @@
         <div class="section-title">仕様書・UI要件</div>
       </div>
       <div class="field">
-        <label>この画面に表示するUI要素・仕様を貼り付け <span style="color:var(--error)">*</span></label>
-        <textarea id="spec-text" rows="10" placeholder="仕様書からこの画面に関係する箇所をコピーしてください。
+        <label>仕様書の URL（Google Docs / Notion など）</label>
+        <input type="text" id="spec-url" placeholder="https://docs.google.com/document/d/... または Notion URL">
+        <div class="input-hint">URLを貼ると、Design Agent が自動で読み込みます</div>
+      </div>
+      <div class="or-divider">または</div>
+      <div class="field">
+        <label>仕様書の内容を直接貼り付け</label>
+        <textarea id="spec-text" rows="8" placeholder="仕様書からこの画面に関係する箇所をコピーしてください。
 UIの専用セクションがなくても、画面の要素が書かれていれば大丈夫です。
 
 例:
@@ -577,7 +599,7 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
 - 左上: 「人気！」バッジ
 - 中央: 🔐 絵文字 + 「{クリエイター名}さんの限定コンテンツをチェックしよう！」テキスト
 - 下部: アバター名 + エンゲージメント（保存数・シェア）"></textarea>
-        <div class="input-hint">仕様書の該当セクションをそのまま貼るか、表示要素を箇条書きで書いてください</div>
+        <div class="input-hint">URLがない場合は、表示要素を箇条書きで書いてもOKです</div>
       </div>
       <div class="field">
         <label>参照する既存デザインの node-id（任意）</label>
@@ -735,6 +757,7 @@ function validateScreenName() {
 function generatePrompt() {
   const productId = document.getElementById('product-select').value;
   const screenName = document.getElementById('screen-name').value.trim();
+  const specUrl = document.getElementById('spec-url').value.trim();
   const specText = document.getElementById('spec-text').value.trim();
   const nodeId = document.getElementById('node-id').value.trim();
 
@@ -742,7 +765,7 @@ function generatePrompt() {
   if (!screenName) { alert('画面名を入力してください'); return; }
   if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('画面名の形式が正しくありません。\n\n英語の単語をつなげて、先頭は小文字にしてください。\n例: packageSelect / homeFeed / settingsTop\n\nスペース・記号・日本語は使えません'); return; }
   if (!selectedType) { alert('画面タイプを選択してください'); return; }
-  if (!specText) { alert('仕様書・UI要件を入力してください'); return; }
+  if (!specUrl && !specText) { alert('仕様書のURLか、内容を入力してください'); return; }
 
   const products = getProducts();
   const product = products.find(p => p.id === productId);
@@ -779,7 +802,8 @@ function generatePrompt() {
 - NavigationLiquid: ${navKey}
 
 ### 仕様書・UI要件
-${specText}
+${specUrl ? `仕様書URL: ${specUrl}
+上記URLを読み込んで、この画面に関係するUI要件・表示要素を確認してください。` : ''}${specUrl && specText ? '\n\n補足メモ:\n' : ''}${specText}
 
 ### 実行手順
 1. Notion Edge Case DB（ID: 8bd11da8-e59b-414b-838a-c3e9cbb1ad33）でエッジケースを確認
