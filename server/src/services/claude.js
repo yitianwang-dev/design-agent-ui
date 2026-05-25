@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles } from './figma.js';
+import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchFileComponents } from './figma.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -91,6 +91,16 @@ export async function generateFigmaScript(input) {
     }
   }
 
+  // Fetch Figma component library
+  let componentLibrary = [];
+  if (product.figmaFileKey) {
+    try {
+      componentLibrary = await fetchFileComponents(product.figmaFileKey);
+    } catch (err) {
+      console.error('Component library fetch failed:', err.message);
+    }
+  }
+
   // Fetch style reference images (product-level, always included)
   const styleRefImages = [];
   for (const refUrl of (product.styleRefUrls || []).slice(0, 2)) {
@@ -149,6 +159,8 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 
 ## Figma Plugin JSのルール
 - scaffold を最初に実行し、返り値の contentFrameNodeId の中身だけを設計する
+- **コンポーネントライブラリが提供されている場合は、必ず `figma.importComponentByKeyAsync(key)` を使ってコンポーネントをインポートし、`.createInstance()` でインスタンス化すること**
+- コンポーネントが見つからない場合のみ自前でノードを作成する
 - appendChild後にfillsを設定する
 - グラデーション: type:'GRADIENT_LINEAR', gradientStops, gradientTransform
 - ぼかし効果: effects = [{ type:'LAYER_BLUR', radius:25, visible:true }]
@@ -165,6 +177,11 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 \`\`\`
 SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換えて使うこと。
 `;
+
+  const componentSection = componentLibrary.length > 0
+    ? `\n## 利用可能なFigmaコンポーネント（必ずimportComponentByKeyAsyncで使うこと）\n` +
+      componentLibrary.slice(0, 80).map(c => `- key: "${c.key}" / name: "${c.name}"${c.description ? ` / ${c.description}` : ''}`).join('\n')
+    : '';
 
   const userTextContent = `## リクエスト
 - 画面名: ${screenName}
@@ -184,7 +201,7 @@ ${figmaStyleInfo ? `
 - ノード名: ${figmaStyleInfo.name}
 - 使用カラー: ${figmaStyleInfo.colors.join(', ')}
 - テキスト要素: ${figmaStyleInfo.texts.join(' / ')}
-` : ''}`;
+` : ''}${componentSection}`;
 
   // Build message content
   const contentBlocks = [];

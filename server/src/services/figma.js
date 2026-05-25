@@ -32,6 +32,24 @@ export async function fetchNodeImageAsBase64(fileKey, nodeId) {
   return Buffer.from(buffer).toString('base64');
 }
 
+export async function fetchFileComponents(fileKey) {
+  const token = process.env.FIGMA_API_TOKEN;
+  if (!token) return [];
+
+  const res = await fetch(
+    `${FIGMA_API}/files/${fileKey}/components`,
+    { headers: { 'X-Figma-Token': token } }
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+
+  return (data.meta?.components || []).map(c => ({
+    key: c.key,
+    name: c.name,
+    description: c.description || '',
+  }));
+}
+
 export async function fetchNodeStyles(fileKey, nodeId) {
   const token = process.env.FIGMA_API_TOKEN;
   if (!token) return null;
