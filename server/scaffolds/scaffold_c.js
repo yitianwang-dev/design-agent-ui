@@ -33,6 +33,16 @@
   screen.cornerRadius = CORNER_R;
   screen.clipsContent = true;
   page.appendChild(screen);
+
+  // 既存フレームと重ならないよう右端に配置
+  const siblings = page.children.filter(n => n.id !== screen.id);
+  if (siblings.length > 0) {
+    const maxRight = Math.max(...siblings.map(n => n.x + n.width));
+    screen.x = maxRight + 50;
+  } else {
+    screen.x = 0;
+  }
+  screen.y = 0;
   screen.fills = [{ type: 'SOLID', color: { r: 0, g: 0, b: 0 } }]; // #000000
 
   // 2. Container

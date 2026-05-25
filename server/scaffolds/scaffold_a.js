@@ -40,6 +40,16 @@
   screen.cornerRadius = CORNER_R;
   screen.clipsContent = true;
   page.appendChild(screen);
+
+  // 既存フレームと重ならないよう右端に配置
+  const siblings = page.children.filter(n => n.id !== screen.id);
+  if (siblings.length > 0) {
+    const maxRight = Math.max(...siblings.map(n => n.x + n.width));
+    screen.x = maxRight + 50;
+  } else {
+    screen.x = 0;
+  }
+  screen.y = 0;
   screen.fills = [{ type: 'SOLID', color: { r: 1, g: 254/255, b: 254/255 } }]; // #FFFEFE
 
   // 2. Container (スクロール領域全体を包む、fills なし)
