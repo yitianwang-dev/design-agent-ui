@@ -32,7 +32,11 @@ async function fetchSpecFromUrl(url) {
 export async function generateFigmaScript(input) {
   const { screenName, screenType, selectedTab, specUrl, specText, figmaRefUrl, product } = input;
 
-  const scaffoldCode = await loadScaffold(screenType);
+  const rawScaffold = await loadScaffold(screenType);
+  // Pre-replace placeholders so Claude doesn't have to
+  const scaffoldCode = rawScaffold
+    .replace(/'__SCREEN_NAME__'/g, JSON.stringify(screenName))
+    .replace(/'__SELECTED_TAB__'/g, JSON.stringify(selectedTab || 'Home'));
 
   // Fetch spec URL content
   let specContent = specText || '';
@@ -90,13 +94,21 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 - 絵文字: textNode.characters に直接セット可能
 - 生成するのはJavaScriptコードのみ
 
-## 出力形式
+## 出力形式（このテンプレートを必ず使うこと）
 \`\`\`javascript
 (async function() {
-  // scaffoldの実行
-  // contentFrameへのコンテンツ追加
+  // 1. scaffoldを実行してcontentFrameNodeIdを取得
+  const { contentFrameNodeId } = await (SCAFFOLD_CODE_HERE);
+
+  // 2. contentFrameを取得
+  const contentFrame = figma.getNodeById(contentFrameNodeId);
+
+  // 3. contentFrameにコンテンツを追加（ここだけ設計する）
+  // ...
 })();
 \`\`\`
+
+SCAFFOLD_CODE_HEREの部分には、下記の「Scaffoldコード」全体をそのまま置き換えて使うこと。
 `;
 
   const userTextContent = `## リクエスト
