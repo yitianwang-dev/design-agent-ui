@@ -75,11 +75,12 @@ async function processJob(jobId, input) {
 
     const outputJs = await generateFigmaScript(input);
     const selectedComponents = generateFigmaScript._lastSelectedComponents || [];
-    console.log(`[job ${jobId}] selected:`, JSON.stringify(selectedComponents.map(c => c.name)));
 
+    // Store selected components in input for debug visibility
     await query(
-      `UPDATE jobs SET status = 'pending_plugin', output_js = $1, updated_at = NOW() WHERE id = $2`,
-      [outputJs, jobId]
+      `UPDATE jobs SET status = 'pending_plugin', output_js = $1,
+       input = input || $2::jsonb, updated_at = NOW() WHERE id = $3`,
+      [outputJs, JSON.stringify({ _debug_selected: selectedComponents.map(c => c.name) }), jobId]
     );
   } catch (err) {
     await query(
