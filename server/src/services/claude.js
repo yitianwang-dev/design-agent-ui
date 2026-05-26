@@ -1,7 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
-import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles } from './figma.js';
+import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchComponentSets } from './figma.js';
 import { loadProductSchemas } from './schemas.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -92,8 +92,18 @@ export async function generateFigmaScript(input) {
     }
   }
 
-  // Load component schemas for this product
+  // Load component schemas for this product (usage guidelines)
   const schemaContent = await loadProductSchemas(product.id || 'twomi');
+
+  // Fetch component sets from library (available components catalog)
+  let componentSets = [];
+  if (product.libraryFileKey) {
+    try {
+      componentSets = await fetchComponentSets(product.libraryFileKey);
+    } catch (err) {
+      console.error('Component sets fetch failed:', err.message);
+    }
+  }
 
   // Fetch style reference images (product-level, always included)
   const styleRefImages = [];
@@ -153,9 +163,10 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 
 ## Figma Plugin JSのルール
 - scaffold を最初に実行し、返り値の contentFrameNodeId の中身だけを設計する
-- **コンポーネントスキーマが提供されている場合は、必ずスキーマ内の `library_component_key` を使って `importComponentByKeyAsync` / `importComponentSetByKeyAsync` でインポートし `.createInstance()` でインスタンス化すること**
-- スキーマにないUI要素のみ自前でノードを作成する
-- `importComponentSetByKeyAsync` の場合は返り値の `.defaultVariant` または `.variants` から条件に合うバリアントを選ぶ
+- **コンポーネントカタログが提供されている場合は、必ずカタログのkeyを使って `importComponentSetByKeyAsync` でインポートし `.createInstance()` でインスタンス化すること**
+- **スキーマ（使用ガイドライン）が存在するコンポーネントについては、スキーマのバリアント選択・プロパティ設定・注意点に必ず従うこと**
+- カタログにもスキーマにも存在しないUI要素のみ自前でノードを作成する
+- `importComponentSetByKeyAsync` の返り値の `.defaultVariant` または `.variants` から条件に合うバリアントを選ぶ
 - appendChild後にfillsを設定する
 - グラデーション: type:'GRADIENT_LINEAR', gradientStops, gradientTransform
 - ぼかし効果: effects = [{ type:'LAYER_BLUR', radius:25, visible:true }]
@@ -173,9 +184,15 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換えて使うこと。
 `;
 
-  const componentSection = schemaContent
-    ? `\n## コンポーネントスキーマ（このプロダクトの公式ライブラリ定義）\n以下のスキーマに定義された library_component_key を使って importComponentByKeyAsync / importComponentSetByKeyAsync でコンポーネントをインポートすること。独自ノードを作るのはスキーマにないUI要素のみ。\n\n${schemaContent}`
+  const catalogSection = componentSets.length > 0
+    ? `\n## コンポーネントカタログ（ライブラリで利用可能な全コンポーネントセット）\n以下のkeyを使って importComponentSetByKeyAsync でインポートできる。UIに必要なコンポーネントはまずここから選ぶこと。\n\n${componentSets.map(cs => `- **${cs.name}** (key: \`${cs.key}\`)${cs.description ? `\n  ${cs.description}` : ''}`).join('\n')}`
     : '';
+
+  const schemaSection = schemaContent
+    ? `\n## コンポーネント使用ガイドライン（スキーマ）\n主要コンポーネントの詳細な使用方法・バリアント選択・注意点を定義している。スキーマに記載されたコンポーネントは必ずスキーマの指示に従うこと。\n\n${schemaContent}`
+    : '';
+
+  const componentSection = catalogSection + schemaSection;
 
   const userTextContent = `## リクエスト
 - 画面名: ${screenName}

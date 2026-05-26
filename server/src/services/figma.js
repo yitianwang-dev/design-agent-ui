@@ -32,21 +32,21 @@ export async function fetchNodeImageAsBase64(fileKey, nodeId) {
   return Buffer.from(buffer).toString('base64');
 }
 
-export async function fetchFileComponents(fileKey) {
+export async function fetchComponentSets(fileKey) {
   const token = process.env.FIGMA_API_TOKEN;
   if (!token) return [];
 
   const res = await fetch(
-    `${FIGMA_API}/files/${fileKey}/components`,
+    `${FIGMA_API}/files/${fileKey}/component_sets`,
     { headers: { 'X-Figma-Token': token } }
   );
   if (!res.ok) return [];
   const data = await res.json();
 
-  return (data.meta?.components || []).map(c => ({
-    key: c.key,
-    name: c.name,
-    description: c.description || '',
+  return (data.meta?.component_sets || []).map(cs => ({
+    key: cs.key,
+    name: cs.name,
+    description: cs.description || '',
   }));
 }
 
