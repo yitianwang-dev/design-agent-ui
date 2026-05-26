@@ -288,6 +288,9 @@ ${figmaStyleInfo ? `
 
   const messageContent = contentBlocks.length > 1 ? contentBlocks : userTextContent;
 
+  // Expose selected components for debug logging
+  generateFigmaScript._lastSelectedComponents = selectedComponents;
+
   // Step 4: Generate JS (Opus)
   const message = await client.messages.create({
     model: 'claude-opus-4-7',

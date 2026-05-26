@@ -74,6 +74,8 @@ async function processJob(jobId, input) {
     await query("UPDATE jobs SET status = 'processing', updated_at = NOW() WHERE id = $1", [jobId]);
 
     const outputJs = await generateFigmaScript(input);
+    const selectedComponents = generateFigmaScript._lastSelectedComponents || [];
+    console.log(`[job ${jobId}] selected:`, JSON.stringify(selectedComponents.map(c => c.name)));
 
     await query(
       `UPDATE jobs SET status = 'pending_plugin', output_js = $1, updated_at = NOW() WHERE id = $2`,
