@@ -237,9 +237,9 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換えて使うこと。
 `;
 
-  // Selected components → focused catalog section
+  // Selected components → pre-written import snippet
   const catalogSection = selectedComponents.length > 0
-    ? `\n## 【必須】この画面で使用するライブラリコンポーネント\n以下のコンポーネントは必ず importComponentSetByKeyAsync でインポートして使うこと。\ncreateEllipse / createRectangle / createFrame 等で代替することは絶対に禁止。\n\n${selectedComponents.map(c => `- **${c.name}** → \`await figma.importComponentSetByKeyAsync("${c.key}")\``).join('\n')}`
+    ? `\n## 【必須】ライブラリコンポーネントのインポート（冒頭に必ずこのコードを入れること）\n以下のインポート変数を使ってコンポーネントをインスタンス化すること。createEllipse / createRectangle 等で代替することは禁止。\n\n\`\`\`javascript\n// Library component imports — DO NOT REMOVE\n${selectedComponents.map(c => `const _set_${c.name.replace(/[^a-zA-Z0-9]/g, '_')} = await figma.importComponentSetByKeyAsync("${c.key}"); // ${c.name}`).join('\n')}\n\`\`\``
     : '';
 
   // Matched schemas → focused guidelines section
