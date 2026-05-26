@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'fs/promises';
 import { resolve } from 'path';
 import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchComponentSets } from './figma.js';
-import { loadProductSchemas } from './schemas.js';
+import { loadSchemasForComponents } from './schemas.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
@@ -28,6 +28,51 @@ async function fetchSpecFromUrl(url) {
   if (!res.ok) throw new Error(`URL の取得に失敗しました (${res.status})`);
   const text = await res.text();
   return text.slice(0, 12000);
+}
+
+async function selectComponents(specContent, screenType, screenName, componentSets) {
+  if (!componentSets.length) return [];
+
+  const catalogText = componentSets
+    .map(cs => `- ${cs.name} (key: ${cs.key})${cs.description ? ': ' + cs.description.slice(0, 80) : ''}`)
+    .join('\n');
+
+  const prompt = `以下の画面仕様をもとに、contentFrameの実装に必要なFigmaコンポーネントをカタログから選んでください。
+
+## 画面情報
+- 画面名: ${screenName}
+- 画面タイプ: ${screenType}
+- 仕様:
+${specContent.slice(0, 3000)}
+
+## コンポーネントカタログ
+${catalogText}
+
+## 注意
+- scaffoldが自動追加するHeader・BottomNav・NavigationLiquidは除外する
+- contentFrame内のコンテンツに必要なものだけ選ぶ
+- 確実に使うものだけ選ぶ（不確かなものは除外）
+
+以下のJSON配列形式のみで返してください（説明不要）:
+[{"name": "コンポーネント名", "key": "key文字列"}, ...]`;
+
+  const message = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const text = message.content[0].text.trim();
+  try {
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    if (!jsonMatch) return [];
+    const selected = JSON.parse(jsonMatch[0]);
+    console.log('[selectComponents]', selected.map(c => c.name).join(', '));
+    return selected;
+  } catch {
+    console.error('[selectComponents] parse failed:', text.slice(0, 200));
+    return [];
+  }
 }
 
 async function reviewAndFixScript(code, screenType) {
@@ -92,18 +137,26 @@ export async function generateFigmaScript(input) {
     }
   }
 
-  // Load component schemas for this product (usage guidelines)
-  const schemaContent = await loadProductSchemas(product.id || 'twomi');
-
-  // Fetch component sets from library (available components catalog)
+  // Step 1: Fetch component catalog from library
   let componentSets = [];
   if (product.libraryFileKey) {
     try {
       componentSets = await fetchComponentSets(product.libraryFileKey);
+      console.log(`[catalog] ${componentSets.length} component sets loaded`);
     } catch (err) {
       console.error('Component sets fetch failed:', err.message);
     }
   }
+
+  // Step 2: Select relevant components for this screen (Haiku)
+  const selectedComponents = await selectComponents(specContent, screenType, screenName, componentSets);
+
+  // Step 3: Load schema guidelines for selected components only
+  const schemaContent = await loadSchemasForComponents(
+    product.id || 'twomi',
+    selectedComponents.map(c => c.name)
+  );
+  console.log(`[schemas] ${schemaContent ? schemaContent.split('###').length - 1 : 0} schema(s) matched`);
 
   // Fetch style reference images (product-level, always included)
   const styleRefImages = [];
@@ -184,12 +237,14 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換えて使うこと。
 `;
 
-  const catalogSection = componentSets.length > 0
-    ? `\n## コンポーネントカタログ（ライブラリで利用可能な全コンポーネントセット）\n以下のkeyを使って importComponentSetByKeyAsync でインポートできる。UIに必要なコンポーネントはまずここから選ぶこと。\n\n${componentSets.map(cs => `- **${cs.name}** (key: \`${cs.key}\`)${cs.description ? `\n  ${cs.description}` : ''}`).join('\n')}`
+  // Selected components → focused catalog section
+  const catalogSection = selectedComponents.length > 0
+    ? `\n## この画面で使用するコンポーネント（importComponentSetByKeyAsync でインポートすること）\n${selectedComponents.map(c => `- **${c.name}** (key: \`${c.key}\`)`).join('\n')}`
     : '';
 
+  // Matched schemas → focused guidelines section
   const schemaSection = schemaContent
-    ? `\n## コンポーネント使用ガイドライン（スキーマ）\n主要コンポーネントの詳細な使用方法・バリアント選択・注意点を定義している。スキーマに記載されたコンポーネントは必ずスキーマの指示に従うこと。\n\n${schemaContent}`
+    ? `\n## コンポーネント使用ガイドライン（スキーマ）\n以下のスキーマに従ってバリアント選択・プロパティ設定・注意点を守ること。\n\n${schemaContent}`
     : '';
 
   const componentSection = catalogSection + schemaSection;
@@ -233,7 +288,7 @@ ${figmaStyleInfo ? `
 
   const messageContent = contentBlocks.length > 1 ? contentBlocks : userTextContent;
 
-  // Step 1: Generate
+  // Step 4: Generate JS (Opus)
   const message = await client.messages.create({
     model: 'claude-opus-4-7',
     max_tokens: 8192,
@@ -251,7 +306,7 @@ ${figmaStyleInfo ? `
 
   const rawCode = match[1].trim();
 
-  // Step 2: Review & fix with Haiku
+  // Step 5: Review & fix (Haiku)
   const reviewedCode = await reviewAndFixScript(rawCode, screenType);
 
   return reviewedCode;
