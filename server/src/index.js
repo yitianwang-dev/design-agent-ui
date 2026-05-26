@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 
-app.get('/health', (_, res) => res.json({ ok: true }));
+app.get('/health', (_, res) => res.json({ ok: true, version: 'v2-workflow' }));
 app.use('/jobs', jobsRouter);
 
 app.use((err, req, res, next) => {
