@@ -239,7 +239,7 @@ SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換え
 
   // Selected components → focused catalog section
   const catalogSection = selectedComponents.length > 0
-    ? `\n## この画面で使用するコンポーネント（importComponentSetByKeyAsync でインポートすること）\n${selectedComponents.map(c => `- **${c.name}** (key: \`${c.key}\`)`).join('\n')}`
+    ? `\n## 【必須】この画面で使用するライブラリコンポーネント\n以下のコンポーネントは必ず importComponentSetByKeyAsync でインポートして使うこと。\ncreateEllipse / createRectangle / createFrame 等で代替することは絶対に禁止。\n\n${selectedComponents.map(c => `- **${c.name}** → \`await figma.importComponentSetByKeyAsync("${c.key}")\``).join('\n')}`
     : '';
 
   // Matched schemas → focused guidelines section
