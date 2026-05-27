@@ -23,6 +23,8 @@
 
 meta:
   name: AvatarIcon ExclusiveContentLabel
+  figma_catalog_name: "AvatarIcon ExclusiveContentLabel"  # exact name in Library - Guideline
+  library_component_key: "b35ec663d2dcb1c854c76b8ffce24dd355cf8964"  # COMPONENT_SET
   library_source:
     file_key: CPe64VQc7petbZawTE6J8o
     component_set_node_id: "b35ec663d2dcb1c854c76b8ffce24dd355cf8964"

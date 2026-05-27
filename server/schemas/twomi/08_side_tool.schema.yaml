@@ -22,6 +22,8 @@
 
 meta:
   name: SideTool
+  figma_catalog_name: "SideTool"  # exact name in Library - Guideline
+  library_component_key: "4d253cf55095f9578e71a34a6ddedc40586ac5b8"  # COMPONENT_SET
   library_source:
     file_key: CPe64VQc7petbZawTE6J8o
     component_set_node_id: "4d253cf55095f9578e71a34a6ddedc40586ac5b8"

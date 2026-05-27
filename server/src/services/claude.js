@@ -1,12 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { readFile } from 'fs/promises';
-import { resolve } from 'path';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchComponentSets } from './figma.js';
 import { loadSchemasForComponents } from './schemas.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SCAFFOLD_DIR = process.env.SCAFFOLD_DIR || '/outputs/figma-design-automation/scaffolds';
+// Hori fix (2026-05-27): make SCAFFOLD_DIR relative to this file (__dirname-based)
+// so the path resolves correctly on Railway (where /outputs/figma-design-automation/
+// doesn't exist) and on any machine cloning the repo.
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const SCAFFOLD_DIR = process.env.SCAFFOLD_DIR || resolve(__dirname, '../../scaffolds');
 
 async function loadScaffold(type) {
   const file = resolve(SCAFFOLD_DIR, `scaffold_${type.toLowerCase()}.js`);
@@ -216,10 +222,10 @@ Twomiというアプリのスクリーンを、仕様書と参照デザインに
 
 ## Figma Plugin JSのルール
 - scaffold を最初に実行し、返り値の contentFrameNodeId の中身だけを設計する
-- **コンポーネントカタログが提供されている場合は、必ずカタログのkeyを使って `importComponentSetByKeyAsync` でインポートし `.createInstance()` でインスタンス化すること**
+- **コンポーネントカタログが提供されている場合は、必ずカタログのkeyを使って \`importComponentSetByKeyAsync\` でインポートし \`.createInstance()\` でインスタンス化すること**
 - **スキーマ（使用ガイドライン）が存在するコンポーネントについては、スキーマのバリアント選択・プロパティ設定・注意点に必ず従うこと**
 - カタログにもスキーマにも存在しないUI要素のみ自前でノードを作成する
-- `importComponentSetByKeyAsync` の返り値の `.defaultVariant` または `.variants` から条件に合うバリアントを選ぶ
+- \`importComponentSetByKeyAsync\` の返り値の \`.defaultVariant\` または \`.variants\` から条件に合うバリアントを選ぶ
 - appendChild後にfillsを設定する
 - グラデーション: type:'GRADIENT_LINEAR', gradientStops, gradientTransform
 - ぼかし効果: effects = [{ type:'LAYER_BLUR', radius:25, visible:true }]

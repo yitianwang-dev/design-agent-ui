@@ -27,6 +27,35 @@
 
 meta:
   name: Avatar icon
+  figma_catalog_name: "Avatar icon"  # exact name in Library - Guideline
+  library_component_key: "cdd946a03ddc4f89c12cc5e597bfd8af63311f8a"  # COMPONENT_SET (16 variants, updated 2026-05-22)
+  related_library_components:
+    - figma_catalog_name: "EntryAvatarIcon"
+      library_component_key: "934a01db960bef0fd2384613486ad5c185d6c77c"
+      asset_type: COMPONENT
+      updated_at: "2026-05-22"
+      note: |
+        Avatar entry tile used in LiveStream entry / list-row contexts —
+        wraps Avatar icon inside an entry-card frame. Use this (not raw
+        Avatar icon) when building LiveStream entry rows or list rows
+        that show "tap to enter avatar".
+    - figma_catalog_name: "Avatar Pickup Button"
+      library_component_key: "4f104db5b6ef71c206f8b0aaa631fc2b6c64561b"
+      asset_type: COMPONENT_SET
+      updated_at: "2026-05-22"
+      note: |
+        Pickup / favorite button overlaid on Avatar icon. Use this
+        component when building avatar tiles that include the heart /
+        pickup action overlay, rather than building Avatar icon + a
+        separate heart icon manually.
+  usage_directive: |
+    ⚠️ ALWAYS use this library component for any TWOMI AVATAR thumbnail
+    (AI avatar, not a real user). Never use figma.createEllipse() or
+    figma.createRectangle() with image fill — that bypasses the design
+    system and the rounded-rectangle clip + white inner stroke + backdrop
+    blur will be missing. If unsure whether it's a user or a Twomi avatar,
+    default to Avatar icon for Twomi avatars and User icon (schema 11)
+    for human accounts.
   library_source:
     file_key: CPe64VQc7petbZawTE6J8o
     component_set_node_id: "cdd946a03ddc4f89c12cc5e597bfd8af63311f8a"
@@ -39,6 +68,7 @@ meta:
     surfaces. MembershipLabel boolean property toggles a tier badge overlay
     (hidden by default — schema currently skips it).
   screen_usage:
+    # — Existing surfaces by size —
     - LiveStream entry list (18x18)
     - Notifications list (20x20)
     - Search results small (32x32)
@@ -46,6 +76,17 @@ meta:
     - Carousel cards (64x64)
     - Profile feature (100x100)
     - Search large hero (116x119)
+    # — Feed / Lists / Cards (added 2026-05-26) —
+    - Feed post cards — avatar associated with each post (48x48 or 64x64)
+    - Home discover carousel — each avatar tile (64x64 or 100x100)
+    - Avatar list views (browse / search / category) — each row tile (48x48)
+    - Pickup / Featured avatar widgets — hero tile (100x100 or 116x119)
+    - Avatar reply / thread author thumbnail (32x32 typical)
+    - Chat / call screens — counterparty avatar thumbnail (48x48)
+    - Studio / Creator dashboard — owned avatar thumbnail (64x64)
+    - ANY place a Twomi avatar thumbnail appears in feeds, lists, cards,
+      popovers, or carousels — use this component, NOT createEllipse or
+      createRectangle with image fill
   dependencies:
     - Library sample avatar image hash (aaa2a2f75a40bf24dbd5d2c340a01183c723a1fd)
     - AvatarIcon ExclusiveContentLabel (only when MembershipLabel=true; currently skipped)
@@ -62,6 +103,23 @@ meta:
 
 components:
   - id: Avatar icon
+    # ⚠️ LIBRARY SUBSCRIPTION REQUIRED (2026-05-26) ⚠️
+    # import_mode: library_set calls importComponentSetByKeyAsync which is
+    # CONDITIONAL on the target file's Library subscription state:
+    #   • File subscribed to Library  → returns remote: true (live ref, safe)
+    #   • File NOT subscribed         → LOCAL COPY (Library link severed,
+    #                                    dangerous: anything built on the
+    #                                    local copy will need to be rebuilt
+    #                                    from scratch once you switch over)
+    # The runtime auto-detects the local-copy case via imp.remote and force-
+    # renames with _TEST_LOCAL_COPY_DO_NOT_USE suffix. NEVER run this schema
+    # in a production file without confirming the file subscribes to:
+    #   Twomi Master Library (file_key: CPe64VQc7petbZawTE6J8o)
+    requires_library_subscription:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      reason: "library_set import returns local copy if file is not subscribed"
+    import_mode: library_set
+    library_component_set_key: "cdd946a03ddc4f89c12cc5e597bfd8af63311f8a"
     variants:
       combinations:
         - { Context: "18x18 LiveStream",    State: Active  }
