@@ -27,15 +27,40 @@
 
 meta:
   name: Alert (iOS 26 Liquid Glass)
+  figma_catalog_name: "Overlay - Alerts"  # exact name in Library - Guideline (note: differs from schema name)
+  library_component_key: "66bd5a7fb0912c0439a331c40c14a092dbd45c44"  # COMPONENT (single, not COMPONENT_SET)
+  library_component_type: COMPONENT  # importable via importComponentByKeyAsync (not importComponentSetByKeyAsync)
+  related_library_components:
+    - figma_catalog_name: "Danger Triangle"
+      library_component_key: "a7045deb894296c8a49c25cc68fe1bb515e9bfd1"
+      asset_type: COMPONENT_SET
+      updated_at: "2026-04-06"
+      note: |
+        Danger / warning triangle icon used inside Alert body and ErrorBar
+        for destructive or critical-state messaging. Prefer this over an
+        inline SVG when an alert needs an icon.
+    - figma_catalog_name: "ErrorBar"
+      library_component_key: "ff9e219b001b7546927b4e616ec19d6426d2d558"
+      asset_type: COMPONENT_SET
+      updated_at: "2026-05-20"
+      note: |
+        Top-of-screen error / connection-lost notification bar (related
+        Alert-family overlay). Used in current scaffold screens above
+        the header. Has its own variants by Language × Type × Mode —
+        prefer this Library component over building a custom error
+        toast. Worth considering a dedicated schema file if usage grows.
   library_source:
     file_key: CPe64VQc7petbZawTE6J8o
     instance_node_id: "974:5211"
     note: |
-      Source is an INSTANCE inside Library's ❖Components page, not a
-      publishable ComponentSet — Apple's iOS Alert ComponentSet
+      Catalog provides a single COMPONENT "Overlay - Alerts"
+      (key 66bd5a7f...) — this is Twomi's Library-published wrapper around
+      Apple's iOS Alert. Apple's underlying iOS Alert ComponentSet
       (lk-a5b98dec..., key fa462a8e... / 372784... / 9b424549...) is
-      blocked from importComponentSetByKeyAsync. Schema rebuilds from
-      Library's existing instance + Apple HIG public spec.
+      blocked from importComponentSetByKeyAsync, but the Twomi wrapper
+      COMPONENT IS importable via importComponentByKeyAsync. Schema
+      rebuilds from Library's existing instance + Apple HIG public spec
+      for cases where direct import isn't desired.
   description: |
     System-style modal alert dialog. White-ish frosted card (Liquid Glass),
     300 wide, with a title, optional description, optional 2 text fields,

@@ -20,6 +20,27 @@
 
 meta:
   name: User icon
+  figma_catalog_name: "User icon"  # exact name in Library - Guideline
+  library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"  # COMPONENT_SET (18 variants, updated 2026-05-22)
+  related_library_components:
+    - figma_catalog_name: "User icon"
+      library_component_key: "611959310a1b3db364bc42e9c2d297d3a8d3497a"
+      asset_type: COMPONENT  # single COMPONENT (not a set) — separate Library entry under same name
+      updated_at: "2026-02-09"
+      note: |
+        Library has a SECOND entry also named "User icon" — a single
+        COMPONENT (not the 18-variant set). Likely a legacy or single-
+        variant publish. Use the COMPONENT_SET above for new work;
+        record this key so Claude can recognize an instance pointing
+        at it as still belonging to the User icon family.
+  usage_directive: |
+    ⚠️ ALWAYS use this library component for any USER thumbnail (real human
+    user, NOT a Twomi avatar). Never use figma.createEllipse() or
+    figma.createRectangle() with image fill for a user avatar — that
+    bypasses the design system and the Self / Other gradient ring will be
+    missing. If unsure whether it's a user or a Twomi avatar, default to
+    User icon for human accounts and Avatar icon (schema 12) for Twomi
+    avatars.
   library_source:
     file_key: CPe64VQc7petbZawTE6J8o
     component_set_node_id: "51faaa59eccc1fd112e9f7c88100c2077004e974"
@@ -31,11 +52,22 @@ meta:
     face for placeholder / unset avatars. State (size context) controls
     dimensions, stroke weight, padding.
   screen_usage:
+    # — Navigation / Profile / Comments —
     - bottomNavi tab (24x24, Self for current user)
     - Profile screen header (Profile = 64x64)
-    - Comments (40x40)
+    - Comments — each comment row's author thumbnail (40x40)
     - MiddleSearch results (32x32)
     - Compact lists (Minimum = 20x20)
+    # — Feed / Lists / Cards (added 2026-05-26) —
+    - Feed post cards — post author thumbnail (Comments=40x40 typical)
+    - Feed post cards — comment / reply author thumbnail (32x32 or 24x24)
+    - Notification list rows — sender avatar (40x40)
+    - Follower / Following lists — each row (40x40)
+    - Suggested users carousel — each tile (40x40 or 64x64)
+    - Reaction / Like-list popovers — each user thumbnail (24x24 or 20x20)
+    - DM / chat thread list — counterparty user thumbnail (40x40)
+    - ANY place a real-user thumbnail appears in feeds, lists, cards,
+      popovers, or carousels — use this component, NOT createEllipse
   dependencies:
     - Library image hashes for Self / Other avatar samples
       (4320744b... Self, 3f65a5de... Other)
@@ -50,6 +82,23 @@ meta:
 
 components:
   - id: User icon
+    # ⚠️ LIBRARY SUBSCRIPTION REQUIRED (2026-05-26) ⚠️
+    # import_mode: library_set calls importComponentSetByKeyAsync which is
+    # CONDITIONAL on the target file's Library subscription state:
+    #   • File subscribed to Library  → returns remote: true (live ref, safe)
+    #   • File NOT subscribed         → LOCAL COPY (Library link severed,
+    #                                    dangerous: anything built on the
+    #                                    local copy will need to be rebuilt
+    #                                    from scratch once you switch over)
+    # The runtime auto-detects the local-copy case via imp.remote and force-
+    # renames with _TEST_LOCAL_COPY_DO_NOT_USE suffix. NEVER run this schema
+    # in a production file without confirming the file subscribes to:
+    #   Twomi Master Library (file_key: CPe64VQc7petbZawTE6J8o)
+    requires_library_subscription:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      reason: "library_set import returns local copy if file is not subscribed"
+    import_mode: library_set
+    library_component_set_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
     variants:
       combinations:
         - { State: Profile,      type: Self    }
