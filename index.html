@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -519,8 +519,8 @@
     Design Agent
   </div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showPage('request')">リクエスト</button>
-    <button class="nav-tab" onclick="showPage('settings')">プロダクト設定</button>
+    <button class="nav-tab active" onclick="showPage('request')">Request</button>
+    <button class="nav-tab" onclick="showPage('settings')">Product Settings</button>
   </div>
 </nav>
 
@@ -529,86 +529,86 @@
 ══════════════════════════════════════════ -->
 <div id="page-request" class="page active">
   <div class="container">
-    <div class="page-title">デザイン生成リクエスト</div>
-    <div class="page-desc">必要な情報を入力してプロンプトを生成します</div>
+    <div class="page-title">Design Generation Request</div>
+    <div class="page-desc">Fill in the details below to submit a design generation request</div>
 
-    <!-- 0. ユーザーID -->
+    <!-- 0. User ID -->
     <div class="section">
       <div class="section-header">
         <div class="section-num" style="background:var(--gray-400)">✉</div>
-        <div class="section-title">あなたのメールアドレス</div>
+        <div class="section-title">Your Email Address</div>
       </div>
       <div class="field">
         <input type="email" id="user-id" placeholder="you@example.com" oninput="saveUserId()">
-        <div class="input-hint">Figmaプラグインと紐づけるために使います。Figmaプラグイン側にも同じアドレスを入力してください</div>
+        <div class="input-hint">Used to link with the Figma plugin. Enter the same address in the Figma plugin.</div>
       </div>
     </div>
 
-    <!-- 1. プロダクト -->
+    <!-- 1. Product -->
     <div class="section">
       <div class="section-header">
         <div class="section-num">1</div>
-        <div class="section-title">プロダクト</div>
+        <div class="section-title">Product</div>
       </div>
       <div class="field">
-        <label>プロダクトを選択</label>
+        <label>Select a product</label>
         <select id="product-select" onchange="onProductChange()">
-          <option value="">-- 選択してください --</option>
+          <option value="">-- Select --</option>
         </select>
-        <div class="input-hint">設定は「プロダクト設定」タブで登録できます</div>
+        <div class="input-hint">Products can be configured in the "Product Settings" tab</div>
       </div>
     </div>
 
-    <!-- 2. 画面名 -->
+    <!-- 2. Screen Name -->
     <div class="section">
       <div class="section-header">
         <div class="section-num">2</div>
-        <div class="section-title">画面名</div>
+        <div class="section-title">Screen Name</div>
       </div>
       <div class="field">
-        <label>スクリーン名 <span style="color:var(--error)">*</span></label>
-        <input type="text" id="screen-name" placeholder="例: packageSelect" oninput="validateScreenName()">
-        <div class="input-hint">英語・camelCase（単語をつなげて先頭小文字）で入力。例: <code>homeFeed</code> / <code>settingsTop</code> / <code>packageSelect</code></div>
+        <label>Screen name <span style="color:var(--error)">*</span></label>
+        <input type="text" id="screen-name" placeholder="e.g. packageSelect" oninput="validateScreenName()">
+        <div class="input-hint">camelCase, starting with a lowercase letter. e.g. <code>homeFeed</code> / <code>settingsTop</code> / <code>packageSelect</code></div>
       </div>
     </div>
 
-    <!-- 3. 画面タイプ -->
+    <!-- 3. Screen Type -->
     <div class="section">
       <div class="section-header">
         <div class="section-num">3</div>
-        <div class="section-title">画面の基本構造</div>
+        <div class="section-title">Screen Type</div>
       </div>
       <div class="type-cards">
         <div class="type-card" onclick="selectType('A')" id="type-A">
           <div class="check"></div>
           <div class="type-card-badge">A</div>
-          <div class="type-card-title">Header + スクロール</div>
-          <div class="type-card-desc">白背景・上部ヘッダーあり<br>下部ナビバーあり（ライト）</div>
-          <div class="type-card-examples">例: 設定、プロフィール、購入画面</div>
+          <div class="type-card-title">Header + Scroll</div>
+          <div class="type-card-desc">White background, top header<br>Bottom nav bar (light)</div>
+          <div class="type-card-examples">e.g. Settings, Profile, Purchase</div>
         </div>
         <div class="type-card" onclick="selectType('B')" id="type-B">
           <div class="check"></div>
           <div class="type-card-badge">B</div>
-          <div class="type-card-title">フルスクリーン</div>
-          <div class="type-card-desc">黒背景・動画背景型<br>下部ナビバーあり（ダーク）</div>
-          <div class="type-card-examples">例: ホームTL、有料コンテンツカード</div>
+          <div class="type-card-title">Full Screen</div>
+          <div class="type-card-desc">Black background, video backdrop<br>Bottom nav bar (dark)</div>
+          <div class="type-card-examples">e.g. Home Feed, Paid Content Card</div>
         </div>
         <div class="type-card" onclick="selectType('C')" id="type-C">
           <div class="check"></div>
           <div class="type-card-badge">C</div>
-          <div class="type-card-title">タブ切り替え型</div>
-          <div class="type-card-desc">下部ナビバーなし<br>画面内タブで切り替え</div>
-          <div class="type-card-examples">例: アバタープロフィール（自分）</div>
+          <div class="type-card-title">Tab Navigation</div>
+          <div class="type-card-desc">No bottom nav bar<br>In-screen tab navigation</div>
+          <div class="type-card-examples">e.g. Avatar Profile (self)</div>
         </div>
       </div>
     </div>
 
-    <!-- 4. 選択タブ（A/Bのみ） -->
+    <!-- 4. Active Tab (A/B only) -->
     <div class="section" id="tab-section">
       <div class="section-header">
         <div class="section-num">4</div>
-        <div class="section-title">アクティブタブ</div>
-        <div class="section-hint">この画面を開いたとき、下部ナビのどのタブが選択されているか</div>
+        <div class="section-title">Active Tab</div>
+        <div class="section-hint">Which bottom nav tab is active when this screen opens</div>
       </div>
       <div class="tab-pills">
         <div class="tab-pill" onclick="selectTab('Home')" id="tab-Home">Home</div>
@@ -619,39 +619,39 @@
       </div>
     </div>
 
-    <!-- 5. 仕様書 -->
+    <!-- 5. Spec -->
     <div class="section">
       <div class="section-header">
         <div class="section-num">5</div>
-        <div class="section-title">仕様書・UI要件</div>
+        <div class="section-title">Spec / UI Requirements</div>
       </div>
       <div class="field">
-        <label>仕様書の URL（Google Docs / Notion など）</label>
-        <input type="text" id="spec-url" placeholder="https://docs.google.com/document/d/... または Notion URL">
-        <div class="input-hint">URLを貼ると、Design Agent が自動で読み込みます</div>
+        <label>Spec URL (Google Docs, Notion, etc.)</label>
+        <input type="text" id="spec-url" placeholder="https://docs.google.com/document/d/... or Notion URL">
+        <div class="input-hint">Paste a URL and Design Agent will fetch the content automatically</div>
       </div>
-      <div class="or-divider">または</div>
+      <div class="or-divider">or</div>
       <div class="field">
-        <label>仕様書の内容を直接貼り付け</label>
-        <textarea id="spec-text" rows="8" placeholder="仕様書からこの画面に関係する箇所をコピーしてください。
-UIの専用セクションがなくても、画面の要素が書かれていれば大丈夫です。
+        <label>Paste spec content directly</label>
+        <textarea id="spec-text" rows="8" placeholder="Paste the relevant section of your spec for this screen.
+No dedicated UI section needed — bullet points describing elements work fine.
 
-例:
-- 背景: 暗転（背後で動画再生、黒オーバーレイ）
-- 上部: クリエイター情報（アイコン + 名前）+ フォローボタン（右）
-- 左上: 「人気！」バッジ
-- 中央: 🔐 絵文字 + 「{クリエイター名}さんの限定コンテンツをチェックしよう！」テキスト
-- 下部: アバター名 + エンゲージメント（保存数・シェア）"></textarea>
-        <div class="input-hint">URLがない場合は、表示要素を箇条書きで書いてもOKです</div>
+Example:
+- Background: dimmed (video playing behind, black overlay)
+- Top: creator info (icon + name) + Follow button (right)
+- Top-left: &quot;Popular!&quot; badge
+- Center: 🔐 emoji + &quot;{creator name}'s exclusive content — check it out!&quot; text
+- Bottom: avatar name + engagement (saves, shares)"></textarea>
+        <div class="input-hint">No URL? A bullet-point list of UI elements works too.</div>
       </div>
       <div class="field">
-        <label>参照する既存デザインの Figma URL（任意・推奨）</label>
+        <label>Reference Figma URL (optional, recommended)</label>
         <input type="text" id="figma-ref-url" placeholder="https://www.figma.com/design/XXXXX/...?node-id=49670-4476">
-        <div class="input-hint">Figmaで参照したいフレームを選択してURLをコピー＆ペースト。あると精度が大幅に上がります</div>
+        <div class="input-hint">Select the frame in Figma and paste its URL. Significantly improves output quality.</div>
       </div>
     </div>
 
-    <button class="generate-btn" id="submit-btn" onclick="submitJob()">デザインを生成</button>
+    <button class="generate-btn" id="submit-btn" onclick="submitJob()">Generate Design</button>
 
     <!-- JOB STATUS -->
     <div class="job-status" id="job-status">
@@ -662,7 +662,7 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
           <div class="job-status-desc" id="job-status-desc"></div>
         </div>
       </div>
-      <a id="figma-link" class="job-figma-link" href="#" target="_blank" style="display:none">Figmaで確認 →</a>
+      <a id="figma-link" class="job-figma-link" href="#" target="_blank" style="display:none">Open in Figma →</a>
     </div>
   </div>
 </div>
@@ -672,11 +672,11 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
 ══════════════════════════════════════════ -->
 <div id="page-settings" class="page">
   <div class="container">
-    <div class="page-title">プロダクト設定</div>
-    <div class="page-desc">プロダクトごとに Figma ファイルやライブラリを登録します</div>
+    <div class="page-title">Product Settings</div>
+    <div class="page-desc">Register Figma files and libraries for each product</div>
 
     <div id="products-list" class="products-list"></div>
-    <button class="btn-add" onclick="openModal()">＋ プロダクトを追加</button>
+    <button class="btn-add" onclick="openModal()">+ Add Product</button>
   </div>
 </div>
 
@@ -685,66 +685,66 @@ UIの専用セクションがなくても、画面の要素が書かれていれ
 ══════════════════════════════════════════ -->
 <div class="modal-overlay" id="modal-overlay" onclick="closeModalOutside(event)">
   <div class="modal">
-    <div class="modal-title" id="modal-title">プロダクトを追加</div>
+    <div class="modal-title" id="modal-title">Add Product</div>
 
     <div class="field">
-      <label>プロダクト名 <span style="color:var(--error)">*</span></label>
-      <input type="text" id="m-name" placeholder="例: Twomi">
+      <label>Product Name <span style="color:var(--error)">*</span></label>
+      <input type="text" id="m-name" placeholder="e.g. Twomi">
     </div>
 
     <div class="fieldset-title">Figma</div>
     <div class="field">
-      <label>作業ファイル URL（または fileKey）<span style="color:var(--error)">*</span></label>
+      <label>Working File URL (or fileKey) <span style="color:var(--error)">*</span></label>
       <input type="text" id="m-figma-url" placeholder="https://www.figma.com/design/XXXXXX/..." oninput="extractFileKey()">
       <div class="input-hint" id="m-filekey-hint"></div>
     </div>
     <div class="field">
-      <label>ライブラリ / マスターファイル URL <span style="color:var(--error)">*</span></label>
+      <label>Library / Master File URL <span style="color:var(--error)">*</span></label>
       <input type="text" id="m-library-url" placeholder="https://www.figma.com/design/XXXXXX/Twomi-Master..." oninput="extractLibraryKey()">
       <div class="input-hint" id="m-library-key-hint"></div>
-      <div class="input-hint">コンポーネントを取得するマスターファイル。プロダクト選択時にここからライブラリを引っ張ります</div>
+      <div class="input-hint">The master file to pull components from. Used when a product is selected.</div>
     </div>
     <div class="field">
-      <label>対象ページ名</label>
-      <input type="text" id="m-page" placeholder="例: Page 1">
+      <label>Target Page Name</label>
+      <input type="text" id="m-page" placeholder="e.g. Page 1">
     </div>
     <div class="field">
-      <label>ライブラリ名</label>
-      <input type="text" id="m-library-name" placeholder="例: Library - Guideline">
+      <label>Library Name</label>
+      <input type="text" id="m-library-name" placeholder="e.g. Library - Guideline">
     </div>
 
     <div class="field">
-      <label>スキーマフォルダ ID（Google Drive）</label>
+      <label>Schema Folder ID (Google Drive)</label>
       <input type="text" id="m-schema-folder" placeholder="1WvUBAX5BSePTC25IczQfW0gk-F6MO3UQ">
-      <div class="input-hint">WangくんのスキーマYAMLが入ったGDriveフォルダID。コンポーネントキーのルールブックとして参照されます</div>
+      <div class="input-hint">Google Drive folder ID containing schema YAMLs. Used as the component usage rulebook.</div>
     </div>
 
-    <div class="fieldset-title">スタイル参照（毎回の生成に使うビジュアルトーンの基準）</div>
+    <div class="fieldset-title">Style Reference (visual tone baseline for every generation)</div>
     <div class="field">
-      <label>スタイル参照 URL 1</label>
+      <label>Style Reference URL 1</label>
       <input type="text" id="m-style-ref-1" placeholder="https://www.figma.com/design/XXXXX/...?node-id=49670-4476">
-      <div class="input-hint">このアプリらしい既存画面のURL。生成のたびに「このトーンに合わせろ」として渡します</div>
+      <div class="input-hint">URL of an existing screen that captures this app's visual tone. Passed as "match this style" on every generation.</div>
     </div>
     <div class="field">
-      <label>スタイル参照 URL 2（任意）</label>
+      <label>Style Reference URL 2 (optional)</label>
       <input type="text" id="m-style-ref-2" placeholder="https://www.figma.com/design/XXXXX/...?node-id=...">
     </div>
 
-    <div class="fieldset-title">コンポーネントキー（省略時はデフォルト値を使用）</div>
+    <div class="fieldset-title">Component Keys (defaults used if omitted)</div>
     <div class="field">
-      <label>ヘッダーコンポーネントキー</label>
+      <label>Header Component Key</label>
       <input type="text" id="m-header-key" placeholder="7ba6d4a58a3530c3b4102c5b883dce105e0c8f14">
-      <div class="input-hint">FigmaライブラリのHeaderコンポーネントキー。省略するとデフォルトを使用</div>
+      <div class="input-hint">Header component key in the Figma library. Uses default if left blank.</div>
     </div>
     <div class="field">
-      <label>ナビゲーションバーコンポーネントキー</label>
+      <label>Navigation Bar Component Key</label>
       <input type="text" id="m-nav-key" placeholder="250f4ab25c2aa2c1eced9b44b7c13056301ce6b7">
-      <div class="input-hint">Figmaライブラリのナビゲーションバーコンポーネントキー。省略するとデフォルトを使用</div>
+      <div class="input-hint">Navigation bar component key in the Figma library. Uses default if left blank.</div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeModal()">キャンセル</button>
-      <button class="btn-primary" onclick="saveProduct()">保存</button>
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveProduct()">Save</button>
     </div>
   </div>
 </div>
@@ -783,7 +783,7 @@ function showPage(name) {
 function populateProductSelect() {
   const sel = document.getElementById('product-select');
   const products = getProducts();
-  sel.innerHTML = '<option value="">-- 選択してください --</option>';
+  sel.innerHTML = '<option value="">-- Select --</option>';
   products.forEach(p => {
     const opt = document.createElement('option');
     opt.value = p.id;
@@ -835,17 +835,17 @@ async function submitJob() {
   const specText = document.getElementById('spec-text').value.trim();
   const figmaRefUrl = document.getElementById('figma-ref-url').value.trim();
 
-  if (!userId) { alert('メールアドレスを入力してください'); return; }
-  if (!screenName) { alert('画面名を入力してください'); return; }
-  if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('画面名の形式が正しくありません。\n\n英語の単語をつなげて、先頭は小文字にしてください。\n例: packageSelect / homeFeed / settingsTop\n\nスペース・記号・日本語は使えません'); return; }
-  if (!selectedType) { alert('画面の基本構造を選択してください'); return; }
-  if (!specUrl && !specText) { alert('仕様書のURLか、内容を入力してください'); return; }
+  if (!userId) { alert('Please enter your email address'); return; }
+  if (!screenName) { alert('Please enter a screen name'); return; }
+  if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('Invalid screen name format.\n\nUse camelCase starting with a lowercase letter.\ne.g. packageSelect / homeFeed / settingsTop\n\nNo spaces, symbols, or non-ASCII characters.'); return; }
+  if (!selectedType) { alert('Please select a screen type'); return; }
+  if (!specUrl && !specText) { alert('Please enter a spec URL or paste spec content'); return; }
 
   const products = getProducts();
   const product = products.find(p => p.id === productId) || {};
 
   document.getElementById('submit-btn').disabled = true;
-  setJobStatus('pending', 'リクエスト送信中...', '');
+  setJobStatus('pending', 'Submitting request...', '');
 
   try {
     const res = await fetch(`${API_BASE}/jobs`, {
@@ -855,10 +855,10 @@ async function submitJob() {
     });
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.error || 'サーバーエラー');
+      throw new Error(err.error || 'Server error');
     }
     const { jobId } = await res.json();
-    setJobStatus('processing', 'AIがデザインを生成中...', '数分かかる場合があります');
+    setJobStatus('processing', 'AI is generating the design...', 'This may take a few minutes');
     pollJob(jobId);
   } catch (err) {
     setJobStatus('error', 'エラー', err.message);
@@ -874,10 +874,10 @@ function pollJob(jobId) {
       const job = await res.json();
 
       if (job.status === 'pending_plugin') {
-        setJobStatus('waiting', 'Figmaプラグインで実行中...', 'FigmaのDesign Agentプラグインを起動してください');
+        setJobStatus('waiting', 'Running in Figma plugin...', 'Open the Design Agent plugin in Figma');
       } else if (job.status === 'done') {
         clearInterval(pollTimer);
-        setJobStatus('done', 'デザインが完成しました！', 'Figmaで確認してください');
+        setJobStatus('done', 'Design complete!', 'Check it in Figma');
         document.getElementById('submit-btn').disabled = false;
         const product = getProducts().find(p => p.id === document.getElementById('product-select').value);
         if (product?.figmaFileKey) {
@@ -887,10 +887,10 @@ function pollJob(jobId) {
         }
       } else if (job.status === 'error') {
         clearInterval(pollTimer);
-        setJobStatus('error', '生成に失敗しました', job.error || '');
+        setJobStatus('error', 'Generation failed', job.error || '');
         document.getElementById('submit-btn').disabled = false;
       }
-    } catch (e) { /* ネットワークエラーは無視してリトライ */ }
+    } catch (e) { /* ignore network errors and retry */ }
   }, 3000);
 }
 
@@ -910,18 +910,18 @@ function renderProducts() {
   const products = getProducts();
   const list = document.getElementById('products-list');
   if (products.length === 0) {
-    list.innerHTML = '<div class="empty-state">プロダクトがまだ登録されていません</div>';
+    list.innerHTML = '<div class="empty-state">No products registered yet</div>';
     return;
   }
   list.innerHTML = products.map(p => `
     <div class="product-card">
       <div class="product-card-info">
         <div class="product-card-name">${escHtml(p.name)}</div>
-        <div class="product-card-meta">fileKey: ${escHtml(p.figmaFileKey || '未設定')} | lib: ${escHtml(p.libraryName || '未設定')} | page: ${escHtml(p.page || 'Page 1')}</div>
+        <div class="product-card-meta">fileKey: ${escHtml(p.figmaFileKey || 'not set')} | lib: ${escHtml(p.libraryName || 'not set')} | page: ${escHtml(p.page || 'Page 1')}</div>
       </div>
       <div class="product-card-actions">
-        <button class="btn-sm" onclick="openModal('${p.id}')">編集</button>
-        <button class="btn-sm danger" onclick="deleteProduct('${p.id}')">削除</button>
+        <button class="btn-sm" onclick="openModal('${p.id}')">Edit</button>
+        <button class="btn-sm danger" onclick="deleteProduct('${p.id}')">Delete</button>
       </div>
     </div>
   `).join('');
@@ -932,7 +932,7 @@ function escHtml(s) {
 }
 
 function deleteProduct(id) {
-  if (!confirm('このプロダクトを削除しますか？')) return;
+  if (!confirm('Delete this product?')) return;
   saveProducts(getProducts().filter(p => p.id !== id));
   renderProducts();
   populateProductSelect();
@@ -941,7 +941,7 @@ function deleteProduct(id) {
 // ── MODAL ────────────────────────────────────
 function openModal(id) {
   editingId = id || null;
-  document.getElementById('modal-title').textContent = id ? 'プロダクトを編集' : 'プロダクトを追加';
+  document.getElementById('modal-title').textContent = id ? 'Edit Product' : 'Add Product';
 
   if (id) {
     const p = getProducts().find(p => p.id === id);
@@ -1000,8 +1000,8 @@ function getFileKey(val) {
 function saveProduct() {
   const name = document.getElementById('m-name').value.trim();
   const figmaUrl = document.getElementById('m-figma-url').value.trim();
-  if (!name) { alert('プロダクト名を入力してください'); return; }
-  if (!figmaUrl) { alert('Figmaファイルを入力してください'); return; }
+  if (!name) { alert('Please enter a product name'); return; }
+  if (!figmaUrl) { alert('Please enter a Figma file URL'); return; }
 
   const products = getProducts();
   const libraryUrl = document.getElementById('m-library-url').value.trim();
@@ -1039,7 +1039,7 @@ populateProductSelect();
 selectTab('Home');
 document.getElementById('user-id').value = localStorage.getItem('da_userId') || '';
 
-// Twomiがなければデフォルトで登録、既存エントリにlibraryFileKeyがなければ補完
+// Seed Twomi as the default product; backfill libraryFileKey on existing entries if missing
 (function seedTwomi() {
   let products = getProducts();
   let changed = false;
@@ -1057,7 +1057,7 @@ document.getElementById('user-id').value = localStorage.getItem('da_userId') || 
     });
     changed = true;
   } else {
-    // 既存のTwomiエントリにlibraryFileKeyがなければ補完
+    // backfill libraryFileKey on existing Twomi entries
     products = products.map(p => {
       if (p.id === 'twomi' && !p.libraryFileKey) {
         changed = true;
