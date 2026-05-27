@@ -6,7 +6,7 @@ figma.ui.onmessage = async (msg) => {
   if (msg.type === 'execute-job') {
     try {
       // サーバーが生成したJavaScriptをFigmaコンテキストで実行
-      const fn = new Function(msg.code);
+      const fn = new Function(`return (${msg.code})`);
       const result = await fn();
       figma.ui.postMessage({ type: 'job-done', jobId: msg.jobId, result });
     } catch (err) {
