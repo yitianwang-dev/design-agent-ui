@@ -7,7 +7,7 @@ import { loadSchemasForComponents } from './schemas.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-// Hori fix (2026-05-27): make SCAFFOLD_DIR relative to this file (__dirname-based)
+// Fix (2026-05-27): make SCAFFOLD_DIR relative to this file (__dirname-based)
 // so the path resolves correctly on Railway (where /outputs/figma-design-automation/
 // doesn't exist) and on any machine cloning the repo.
 const __filename = fileURLToPath(import.meta.url);
