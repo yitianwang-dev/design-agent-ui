@@ -76,6 +76,178 @@ async function loadMatchingScreenSchema(screenName) {
   return null;
 }
 
+// parseSpecChecklist (2026-05-28 Plan C): use Haiku to extract a structured
+// list of "MUST have" UI elements from the spec. The checklist is injected
+// into the system prompt (so Step 4 sees an explicit list) AND used as the
+// ground truth for Step 6 coverage verification.
+// Returns { must_have_layers: [{role, text?, count?, position?}, ...] } or null.
+async function parseSpecChecklist(specContent, screenName) {
+  if (!specContent || specContent.trim().length === 0) return null;
+  const prompt = `あなたは Twomi Design Agent の spec parser です。以下の仕様書から「画面に必ず存在すべき UI 要素」をすべて抽出してください。
+
+## 抽出ルール
+- spec 中の **すべての bullet / 行 / 「」で囲まれた文字列 / 明示的な UI element 名** を漏れなく拾う
+  対象例: title / button / icon / badge / handle / chip / sheet / card / overlay / cta / grid / list item / placeholder / tab / divider / counter / label / avatar / hashtag
+- spec の **インデント構造**（親 bullet の子も独立要素として扱う）を尊重する
+- 複数個ある要素は \`count\` を記録する（spec の文脈から推定、例: "3列×2行" → count 6）
+- spec が位置を明示している場合（"右上"・"下部"・"中央"等）は \`position\` に書く
+- 「省略可」「optional」「任意」と明記された要素のみ \`optional: true\`、それ以外は required（必須）扱い
+- spec が「【ヘッダー】」「【グリッド】」のような **見出しブロック** で書かれている場合、その下の各要素を個別 entry にする
+
+## 仕様書
+画面名: ${screenName}
+${specContent.slice(0, 4000)}
+
+## 出力形式（JSON のみ、説明・前置き禁止）
+{
+  "must_have_layers": [
+    {"role": "<英語スネークケース>", "text": "<spec 中の固定文字列があれば>", "count": <数>, "position": "<位置>", "optional": false}
+  ]
+}
+
+役割名（role）のガイドライン:
+- 動的テキスト → "user_name" / "coin_count" / "post_count"
+- 固定ラベル → "sheet_title" / "send_cta" / "follow_button"
+- 要素 → "gift_grid" / "gift_item" / "quantity_chip" / "drag_handle" / "coin_balance"`;
+
+  try {
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const text = message.content[0].text.trim();
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) return null;
+    const parsed = JSON.parse(m[0]);
+    if (!parsed.must_have_layers || !Array.isArray(parsed.must_have_layers)) return null;
+    console.log(`[parseSpecChecklist] extracted ${parsed.must_have_layers.length} required layers`);
+    return parsed;
+  } catch (err) {
+    console.warn(`[parseSpecChecklist] failed: ${err.message}`);
+    return null;
+  }
+}
+
+// checkSpecCoverage (2026-05-28 Plan C): after the generation + structural
+// lint, verify every checklist item is represented in the final code.
+// Uses Haiku for semantic matching (sheet_title ≈ "sheetTitle" / "TitleText").
+// Returns { complete: bool, missing: [{role, expected, reason}] }.
+async function checkSpecCoverage(code, checklist) {
+  if (!checklist || !checklist.must_have_layers || checklist.must_have_layers.length === 0) {
+    return { complete: true, missing: [] };
+  }
+  const required = checklist.must_have_layers.filter(item => !item.optional);
+  if (required.length === 0) return { complete: true, missing: [] };
+
+  const prompt = `以下の Figma Plugin JS コードが、必須 UI 要素チェックリストをすべて含んでいるか確認してください。
+
+## 必須チェックリスト
+${JSON.stringify(required, null, 2)}
+
+## 判定ルール
+- layer の name / textNode.characters / setName() 引数 / createInstance 後の name 設定 などから要素の存在を semantic match で判定
+- role 名は **厳密一致でなく意味マッチ** で OK（例: "sheet_title" ≈ "sheetTitleText" / "SheetTitle" / "title" / "TitleLabel" / "$Title"）
+- count が指定されている場合は code 内のループ / 個別作成回数も数える
+- text が指定されている場合は textNode.characters または近い文字列があるか確認
+
+## コード
+\`\`\`javascript
+${code.slice(0, 12000)}
+\`\`\`
+
+## 出力（JSON のみ、説明禁止）
+{
+  "complete": <true|false>,
+  "missing": [
+    {"role": "<role 名>", "expected": "<spec での説明>", "reason": "<コードで見つからない具体的な理由>"}
+  ]
+}`;
+
+  try {
+    const message = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const text = message.content[0].text.trim();
+    const m = text.match(/\{[\s\S]*\}/);
+    if (!m) return { complete: true, missing: [] };
+    const parsed = JSON.parse(m[0]);
+    return {
+      complete: parsed.complete === true,
+      missing: Array.isArray(parsed.missing) ? parsed.missing : [],
+    };
+  } catch (err) {
+    console.warn(`[checkSpecCoverage] failed: ${err.message}, assuming complete`);
+    return { complete: true, missing: [] };
+  }
+}
+
+// patchMissingItems (2026-05-28 Plan C): when checkSpecCoverage reports missing
+// items, ask Opus to add ONLY those items while keeping every existing layer
+// untouched. Returns the patched code (or the original if patch failed sanity).
+async function patchMissingItems(code, missingItems, specContent, screenType) {
+  if (!missingItems || missingItems.length === 0) return code;
+
+  const prompt = `以下の Figma Plugin JS コードに、**欠落している UI 要素のみ**を追加してください。
+
+## 鉄則
+1. 既存のレイヤー・ID・命名・構造は **絶対に変更しない**
+2. 欠落要素だけを spec の位置指示に従って追加
+3. scaffold が返す container / content / footer / header の階層は触らない
+4. TEXT node の name は **動的→\`$VariableName\` / 固定→役割名**（Japanese / 数字 / emoji を name にしない）
+5. icon / TEXT / RECTANGLE は **AutoLayout コンテナの中**に配置（直置き禁止）
+6. AutoLayout の itemSpacing は 4/8/12/16/20/24/32 のみ
+7. font は \`await figma.loadFontAsync({ family, style })\` で必ずロード
+
+## 欠落要素（追加対象）
+${JSON.stringify(missingItems, null, 2)}
+
+## 参考: 元の仕様書（位置・スタイル参考用）
+${specContent.slice(0, 2500)}
+
+## 画面タイプ
+${screenType}
+
+## 元コード
+\`\`\`javascript
+${code}
+\`\`\`
+
+## 出力
+修正したコード全文を **1 つの javascript コードブロック** で返す。説明・前置き禁止。
+
+\`\`\`javascript
+(修正後コード)
+\`\`\``;
+
+  try {
+    const message = await client.messages.create({
+      model: 'claude-opus-4-7',
+      max_tokens: 16384,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const text = message.content[0].text;
+    const matches = [...text.matchAll(/```javascript\n([\s\S]*?)```/g)];
+    if (matches.length === 0) {
+      console.warn('[patchMissingItems] no code block returned, keeping original');
+      return code;
+    }
+    const patched = matches[matches.length - 1][1].trim();
+    // Sanity: patched code must be >= 90% of original length (we're ADDING, not shortening).
+    if (patched.length < code.length * 0.9) {
+      console.warn(`[patchMissingItems] patched code shorter than original (${patched.length} < 90% of ${code.length}), keeping original`);
+      return code;
+    }
+    console.log(`[patchMissingItems] original ${code.length} → patched ${patched.length} chars`);
+    return patched;
+  } catch (err) {
+    console.warn(`[patchMissingItems] failed: ${err.message}, keeping original`);
+    return code;
+  }
+}
+
 async function fetchSpecFromUrl(url) {
   const gdocMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
   if (gdocMatch) {
@@ -262,6 +434,14 @@ export async function generateFigmaScript(input) {
     }
   }
 
+  // Plan C Step 0 (2026-05-28): kick off spec checklist parsing in parallel
+  // with Steps 1-3 (catalog / component select / schema load) so its latency
+  // is hidden. The checklist is awaited just before systemPrompt assembly so
+  // the MUST_HAVE_LAYERS list is injected for Step 4 generation, and also
+  // used as the ground truth for Step 6 coverage verification. If parsing
+  // returns null, the system silently degrades to pre-Plan-C behavior.
+  const checklistPromise = parseSpecChecklist(specContent, screenName);
+
   // Step 1: Fetch component catalog from library
   let componentSets = [];
   if (product.libraryFileKey) {
@@ -341,8 +521,16 @@ export async function generateFigmaScript(input) {
     ? `\n\n## 🎯 画面固有スキーマ（${screenSchema.matched}）\n\nこのリクエストの screenName="${screenName}" は以下の画面スキーマにマッチしました。\n**この構造を厳格に守ってください。spec と矛盾する場合は本スキーマの構造を優先**（spec は内容を供給する役割、本スキーマは骨格を定義する役割）。\nスキーマに記載された forbidden_components は絶対に使わないこと。required_components は必ず使うこと。\n\n${screenSchema.content}\n`
     : '';
 
+  // Plan C: await the checklist promise started before Step 1, then inject
+  // a MUST_HAVE_LAYERS section. This is the upfront half of the closed loop —
+  // Step 6 (after Step 5) verifies the same list against the final code.
+  const checklist = await checklistPromise;
+  const checklistSection = checklist && checklist.must_have_layers && checklist.must_have_layers.length > 0
+    ? `\n\n## ✅ MUST HAVE LAYERS（spec から抽出した必須要素チェックリスト）\n\n以下のすべての要素は **必ず生成コードに含めること**。spec の文章を読み飛ばさず、各 entry を 1 つ以上の layer / TEXT / instance として実装してください。**1 つでも欠けると Step 6 で検出され再生成対象になります。**\n\n\`\`\`json\n${JSON.stringify(checklist.must_have_layers, null, 2)}\n\`\`\`\n\n各 entry の解釈:\n- \`role\`: 役割名（layer name に近い形で命名すること）\n- \`text\`: 固定文字列がある場合は textNode.characters にそのまま設定\n- \`count\`: 個数指定。ループまたは複数 instance 作成で満たす\n- \`position\`: 配置位置の文脈（例: "右上" → padding-right + AutoLayout primaryAxis END）\n- \`optional: true\` のものは省略可、それ以外は **必須**\n`
+    : '';
+
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}${checklistSection}
 
 ## Twomiとは
 - 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）
@@ -459,8 +647,36 @@ ${figmaStyleInfo ? `
 
   const rawCode = match[1].trim();
 
-  // Step 5: Review & fix (Haiku)
-  const reviewedCode = await reviewAndFixScript(rawCode, screenType);
+  // Step 5: Review & fix (Haiku) — structural lint, 12 checks
+  let finalCode = await reviewAndFixScript(rawCode, screenType);
 
-  return reviewedCode;
+  // Step 6 (Plan C, 2026-05-28): spec coverage gate with auto-retry.
+  // Compares the generated code against the MUST_HAVE_LAYERS checklist
+  // extracted in Step 0. If any required item is missing, Opus patches the
+  // code in-place (adding ONLY the missing items), then we re-run Step 5
+  // structural lint to catch any regressions from the patch. Max 2 retries
+  // — beyond that, return the best-effort code and log the unresolved gap.
+  if (checklist && checklist.must_have_layers && checklist.must_have_layers.length > 0) {
+    const MAX_RETRIES = 2;
+    for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+      const coverage = await checkSpecCoverage(finalCode, checklist);
+      console.log(`[coverage] attempt ${attempt}: complete=${coverage.complete}, missing=${coverage.missing.length}`);
+      if (coverage.complete) {
+        if (attempt > 1) console.log(`[coverage] resolved after ${attempt - 1} patch round(s)`);
+        break;
+      }
+      if (attempt > MAX_RETRIES) {
+        console.warn(`[coverage] ${coverage.missing.length} item(s) still missing after ${MAX_RETRIES} retries: ${coverage.missing.map(m => m.role).join(', ')}`);
+        break;
+      }
+      console.log(`[coverage] missing: ${coverage.missing.map(m => m.role).join(', ')} → patching (attempt ${attempt}/${MAX_RETRIES})`);
+      const patched = await patchMissingItems(finalCode, coverage.missing, specContent, screenType);
+      // Re-run structural lint on the patched code so the new additions don't
+      // violate the 12 naming / layout rules. If lint shortens the code too
+      // aggressively, reviewAndFixScript falls back to the patched original.
+      finalCode = await reviewAndFixScript(patched, screenType);
+    }
+  }
+
+  return finalCode;
 }
