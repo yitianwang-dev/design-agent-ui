@@ -44,6 +44,38 @@ async function loadAllRules() {
   }
 }
 
+// loadMatchingScreenSchema (2026-05-28): if the request's screenName matches a
+// screen-level schema in server/schemas/twomi/screens/, load it and return its
+// content. The matching is a normalized substring check: the schema filename
+// (e.g. "profile_self.schema.yaml" → normalized "profileself") must appear
+// inside the normalized screenName. So screenName="testProfileSelf" matches
+// "profile_self.schema.yaml". If no schema matches, returns null and the
+// system falls back to component-level schemas only (current behavior).
+//
+// Screen schemas constrain layout structure + which Library components to use
+// + forbidden components list, eliminating most "AI improvises layout" failures.
+async function loadMatchingScreenSchema(screenName) {
+  const SCREENS_DIR = resolve(__dirname, '../../schemas/twomi/screens');
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizedScreen = normalize(screenName);
+  if (!normalizedScreen) return null;
+  try {
+    const files = (await readdir(SCREENS_DIR)).filter(f => f.endsWith('.schema.yaml'));
+    for (const file of files) {
+      const base = file.replace('.schema.yaml', '');
+      const normalizedBase = normalize(base);
+      if (!normalizedBase) continue;
+      if (normalizedScreen.includes(normalizedBase)) {
+        const content = await readFile(resolve(SCREENS_DIR, file), 'utf-8');
+        return { matched: file, content };
+      }
+    }
+  } catch (err) {
+    console.warn(`[loadMatchingScreenSchema] failed: ${err.message}`);
+  }
+  return null;
+}
+
 async function fetchSpecFromUrl(url) {
   const gdocMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
   if (gdocMatch) {
@@ -251,8 +283,22 @@ export async function generateFigmaScript(input) {
     ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n`
     : '';
 
+  // Screen-level schema (2026-05-28): if request's screenName matches a known
+  // screen schema in server/schemas/twomi/screens/, inject it. This gives the
+  // agent exact layout structure + component constraints + forbidden list for
+  // that specific screen, eliminating most "AI improvises layout" failures.
+  const screenSchema = await loadMatchingScreenSchema(screenName);
+  if (screenSchema) {
+    console.log(`[screenSchema] matched ${screenSchema.matched} for screenName="${screenName}"`);
+  } else {
+    console.log(`[screenSchema] no match for screenName="${screenName}" — falling back to component schemas only`);
+  }
+  const screenSchemaSection = screenSchema
+    ? `\n\n## 🎯 画面固有スキーマ（${screenSchema.matched}）\n\nこのリクエストの screenName="${screenName}" は以下の画面スキーマにマッチしました。\n**この構造を厳格に守ってください。spec と矛盾する場合は本スキーマの構造を優先**（spec は内容を供給する役割、本スキーマは骨格を定義する役割）。\nスキーマに記載された forbidden_components は絶対に使わないこと。required_components は必ず使うこと。\n\n${screenSchema.content}\n`
+    : '';
+
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}
 
 ## Twomiとは
 - 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）

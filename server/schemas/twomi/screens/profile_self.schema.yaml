@@ -1,0 +1,284 @@
+# ============================================================
+# profile_self.schema.yaml — Screen-level schema
+# ============================================================
+# ユーザー本人のプロフィール画面（USER profile, NOT Twomi avatar profile）
+# Header + Scroll content + BottomNav Float（scaffold A）
+#
+# このスキーマの役割:
+#   spec が profile / userProfile / Profile Self などにマッチした時、
+#   Step 4 の system prompt に画面構造ガイドラインとして注入される。
+#
+# このスキーマは「構造のテンプレート」であり、内容（テキスト・色等）は spec から取る。
+# spec が指示しない section は省略可（例: bio がなければ bio 段落を出さない）。
+# ============================================================
+
+meta:
+  name: Profile / Self
+  description: |
+    ユーザー本人のプロフィール画面。Self 視点（編集者）。
+    Other（観客）視点の場合は profile_other.schema.yaml を参照。
+  scaffold: A
+  scaffold_reason: |
+    Header + Scroll content + BottomNav が必要。スクロール領域内に
+    ユーザー情報＋タブ＋コンテンツを配置するため。
+  source_analysis: server/rules/twomi_screen_analysis.md §1
+  applies_when_screen_name_contains:
+    # claude.js がリクエストの screenName を case-insensitive に部分マッチ
+    - profile_self
+    - profileSelf
+    - userProfile
+    - userprofile
+    - profile / self
+  screen_size: { width: 402, height: 874 }
+  background: "#FFFEFE"
+
+# ───────────────────────────────────────────────────────────
+# scaffold セットアップ
+# ───────────────────────────────────────────────────────────
+scaffold_setup:
+  type: A
+  selected_nav_tab: Profile
+
+# ───────────────────────────────────────────────────────────
+# 画面レベル variant
+# ───────────────────────────────────────────────────────────
+variants:
+  userType:
+    value: self
+    note: |
+      このスキーマは Self 専用。Other に同 spec を流す場合は
+      profile_other.schema.yaml に流すこと。
+  emptyState:
+    values: [false, true]
+    when_true: |
+      avatarCount === 0 のとき。actionButtons の "新しいアバターを作成" を強調。
+  exclusiveContentStatus:
+    values: [idle, pending, approved, rejected]
+    note: |
+      限定コンテンツ管理 CTA がこの status を持つ。spec が指示しない場合は idle。
+
+# ───────────────────────────────────────────────────────────
+# Component 使用ルール
+# ───────────────────────────────────────────────────────────
+required_components:
+  - name: User icon
+    library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+    schema_ref: 11_user_icon
+    note: |
+      このスクリーンの主体。**必須**。createEllipse で代替禁止。
+
+forbidden_components:
+  - name: Avatar infomation
+    reason: |
+      Twomi avatar 詳細ページ用 component。人間 profile に絶対に使わない。
+      （2026-05-27 E2E テストで AI がこれを誤選択し、AVATARNAME placeholder が露出した。）
+  - name: Avatar icon
+    reason: |
+      Twomi avatar サムネ用。人間 profile には不適切。User icon を使う。
+  - name: Avatar Pickup Button
+    reason: |
+      Live 配信のアバター選択 button。Profile 画面では使わない。
+  - name: Avatar Bookmark Button
+    reason: |
+      Avatar Card 内専用。
+  - name: EntryAvatarIcon
+    reason: |
+      限定コンテンツ設定画面の avatar アイコン。
+  - name: AvatarIcon ExclusiveContentLabel
+    reason: |
+      Avatar icon に重ねる pill。単独使用しない。Profile では使わない。
+
+# ───────────────────────────────────────────────────────────
+# 画面構造（contentFrame の中身）
+# scaffold A の contentFrame は y=110, h=662
+# ───────────────────────────────────────────────────────────
+content_structure:
+  layout: VERTICAL
+  padding: { top: 16, right: 16, bottom: 24, left: 16 }
+  spacing: 24
+  align_horizontal: CENTER
+
+  sections:
+    # ─ Section 1: userHeader（必須）─
+    - id: userHeader
+      description: |
+        ユーザー情報ブロック — avatar 64×64 + 表示名 + ハンドル + 自己紹介。
+      required: true
+      layout: VERTICAL
+      spacing: 12
+      align: CENTER
+      children:
+        - role: avatar
+          kind: INSTANCE
+          component_ref: User icon
+          variant_selection:
+            State: Profile
+            type: Self
+          size: { width: 64, height: 64 }
+          content_source: |
+            画像は Library サンプル hash（User icon Self の default image）を使う。
+            spec が specific image を指定しない限り Library のデフォルトを採用。
+        - role: displayName
+          kind: TEXT
+          font: { family: Noto Sans JP, style: Bold, size: 20 }
+          color: "#2E2E2E"
+          align: CENTER
+          line_height: { unit: PIXELS, value: 28 }
+          content_source: spec.userName || "ユーザー名"
+        - role: handle
+          kind: TEXT
+          font: { family: Noto Sans JP, style: Regular, size: 14 }
+          color: "#767680"
+          align: CENTER
+          line_height: { unit: PIXELS, value: 20 }
+          prefix: "@"
+          content_source: spec.handle
+          conditional: spec.handle != null
+        - role: bio
+          kind: TEXT
+          font: { family: Noto Sans JP, style: Regular, size: 14 }
+          color: "#2E2E2E"
+          align: CENTER
+          line_height: { unit: PIXELS, value: 20 }
+          multiline: true
+          max_lines: 3
+          truncate: ellipsis
+          width: FILL
+          content_source: spec.bio
+          conditional: spec.bio != null
+
+    # ─ Section 2: stats（任意・3列）─
+    - id: stats
+      description: |
+        投稿 / フォロワー / フォロー の 3 列ステータス。
+        spec に followers/following 等が含まれる場合のみ表示。
+      required: false
+      conditional: spec が followers / posts / following のいずれかを言及した場合
+      layout: HORIZONTAL
+      spacing: 32
+      align: CENTER
+      items:
+        - { key: posts,     label: "投稿" }
+        - { key: followers, label: "フォロワー" }
+        - { key: following, label: "フォロー" }
+      item_structure:
+        layout: VERTICAL
+        spacing: 4
+        align: CENTER
+        children:
+          - role: count
+            kind: TEXT
+            font: { family: Noto Sans JP, style: Bold, size: 18 }
+            color: "#2E2E2E"
+            align: CENTER
+            content_source: spec.stats[item.key]
+          - role: label
+            kind: TEXT
+            font: { family: Noto Sans JP, style: Regular, size: 12 }
+            color: "#767680"
+            align: CENTER
+            content: item.label
+
+    # ─ Section 3: actionButtons（必須・Self は 2 列）─
+    - id: actionButtons
+      description: |
+        Self プロフィール用のアクションボタン 2 つ。
+        左: プロフィール編集 / 右: シェア（または spec 指定に従う）。
+      required: true
+      layout: HORIZONTAL
+      spacing: 8
+      align: CENTER
+      children:
+        - role: primaryAction
+          kind: FRAME
+          template: outlineButton
+          size: { width: 160, height: 40 }
+          corner_radius: 20
+          fill: TRANSPARENT
+          stroke: { color: "#C4C4C4", weight: 1, align: INSIDE }
+          padding: { top: 0, right: 16, bottom: 0, left: 16 }
+          inner_layout: { direction: HORIZONTAL, primary: CENTER, counter: CENTER }
+          children:
+            - kind: TEXT
+              font: { family: Noto Sans JP, style: Medium, size: 14 }
+              color: "#2E2E2E"
+              content: spec.primaryActionText || "プロフィールを編集"
+        - role: secondaryAction
+          kind: FRAME
+          template: outlineButton
+          size: { width: 160, height: 40 }
+          # 同 primaryAction スタイル
+          children:
+            - kind: TEXT
+              font: { family: Noto Sans JP, style: Medium, size: 14 }
+              color: "#2E2E2E"
+              content: spec.secondaryActionText || "シェア"
+
+    # ─ Section 4: tabsContent（任意・コンテンツタブ）─
+    - id: tabsContent
+      description: |
+        spec が tabs / posts / live streaming / favorites などを言及した場合のみ。
+        通常は省略可（プロフィール上部だけで spec が完結する場合）。
+      required: false
+      conditional: spec が "tab" / "投稿" / "ライブ配信" / "お気に入り" 等を言及
+      layout: VERTICAL
+      spacing: 16
+      note: |
+        詳細構造は spec 次第。tab bar + tab 内容。
+        実装が複雑な場合はこの section を省いて userHeader + stats + actionButtons のみで完結させる。
+
+# ───────────────────────────────────────────────────────────
+# 設計原則（このスクリーン固有）
+# ───────────────────────────────────────────────────────────
+design_principles:
+  - id: self_other_unified_via_variant
+    rule: |
+      Self / Other は同じ画面構造、permission の違いだけ。
+      この schema は Self 用、Other 用は profile_other.schema.yaml。
+      画面 copy ではなく User variant で 1 component に統合する原則を守ること。
+  - id: text_must_be_in_autolayout
+    rule: |
+      直置きテキスト禁止。すべてのテキストは AutoLayout コンテナに入れる。
+  - id: spacing_8_multiple
+    rule: |
+      Gap は 8 の倍数（4, 8, 12, 16, 24, 32...）のみ使用。
+  - id: no_fixed_position
+    rule: |
+      AutoLayout を使うので絶対座標（x, y）を計算しないこと。
+      Header の y=0 と footer の y=772 のみ scaffold が固定する。
+
+# ───────────────────────────────────────────────────────────
+# 既知の失敗モード（このスクリーン特有）
+# ───────────────────────────────────────────────────────────
+known_failure_modes:
+  - id: avatar_information_misuse
+    case: "AI が 'avatar' キーワードで Avatar infomation を選択 → 人間 profile に Twomi avatar 詳細 widget が紛れ込む"
+    fix: |
+      forbidden_components の Avatar infomation を参照。
+      User icon が **このスクリーンで唯一の avatar 系 component**。
+  - id: avatarname_placeholder
+    case: "Avatar infomation を import すると component 内の AVATARNAME placeholder が露出"
+    fix: |
+      forbidden_components 遵守 + テキストはすべて spec から取る。
+  - id: offscreen_content
+    case: "Avatar information を import して y=-101 など画面外に配置"
+    fix: |
+      forbidden_components 遵守 + content_structure の section 配置のみ守る。
+  - id: createellipse_for_avatar
+    case: "User icon の import に失敗して createEllipse + image fill で代替"
+    fix: |
+      User icon は **必須**。import 失敗時はエラーを返して spec を再考。
+      フォールバックの createEllipse 禁止。
+
+# ───────────────────────────────────────────────────────────
+# 出力前セルフチェック（このスクリーン用 mini Prompt B）
+# ───────────────────────────────────────────────────────────
+self_check:
+  - User icon component（key 51faaa59...）を import + createInstance したか？
+  - User icon の variant は State=Profile, type=Self を選んだか？
+  - forbidden_components リストの component を使っていないか？
+  - スクリーン全要素が y=110〜772 の contentFrame 内に収まっているか？
+  - 直置きテキストはないか（すべて AutoLayout コンテナに入っているか）？
+  - Gap は 8 の倍数か？
+  - spec に明示されていない placeholder text（AVATARNAME 等）が残っていないか？
+  - displayName / handle / bio の文字は spec から取った内容か？
