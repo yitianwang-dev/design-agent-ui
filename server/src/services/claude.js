@@ -64,8 +64,14 @@ async function fetchSpecFromUrl(url) {
 async function selectComponents(specContent, screenType, screenName, componentSets) {
   if (!componentSets.length) return [];
 
+  // Fix (2026-05-28): increase description slice from 80 → 600 chars so the
+  // structured "【用途 / Usage】/【State】/【注意 / Notes】/【使用画面 / Used in】"
+  // blocks in Twomi Library descriptions are visible to Haiku at selection time.
+  // Average description is 200-400 chars; 600 covers full block for all known
+  // components. With <300 components currently annotated, prompt size impact
+  // is minimal (~150KB worst case).
   const catalogText = componentSets
-    .map(cs => `- ${cs.name} (key: ${cs.key})${cs.description ? ': ' + cs.description.slice(0, 80) : ''}`)
+    .map(cs => `- ${cs.name} (key: ${cs.key})${cs.description ? '\n  ' + cs.description.replace(/\n/g, '\n  ').slice(0, 600) : ''}`)
     .join('\n');
 
   const prompt = `以下の画面仕様をもとに、contentFrameの実装に必要なFigmaコンポーネントをカタログから選んでください。
@@ -77,6 +83,18 @@ async function selectComponents(specContent, screenType, screenName, componentSe
 ${specContent.slice(0, 3000)}
 
 ## コンポーネントカタログ
+各コンポーネントの description には以下の構造化情報が含まれます:
+  - 【用途 / Usage】: そのコンポーネントの本来の使用文脈
+  - 【State】: variant プロパティと値（Enum）
+  - 【注意 / Notes】: deprecation 警告・他コンポーネントとの関係・使用制限
+  - 【使用画面 / Used in】: そのコンポーネントが本来使われる画面
+
+**コンポーネント選択時は description の Usage と Notes を最優先で読み、
+適切な文脈で使うべきコンポーネントだけを選んでください。**
+- 「現行画面では使用しないこと」「deprecated」「旧デザイン」と書いてあるものは選ばない
+- 「○○へ重ねて表示する」と書いてあるものは単独で選ばない（親コンポーネントと併用）
+- Usage に書かれた本来の使用文脈と画面要件が一致しないものは選ばない
+
 ${catalogText}
 
 ## 注意
