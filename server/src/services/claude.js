@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { readFile } from 'fs/promises';
+import { readFile, readdir } from 'fs/promises';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchComponentSets } from './figma.js';
@@ -13,10 +13,35 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const SCAFFOLD_DIR = process.env.SCAFFOLD_DIR || resolve(__dirname, '../../scaffolds');
+const RULES_DIR = process.env.RULES_DIR || resolve(__dirname, '../../rules');
 
 async function loadScaffold(type) {
   const file = resolve(SCAFFOLD_DIR, `scaffold_${type.toLowerCase()}.js`);
   return readFile(file, 'utf-8');
+}
+
+// loadAllRules (2026-05-28): read every .md file in server/rules/ and concatenate
+// them so the system prompt can include the full Design Agent rule set + Twomi
+// design system references (master / structure / component / screen_analysis).
+// Files are sorted alphabetically so the rules file (which starts "twomi_design_agent_")
+// comes before the references. If the folder is missing or empty, returns ''.
+async function loadAllRules() {
+  try {
+    const files = (await readdir(RULES_DIR))
+      .filter(f => f.endsWith('.md'))
+      .sort();
+    if (files.length === 0) return '';
+    const sections = await Promise.all(
+      files.map(async f => {
+        const content = await readFile(resolve(RULES_DIR, f), 'utf-8');
+        return `### Source: ${f}\n\n${content}`;
+      })
+    );
+    return sections.join('\n\n---\n\n');
+  } catch (err) {
+    console.warn(`[loadAllRules] failed to load rules from ${RULES_DIR}: ${err.message}`);
+    return '';
+  }
 }
 
 async function fetchSpecFromUrl(url) {
@@ -197,8 +222,19 @@ export async function generateFigmaScript(input) {
     C: 'タブ型（BottomNav なし）',
   };
 
+  // Load all rules / design-system references from server/rules/*.md.
+  // These are injected into the system prompt so the agent has full context on
+  // Twomi UI rules (MUST/SHOULD/NICE), Library component white/blacklists,
+  // layout / color / naming / philosophy. See server/rules/README or the
+  // twomi_design_agent_rules.md for the rule taxonomy.
+  const rulesContent = await loadAllRules();
+  console.log(`[rules] loaded ${rulesContent.length} chars from rules/`);
+  const rulesSection = rulesContent
+    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n`
+    : '';
+
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}
 
 ## Twomiとは
 - 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）
