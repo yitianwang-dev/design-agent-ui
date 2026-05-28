@@ -280,7 +280,7 @@ export async function generateFigmaScript(input) {
   const rulesContent = await loadAllRules();
   console.log(`[rules] loaded ${rulesContent.length} chars from rules/`);
   const rulesSection = rulesContent
-    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n`
+    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（最重要、再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。必ず役割名（〜Text / 〜Label / 〜Icon）で命名する。spec に出てくる文字列を node 名に使ったら MUST 違反。詳細は rules §1.7 参照。**\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n`
     : '';
 
   // Screen-level schema (2026-05-28): if request's screenName matches a known

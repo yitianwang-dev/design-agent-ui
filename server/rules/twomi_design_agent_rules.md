@@ -67,6 +67,51 @@
 
 逆順に積むと実装バグ（Bottom シートが Header に隠れる等）が発生する。
 
+### 1.7 Text node の name は **絶対に内容にしない**（必ず役割名）
+
+⚠️ **これは絶対ルール**。違反は MUST 違反 = 再生成対象。
+
+text node（TEXT type のノード）の `name` プロパティを **実際の文字内容**（`characters`）と
+同じにすることは絶対禁止。**必ず役割名**（〜Text / 〜Label / 〜Title など camelCase）で命名する。
+
+**理由**:
+- テキスト内容は spec 由来で動的に変わる。role 命名なら spec が変わっても node 名は変わらない
+- 開発側はノード名で参照する（layer 名 = 変数名 / セレクタ）→ 内容で命名すると毎回壊れる
+- 多言語対応で JP→EN に切り替えても node 名は変わらない
+- テキストが空になっても name は意味を保つ
+
+**NG → OK 一覧**:
+
+| ❌ NG（内容ベース） | ✅ OK（役割ベース） |
+|---|---|
+| `"Hello world"` | `greetingText` |
+| `"Yitian Wang"` / `"Hikari"` / `"サキ"` | `displayNameText` / `senderNameText` / `userNameText` |
+| `"@yitian_wang"` | `userHandleText` |
+| `"Marketing at AIA"` | `bioText` / `descriptionText` |
+| `"1,200"` / `"12,450"` / `"980"` | `coinCountText` / `countText` |
+| `"42"` / `"1.2K"` / `"287"` | `statValueText` |
+| `"投稿"` / `"フォロワー"` / `"フォロー"` | `statLabelText`（または `posts` / `followers` / `following` を **variant** で持つ） |
+| `"プロフィールを編集"` / `"シェア"` | `primaryActionText` / `secondaryActionText` |
+| `"フォロー"` / `"フォロー中"` | `followButtonText`（状態は `followStatus` variant） |
+| `"×1 送る"` | `sendCtaText` |
+| `"ギフトを贈る"` / `"スタンプ"` | `sheetTitleText` |
+| `"が🌹を贈りました"` | `senderActionText` |
+| `"🎉 1,000🪙ダイヤを贈呈!"` | `congratulationText` |
+| `"❤️"` / `"💐"` / `"👑"` / `"💎"` | `giftIcon`（emoji コンテンツも text node の場合 same rule） |
+| `"🪙"` (繰り返し 30 個) | `coinIcon`（30 個全部 same name でOK、index は parent 側で管理） |
+| `"✨"` (パーティクル多数) | `sparkleIcon` |
+| `"1"` / `"2"` / `"3"` (順位) | `rankNumText`（順位値は `rankIndex` variant か parent name で管理） |
+
+**役割名が思いつかない場合の最低保証**:
+- セクション内容を表す末尾 `Text`: `bioText` / `priceText` / `dateText`
+- フォーム要素なら: `labelText` / `placeholderText` / `valueText` / `helperText` / `errorText`
+- ボタン内なら: `buttonLabelText` / `ctaText`
+- アイコン的 text なら: `<purpose>Icon` で統一（emoji を icon として使う場合も含む）
+
+**自己チェック**:
+- 出力する前に **すべての TEXT node の name を grep** して、**仕様書（spec）に出てくる文字列と一致するものがあれば違反**。
+- 例: spec に "Yitian Wang" が含まれている → output に `name="Yitian Wang"` の text node があれば NG。
+
 ---
 
 ## 2. Library 使用ルール
