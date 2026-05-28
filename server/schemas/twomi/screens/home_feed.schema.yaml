@@ -1,0 +1,174 @@
+# ============================================================
+# home_feed.schema.yaml — Screen-level schema
+# ============================================================
+# Home Feed 画面（フルスクリーン縦スワイプ、Avatar Card 中心）
+# Self / Other-following / Other-follow をすべてカバー。
+# ============================================================
+
+meta:
+  name: Home / Feed
+  description: |
+    フルスクリーン Avatar フィード画面。縦スワイプでページング（連続スクロール
+    ではない、TikTok 形式）。各ページは 1 つの Avatar Card で、画面いっぱいに
+    アバター動画 / Live 配信が表示される。BottomNav は Float。
+    Self（自分が見るフィード）と Other（他人のフィード）は User variant で統合。
+  scaffold: B
+  scaffold_reason: |
+    フルスクリーン + BottomNav Float。Header は overlay、コンテンツは
+    画面全体を使う。
+  source_analysis: server/rules/twomi_screen_analysis.md §2
+  applies_when_screen_name_contains:
+    - home_feed
+    - homeFeed
+    - homefeed
+    - home / feed
+    - feed_other_following
+    - feed_other_follow
+  screen_size: { width: 402, height: 874 }
+  background: "#000000"
+
+scaffold_setup:
+  type: B
+  selected_nav_tab: Home
+
+variants:
+  user:
+    values: [self, otherFollowing, otherFollow]
+    note: |
+      自分 / フォロー中の他人 / 未フォロー他人で右上 CTA が変わる。
+  avatarStatus:
+    values: [publicGenerating, placeholder, MemberLock, MemberUnlock]
+  hasAudio:
+    values: [true, false]
+  exclusiveContent:
+    values: [false, true]
+  viewStatus:
+    values: [true, false]
+  tag:
+    values: [true, false]
+
+# Avatar Card は Library にある複雑な ComponentSet。
+# 詳細な variant は Library 側で定義済み。spec の文脈から適切な
+# variant を選択する。
+required_components:
+  - name: Avatar Card
+    note: |
+      Home Feed の主体。各ページに 1 つ、画面全体に表示。
+      Library から import + createInstance、variant は spec の文脈に
+      応じて選択（Model / Status / User / UseCase 等）。
+  - name: User icon
+    library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+    note: |
+      右上の自分のアイコン + Avatar Card 内の投稿者アイコン（必要時）。
+
+forbidden_components:
+  - name: Avatar infomation
+    reason: |
+      Avatar Card で十分。Avatar 詳細 widget を上に重ねない。
+  - name: 画面下部 BottomNav の自前作成
+    reason: |
+      scaffold B が NavigationLiquid（DarkMode=Dark）を自動追加。
+      contentFrame に BottomNav を入れない。
+
+content_structure:
+  layout: VERTICAL
+  # フルスクリーン B では padding なし
+  padding: { top: 0, right: 0, bottom: 0, left: 0 }
+  spacing: 0
+
+  sections:
+    # ─ Section 1: avatarCardPage（必須・全画面）─
+    - id: avatarCardPage
+      description: |
+        Avatar Card 1 枚を画面全体に配置。Background は Card 自身が持つ
+        （avatar 動画 / Live 映像）。
+      required: true
+      layout: ABSOLUTE  # フルスクリーン配置のため
+      children:
+        - role: avatarCard
+          kind: INSTANCE
+          component_ref: Avatar Card
+          variant_selection:
+            # spec の文脈から動的決定。デフォルト:
+            Model: selfVideo  # spec が "live streaming" を含むなら selfInCallVideo
+            User: self        # spec の user 視点に応じて
+            Status: publicGenerating
+            ViewStatus: false
+            Tag: false
+            ExclusiveContent: false
+          size: { width: 402, height: 874 }
+          position: { x: 0, y: 0 }
+
+    # ─ Section 2: topRightAction（任意・右上 CTA）─
+    - id: topRightAction
+      description: |
+        Header 領域内（y=0〜60、SafeArea Top 内）の右側に小さな action。
+        Self → notification icon、Other-following → following badge、
+        Other-follow → "+ フォロー" button。
+      required: false
+      conditional: spec が右上 CTA を言及した場合
+      layout: ABSOLUTE
+      position: { x: 350, y: 60 }
+      note: |
+        scaffold の Header は overlay。topRightAction も Header と同じ層。
+
+    # ─ Section 3: avatarOverlay（Avatar Card 内オーバーレイ）─
+    - id: avatarOverlay
+      description: |
+        Avatar Card の右側に縦並びアクション（like / comment / share 等）と
+        左下に投稿者情報（User icon + 名前 + tag）。
+      required: false
+      conditional: |
+        Avatar Card 内に既に含まれている場合は不要。spec が明示的に
+        追加要素を要求した場合のみ追加。
+      note: |
+        Avatar Card 自体が overlay を含む variant を持つ。spec の指示と
+        Card の variant を確認し、二重表示を避ける。
+
+design_principles:
+  - id: fullscreen_no_padding
+    rule: |
+      Home Feed はフルスクリーン。padding 0、avatar 動画が画面端まで届く。
+  - id: dark_background
+    rule: |
+      背景 #000000。BottomNav は DarkMode=Dark を選ぶ（scaffold B のデフォルト）。
+  - id: page_per_swipe
+    rule: |
+      連続スクロールではなく 1 ページ = 1 Avatar Card。生成時は 1 ページのみ
+      実装する（プレビュー用）。複数ページの実装は Prototype で連携。
+  - id: tap_to_hide_ui
+    rule: |
+      Avatar Card 上をタップすると UI が消える（UseCase: Home Pre-trans variant）。
+      生成時は通常状態のみ実装。
+  - id: dynamic_bg_gradient
+    rule: |
+      Avatar Card の背景グラデーションは avatar 画像の代表色から動的生成
+      （固定値ではない）。spec で色を指定された場合のみ override。
+
+known_failure_modes:
+  - id: missing_avatar_card
+    case: AI が Avatar Card を import せず空白フィードを生成
+    fix: |
+      required_components の Avatar Card を必ず import + createInstance。
+      Library に existing variant が複数あるので、spec から最適 variant を選ぶ。
+  - id: duplicate_bottom_nav
+    case: scaffold B が BottomNav を追加するのに contentFrame にも追加
+    fix: |
+      forbidden の通り、contentFrame に NavigationLiquid を絶対追加しない。
+  - id: avatar_card_wrong_size
+    case: Avatar Card を 402×874 以外のサイズで配置
+    fix: |
+      必ず 402×874 全画面。Header overlay を考慮して y=0 から開始。
+  - id: white_background_misuse
+    case: Type A の白背景設定で生成
+    fix: |
+      Home Feed は scaffold B、黒背景固定。
+
+self_check:
+  - Avatar Card を Library から import したか？
+  - Avatar Card のサイズは 402×874 か？
+  - 背景は黒 #000000 か？
+  - scaffold B のみ使用したか（A や C ではない）？
+  - contentFrame に Header / BottomNav / NavigationLiquid を追加していないか？
+  - 縦並びアクションは Avatar Card variant に内包されているか（二重表示してない）？
+  - Avatar Card variant 選択が spec の文脈に合っているか？

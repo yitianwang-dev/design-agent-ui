@@ -1,0 +1,170 @@
+# ============================================================
+# avatar_top_self.schema.yaml — Screen-level schema
+# ============================================================
+# Avatar TOP 画面（Self / 編集者視点）
+# フルスクリーン + 下部タブ連動。BottomNav なし。
+# ============================================================
+
+meta:
+  name: Avatar TOP / Self
+  description: |
+    自分のアバター TOP 画面。アバター動画 + Function タブ（EditTop /
+    LiveStreaming / VideoGallery / Customize）。下部タブで横スワイプ連動。
+    BottomNav なし（fullscreen + 下部タブ型）。
+    Other 視点は avatar_top_other.schema.yaml を参照。
+  scaffold: C
+  scaffold_reason: |
+    BottomNav なし。Header と Avatar が全画面に表示され、下部タブで
+    Function 切り替え。連動する横スワイプを Prototype で実現。
+  source_analysis: server/rules/twomi_screen_analysis.md §3
+  applies_when_screen_name_contains:
+    - avatar_top_self
+    - avatarTopSelf
+    - avatartopself
+    - avatarTop / self
+  screen_size: { width: 402, height: 874 }
+  background: "#000000"
+
+scaffold_setup:
+  type: C
+
+variants:
+  user:
+    value: self
+    note: |
+      Self は編集者視点。Other（観客視点）は avatar_top_other.schema.yaml。
+  functionScreen:
+    values: [editTop, liveStreaming, videoGallery, customize]
+    note: |
+      下部タブで選択中の function。FunctionContent が variant で切り替わる。
+  menuState:
+    values: [old, feature]
+    note: |
+      old は旧デザイン（リリース後削除予定）。デフォルトは feature。
+  betaVersion:
+    values: [true, false]
+    note: |
+      Beta 機能（LiveStream 等）にバッジ表示。
+
+required_components:
+  - name: Avatar Card  # or 同等の avatar display
+    note: |
+      画面上部の avatar 動画 / 静止画表示。FunctionMenuSection の上に配置。
+  - name: AvatarTOP / FunctionMenuSection
+    note: |
+      W403×H80 の下部 function 選択 bar。
+      Library にある専用 component。**メンテナンスコスト削減のための
+      ネスト component の例外**。
+      menu = EditTop / LiveStream / Publish / Customize、
+      State = Old / feature、Language = JP / EN。
+
+forbidden_components:
+  - name: navigation_liquid（BottomNav）
+    reason: |
+      scaffold C は BottomNav なし。代わりに FunctionMenuSection が
+      下部に来る。混同しない。
+  - name: 画面下部 BottomNav の自前作成
+    reason: 同上。
+  - name: Avatar infomation
+    reason: 別 component。FunctionMenuSection と混同しないこと。
+
+content_structure:
+  layout: VERTICAL
+  padding: { top: 0, right: 0, bottom: 0, left: 0 }
+  spacing: 0
+
+  sections:
+    # ─ Section 1: avatarDisplay（必須・上部全画面）─
+    - id: avatarDisplay
+      description: |
+        画面上部全体に avatar 動画 / 静止画 / 編集画面を表示。
+        FunctionContent が functionScreen variant により切り替わる:
+          - editTop: 編集モード（avatar 全身 + 編集 UI）
+          - liveStreaming: Live 配信画面（Beta バッジ表示）
+          - videoGallery: 動画ギャラリー（grid）
+          - customize: AI チャット形式の customize 画面
+      required: true
+      layout: ABSOLUTE
+      size: { width: 402, height: 794 }   # 874 - 80（FunctionMenuSection 分）
+      position: { x: 0, y: 0 }
+      note: |
+        FunctionContent component を import し functionScreen variant を選択。
+        または各 functionScreen 専用 component が Library にあればそれを使う。
+
+    # ─ Section 2: functionMenuSection（必須・下部）─
+    - id: functionMenuSection
+      description: |
+        下部 80px の Function 選択 bar。横並び 4 項目:
+        EditTop / LiveStream / Publish / Customize。
+        選択中の menu はハイライト、他は dim。
+      required: true
+      layout: ABSOLUTE
+      position: { x: 0, y: 794 }
+      size: { width: 402, height: 80 }
+      children:
+        - role: functionMenuSection
+          kind: INSTANCE
+          component_ref: AvatarTOP / FunctionMenuSection
+          variant_selection:
+            menu: editTop  # spec の指示または functionScreen variant と同じ
+            State: feature
+            Language: JP
+          size: { width: 403, height: 80 }
+
+    # ─ Section 3: topRightActions（任意・Header 内右側）─
+    - id: topRightActions
+      description: |
+        Self 専用の右上アクション群。Function menu（三点）+ 公開中トグル等。
+      required: false
+      conditional: spec が右上 UI を言及
+      layout: HORIZONTAL
+      align: { primary: END, counter: CENTER }
+      note: |
+        scaffold C は Header overlay。topRightActions は Header と同じ層に
+        absolute 配置。
+
+    # ─ Section 4: hashtagButton（任意・avatar 上にオーバーレイ）─
+    - id: hashtagButton
+      description: |
+        avatar 上に重ねる hashtag CTA。Self のみ。Other には表示しない。
+      required: false
+      conditional: spec が tag / hashtag を言及
+
+design_principles:
+  - id: no_bottomnav
+    rule: |
+      scaffold C は BottomNav なし。FunctionMenuSection が代わりに下部 80px を占める。
+  - id: function_swipe_coordination
+    rule: |
+      avatarDisplay の FunctionContent と functionMenuSection は別 component だが、
+      横スワイプで連動。Prototype で実現される（生成時は 1 つの functionScreen を
+      表示）。
+  - id: full_screen_avatar
+    rule: |
+      avatar 動画は画面いっぱい（W402×H794）。padding 0。
+  - id: beta_badge_variant
+    rule: |
+      LiveStreaming function には Beta バッジ表示。betaVersion variant で制御。
+      正式リリース後は variant 削除予定。
+
+known_failure_modes:
+  - id: bottomnav_added
+    case: scaffold C なのに BottomNav を contentFrame に追加
+    fix: |
+      forbidden_components 遵守。FunctionMenuSection が下部の唯一の固定 UI。
+  - id: function_menu_size_wrong
+    case: FunctionMenuSection を 402 幅で配置（正しくは 403）
+    fix: |
+      FunctionMenuSection は 403×80（Library の正準サイズ）。
+  - id: wrong_function_screen
+    case: spec が "Customize" なのに editTop variant を表示
+    fix: |
+      spec から functionScreen を読み取り、variant を正しく選択。
+
+self_check:
+  - scaffold C を使用したか（A や B ではない）？
+  - BottomNav / NavigationLiquid を contentFrame に追加していないか？
+  - FunctionMenuSection を 403×80 のサイズで y=794 に配置したか？
+  - avatarDisplay は W402×H794、y=0 から始まっているか？
+  - functionScreen variant が spec の文脈に合っているか？
+  - Beta バッジは LiveStreaming のみで表示されているか？
