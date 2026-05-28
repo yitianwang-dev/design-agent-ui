@@ -163,40 +163,82 @@ async function reviewAndFixScript(code, screenType) {
     C: 'BottomNavなし・タブ切り替え',
   };
 
-  const reviewPrompt = `以下のFigma Plugin JavaScriptコードを品質チェックしてください。
+  // Expanded lint review (2026-05-28): added layer-naming + AutoLayout + spacing
+  // checks to catch the violations seen in May 28 generation (content-as-name,
+  // direct-placement sparkles, Japanese in layer names, etc.). Review pass acts
+  // as a hard linter — if any check fails the code MUST be rewritten.
+  const reviewPrompt = `あなたは Figma Plugin JS の品質チェッカーです。以下のコードを **12 項目の lint チェック** で精査し、違反があれば**そのまま修正してコード全文を返す**。
 
 ## 画面タイプ: ${screenType}（${typeRules[screenType]}）
 
-## チェック項目
-1. **Header重複**: contentFrameにHeaderコンポーネント（importComponentByKeyAsync/createInstance）を追加していないか
-2. **BottomNav重複**: contentFrameにNavigationLiquidやBottomNavを追加していないか
-3. **背景色の矛盾**: Type ${screenType}に合った背景色か（A=白, B=黒系）
-4. **画面外配置**: y座標が874を超えている要素がないか
-5. **contentFrame外への直接追加**: page.appendChild()でcontentFrame以外に要素を追加していないか
+## 構造系チェック（Critical）
+1. **Header 重複**: contentFrame に Header / headMenu / SearchField 等を import + createInstance していないか。scaffold が自動追加する。
+2. **BottomNav 重複**: contentFrame に NavigationLiquid / BottomNav を追加していないか。scaffold が自動追加する。
+3. **背景色の矛盾**: Type ${screenType} に合った背景色か（A=白, B=黒系, C=黒系）。
+4. **画面外配置**: 任意要素の y 座標 < 0 または y+height > 874 がないか。あれば修正。
+5. **contentFrame 外への直接追加**: \`page.appendChild()\` で contentFrame 以外に要素を追加していないか（scaffold の return を無視していないか）。
+6. **scaffold 構造の改変**: scaffold が返す \`container\` / \`content\` / \`footer\` / \`header\` の階層を編集していないか。header instance を content の子として追加するのは違反（header は screen の直接子）。
 
-## コード
+## 命名系チェック（May 28 で発覚）
+7. **⚠️ TEXT node の name が内容**: \`.name = "実際の文字列"\` のパターンを検出。
+   違反パターン例:
+     - \`textNode.name = "Hello world"\` ← spec の文字列が name に
+     - \`textNode.name = "1,200"\` / \`"42"\` / \`"12,450"\` ← 数字
+     - \`textNode.name = "❤️"\` / \`"🪙"\` / \`"💎"\` / \`"✨"\` ← 絵文字
+     - \`textNode.name = "ギフトを贈る"\` / \`"スタンプ"\` / \`"フォロー"\` ← 日本語ラベル
+     - \`textNode.name = "@yitian_wang"\` ← ハンドル
+     - \`textNode.name = "Yitian Wang"\` / \`"サキ"\` ← ユーザー名
+   修正後の正しい name 例:
+     - \`bodyText\` / \`titleText\` / \`bioText\` / \`descriptionText\`
+     - \`coinCountText\` / \`statValueText\` / \`rankNumText\`
+     - \`giftIcon\` / \`coinIcon\` / \`sparkleIcon\` / \`congratulationText\`
+     - \`sheetTitleText\` / \`sendCtaText\` / \`primaryActionText\`
+     - \`userHandleText\` / \`displayNameText\` / \`senderNameText\`
+   違反したら **すべての TEXT node の name を役割名にリネーム**。
+8. **通用名の使用**: \`.name = "Rectangle"\` / \`"Frame"\` / \`"Group"\` / \`"Text"\` / \`"label"\` （Figma default name そのまま）。役割名に置き換え。
+9. **レイヤー名に日本語**: \`stat_投稿\` / \`stamp_お祝い\` 等、英語以外が混入。必ず camelCase + 英語へ。例: \`stat_posts\` / \`stamp_celebration\`。
+
+## レイアウト系チェック
+10. **直置き禁止**: TEXT / SVG / RECTANGLE（icon 用途）が **AutoLayout でない frame の直接子** になっていないか。違反したら AutoLayout コンテナで包む。特に装飾用 ✨ などの粒子は \`sparkleLayer\` / \`particleLayer\` に集約。
+11. **Gap が 8 の倍数でない**: \`itemSpacing\` / \`gap\` が 4, 8, 12, 16, 20, 24, 32... 以外（例: 5, 7, 10, 13, 15）。8 の倍数または 4 + 8N に修正。
+12. **line-height: Auto**: TEXT に対し lineHeight を設定していない、または \`lineHeight: { unit: 'AUTO' }\`。Noto Sans JP では Auto 禁止。\`lineHeight: { unit: 'PIXELS', value: 数値 }\` に修正。
+
+## 出力フォーマット
+
+問題なし → 元のコードをそのまま返す。
+問題あり → 修正したコード全文を返す。**説明・コメント不要**。コードブロックのみ。
+
 \`\`\`javascript
 ${code}
 \`\`\`
 
-問題があれば修正したコードをそのまま返してください。
-問題がなければ元のコードをそのまま返してください。
-説明は不要です。コードブロックのみ返してください。
+修正したコード:
 
 \`\`\`javascript
-(修正後 or 元のコード)
+(修正後 or 元のコード全文)
 \`\`\``;
 
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 8192,
+    max_tokens: 16384,  // increased from 8192 because review may rewrite large screens
     messages: [{ role: 'user', content: reviewPrompt }],
   });
 
   const text = message.content[0].text;
-  const match = text.match(/```javascript\n([\s\S]*?)```/);
-  if (!match) return code; // レビュー失敗時は元コードをそのまま使う
-  return match[1].trim();
+  // Find the LAST javascript code block (the fixed version, not the input)
+  const matches = [...text.matchAll(/```javascript\n([\s\S]*?)```/g)];
+  if (matches.length === 0) {
+    console.warn('[reviewAndFixScript] no code block in response, using original');
+    return code;
+  }
+  const reviewed = matches[matches.length - 1][1].trim();
+  // Sanity: reviewed must be a non-trivial amount of code (>30% of original)
+  if (reviewed.length < code.length * 0.3) {
+    console.warn(`[reviewAndFixScript] reviewed code too short (${reviewed.length} < 30% of ${code.length}), using original`);
+    return code;
+  }
+  console.log(`[reviewAndFixScript] original ${code.length} → reviewed ${reviewed.length} chars`);
+  return reviewed;
 }
 
 export async function generateFigmaScript(input) {
