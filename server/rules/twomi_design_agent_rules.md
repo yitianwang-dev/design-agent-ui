@@ -72,7 +72,27 @@
 ⚠️ **これは絶対ルール**。違反は MUST 違反 = 再生成対象。
 
 text node（TEXT type のノード）の `name` プロパティを **実際の文字内容**（`characters`）と
-同じにすることは絶対禁止。**必ず役割名**（〜Text / 〜Label / 〜Title など camelCase）で命名する。
+同じにすることは絶対禁止。**必ず役割名**で命名する。
+
+#### Library 実際の命名 convention（参考、Library - Guideline からの実測）
+
+Twomi Library で **実際に使われている** 命名スタイル（このコンベンションに合わせること）:
+
+| Style | Library 実例 |
+|---|---|
+| **PascalCase + 空格**（複数語のコンポーネント名）| `Avatar Pickup Button` / `Like Button` / `Bottom Sheet` / `Notification Card` / `Image Big Gift` / `Profile Action Button` / `Chat Input Bar` |
+| **PascalCase 紧凑**（複数語の inner 要素）| `EntryAvatarIcon` / `FreeInputTitleText` / `LiveCommentContextMenu` / `MembershipTierLabel` / `HomeFeedSortFilterButton` / `LiveCastAvatarImage` |
+| **camelCase**（小さい inner 要素）| `userHeader` / `screenTitleText` |
+| **TitleCase（単語1〜2語、役割が明確）**| `DateStamp` / `HoursLabel` / `MinutesLabel` / `ProgressBar` / `NeonBar` / `Title` / `Container` |
+
+**3 つの style はすべて OK**（PascalCase / camelCase / PascalCase+space）。
+**Twomi Library 自身が混合運用しており、厳格な統一は強制していない**。
+
+**重要なのは 2 点だけ**:
+1. ✅ **英語必須**（日本語・中国語等を layer name に混ぜない）
+2. ✅ **役割で命名**（内容・generic を使わない）
+
+case style は component 内で大まかに一致していれば OK。
 
 **理由**:
 - テキスト内容は spec 由来で動的に変わる。role 命名なら spec が変わっても node 名は変わらない
@@ -80,27 +100,52 @@ text node（TEXT type のノード）の `name` プロパティを **実際の�
 - 多言語対応で JP→EN に切り替えても node 名は変わらない
 - テキストが空になっても name は意味を保つ
 
-**NG → OK 一覧**:
+**NG → OK 一覧**（OK 列は複数 style 例、いずれも acceptable）:
 
-| ❌ NG（内容ベース） | ✅ OK（役割ベース） |
+| ❌ NG（内容ベース） | ✅ OK（役割ベース、3 style 何でも可） |
 |---|---|
-| `"Hello world"` | `greetingText` |
-| `"Yitian Wang"` / `"Hikari"` / `"サキ"` | `displayNameText` / `senderNameText` / `userNameText` |
-| `"@yitian_wang"` | `userHandleText` |
-| `"Marketing at AIA"` | `bioText` / `descriptionText` |
-| `"1,200"` / `"12,450"` / `"980"` | `coinCountText` / `countText` |
-| `"42"` / `"1.2K"` / `"287"` | `statValueText` |
+| `"Hello world"` | `greetingText` / `GreetingText` / `Greeting Text` |
+| `"Yitian Wang"` / `"Hikari"` / `"サキ"` | `displayNameText` / `DisplayNameText` / `Display Name` |
+| `"@yitian_wang"` | `userHandleText` / `UserHandleText` / `User Handle` |
+| `"Marketing at AIA"` | `bioText` / `BioText` / `Bio` |
+| `"1,200"` / `"12,450"` / `"980"` | `coinCountText` / `CoinCountText` / `Coin Count` |
+| `"42"` / `"1.2K"` / `"287"` | `statValueText` / `StatValueText` / `Stat Value` |
 | `"投稿"` / `"フォロワー"` / `"フォロー"` | `statLabelText`（または `posts` / `followers` / `following` を **variant** で持つ） |
-| `"プロフィールを編集"` / `"シェア"` | `primaryActionText` / `secondaryActionText` |
-| `"フォロー"` / `"フォロー中"` | `followButtonText`（状態は `followStatus` variant） |
-| `"×1 送る"` | `sendCtaText` |
-| `"ギフトを贈る"` / `"スタンプ"` | `sheetTitleText` |
-| `"が🌹を贈りました"` | `senderActionText` |
-| `"🎉 1,000🪙ダイヤを贈呈!"` | `congratulationText` |
-| `"❤️"` / `"💐"` / `"👑"` / `"💎"` | `giftIcon`（emoji コンテンツも text node の場合 same rule） |
-| `"🪙"` (繰り返し 30 個) | `coinIcon`（30 個全部 same name でOK、index は parent 側で管理） |
-| `"✨"` (パーティクル多数) | `sparkleIcon` |
-| `"1"` / `"2"` / `"3"` (順位) | `rankNumText`（順位値は `rankIndex` variant か parent name で管理） |
+| `"プロフィールを編集"` / `"シェア"` | `primaryActionText` / `PrimaryActionText` / `Primary Action` |
+| `"フォロー"` / `"フォロー中"` | `followButtonText` / `FollowButtonText` / `Follow Button`（状態は `followStatus` variant） |
+| `"×1 送る"` | `sendCtaText` / `SendCtaText` / `Send CTA` |
+| `"ギフトを贈る"` / `"スタンプ"` | `sheetTitleText` / `SheetTitleText` / `Sheet Title` |
+| `"が🌹を贈りました"` | `senderActionText` / `SenderActionText` / `Sender Action` |
+| `"🎉 1,000🪙ダイヤを贈呈!"` | `congratulationText` / `CongratulationText` / `Congratulation` |
+| `"❤️"` / `"💐"` / `"👑"` / `"💎"` | `giftIcon` / `GiftIcon` / `Gift Icon`（emoji も同じ）|
+| `"🪙"` (繰り返し 30 個) | `coinIcon` / `CoinIcon` / `Coin Icon`（30 個全部 same name でOK）|
+| `"✨"` (パーティクル多数) | `sparkleIcon` / `SparkleIcon` / `Sparkle Icon` |
+| `"1"` / `"2"` / `"3"` (順位) | `rankNumText` / `RankNumText` / `Rank Number` |
+
+**Library actual 命名スタイルに合わせる**:
+- 単独コンポーネント名は **PascalCase + 空格** が多い（例: `Avatar Pickup Button`）
+- inner / nested 要素は **PascalCase 紧凑** か **camelCase** が多い（例: `FreeInputTitleText`, `userHeader`）
+- どちらでも違反ではない。**英語 + 役割** が守られていれば OK。
+
+#### 動的テキストは `$VariableName` 形式が **推奨**（Library 実例）
+
+Library を実測した結果、**動的に内容が変わるテキスト node** は `$UserName` のような
+**テンプレート変数名**で命名されている:
+
+| Library 実例（生成画面）| 表示する spec の文字 |
+|---|---|
+| `$UserName` | `"Hikari"` / `"サキ"` / `"Yitian Wang"` |
+| `$DisplayName` | spec の表示名 |
+| `$Bio` | spec の自己紹介文 |
+| `$CoinCount` | `"1,200"` / `"12,450"` |
+| `$Rank` | `"1"` / `"2"` / `"3"` |
+
+**ルール**:
+- spec から動的に決まる文字 → `$VariableName` 形式（PascalCase、`$` プレフィックス必須）
+- 固定テキスト（ボタンラベル等）→ 役割名（`primaryActionText`、`sheetTitleText`）
+
+両方とも**実際の文字を name にしない**という大原則は同じ。
+`$VariableName` の方が「あとから内容が変わる」ことが明示できて開発者にも親切。
 
 **役割名が思いつかない場合の最低保証**:
 - セクション内容を表す末尾 `Text`: `bioText` / `priceText` / `dateText`
@@ -111,6 +156,140 @@ text node（TEXT type のノード）の `name` プロパティを **実際の�
 **自己チェック**:
 - 出力する前に **すべての TEXT node の name を grep** して、**仕様書（spec）に出てくる文字列と一致するものがあれば違反**。
 - 例: spec に "Yitian Wang" が含まれている → output に `name="Yitian Wang"` の text node があれば NG。
+
+---
+
+### 1.8 Library 実際の構造パターン（必ず参照、Library - Guideline からの実測）
+
+⚠️ **AI 生成画面は以下の構造パターンに揃えること**。Library で観察された実際のパターンであり、Twomi 設計の現行 standard。
+
+#### A. 階層の深さ（shallow がデフォルト）
+
+| component 種類 | 典型階層数 | 実例 |
+|---|---|---|
+| 単独 button | 2 | `button → icon + text` |
+| Card | 3-4 | `card → row → icon + name + meta` |
+| Bottom Sheet | 4-5 | `sheet → handle + title + body → items → cells` |
+| Full screen | 4-5 | `screen → container → content → section → element` |
+
+**過度なネスト禁止**:
+- 役割が説明できない中間 Frame を作らない
+- 1 child しか持たない wrapper Frame は基本不要（visibility 制御等の理由がない限り）
+
+**Library 実例（Profile Action Button、shallow 2階層）**:
+```
+button (auto-layout, gap=4, padding=8, rounded=10)
+├── icon "Outline / Security / Favorites Unlocked"
+│     └── Vector (SVG path)
+└── text "$ActionLabel"
+```
+
+#### B. AutoLayout がデフォルト
+
+- **すべての container は AutoLayout**（HORIZONTAL or VERTICAL flex）
+- gap で要素間隔を制御（**8 の倍数**: 4, 8, 12, 16, 24, 32...）
+- padding で内側余白を制御
+- **絶対位置（x, y）は overlay / 重なり / floating 以外で使わない**
+
+絶対位置 OK の場面:
+- Bottom Sheet（画面下から overlay）
+- Header overlay（scaffold A/B）
+- 装飾 sparkle ✨（ただし AutoLayout の `sparkleLayer` に集約してから absolute 配置）
+- Toast / notification banner
+
+#### C. Icon 命名 taxonomy（slash 多段分類）
+
+**Library 全 icon が同じ taxonomy**:
+```
+[描画スタイル] / [カテゴリ] / [具体名]
+```
+
+| 段 | 値の例 |
+|---|---|
+| 第 1 段（描画スタイル）| `Outline` / `Bold` / `Liner` / `Filled` |
+| 第 2 段（カテゴリ）| `Security` / `Notifications` / `Users` / `Essentional, UI` |
+| 第 3 段（具体名）| `Favorites Unlocked` / `Bell` / `User Plus Rounded` |
+
+**Library 実例**:
+- `Outline / Security / Favorites Unlocked`
+- `Outline / Notifications / Bell`
+- `Outline / Users / User Plus Rounded`
+- `Outline / Essentional, UI / Magic Stick 3`
+
+新規 icon を作る場合**この slash taxonomy に合わせる**。
+
+#### D. Variant property 命名 format
+
+**必須形式**: `Property1=Value1, Property2=Value2, ...`
+- カンマ + 半角スペース区切り（`Property=Value,Value` ではない）
+- Property は **PascalCase**
+- Value は仕様 enum と一致
+
+**Library 実例**:
+- `Language=JP, State=Default`
+- `User=private, Status=NG Public, Language=JP, Size=Default`
+- `Tier=Tier1, State=Active`
+- `Type=User`（単一 property の場合）
+
+#### E. Sub-component の slash 命名（親子関係を明示）
+
+親 component の内部要素を slash で表現:
+- `Notification Card/IconName`
+- `Chatbox / MikeButton`
+- `Chat Input Bar / VideoButton`
+- `Settings/MembershipListItem`
+
+slash 周りの space は **有り/無し どちらでも OK**（Library 内で混在）。
+意図: 「`Notification Card` の内部に `IconName` がある」ことを命名で示す。
+
+#### F. Component 命名の使い分け
+
+| 種類 | スタイル | 例 |
+|---|---|---|
+| 単独機能 component | PascalCase + spaces | `Profile Action Button`, `Avatar Pickup Button`, `Like Button` |
+| nested / inner | PascalCase 紧凑 | `MembershipTierLabel`, `LiveCommentContextMenu`, `EntryAvatarIcon` |
+| 1-2 word の role | TitleCase | `DateStamp`, `ProgressBar`, `NeonBar`, `Title`, `Container` |
+| Section / page 内 group | camelCase | `userHeader` |
+
+すべて**英語 + 役割ベース**は共通。
+
+#### G. 「Container」「Frame」「Title」など generic 名の使用方針
+
+**Library で実際に使われている**（OK）:
+- `Container` — wrapper の意味で OK
+- `Title` — `titleText` より簡潔、Library で多用
+- `Button` — single button only な場面で OK
+- `Note` / `SubNote` — メモ要素
+
+**Figma default のままは NG**:
+- `Rectangle`, `Frame`, `Group`（自動生成のまま）
+- 大文字始まり `Text`（Figma text node default）
+- `label`（小文字、単独）
+
+**判断基準**:
+1. Library で見たことがある generic 名 → 許容
+2. Library で見たことがない / Figma default のまま → NG
+
+#### H. ネストパターン: 親-子 + reusable component の再利用
+
+実例（Notification Card/IconName）:
+```
+NotificationCardIconName (flex, gap=4)
+├── UserIcon (nested component, 20×20)
+│     └── userImage
+│           └── imageOther (with mask)
+└── text "$UserName" ← 動的テキストは $VariableName
+```
+
+**観察**:
+- 親 component が**他の Library component** を nested 利用（UserIcon を入れる）
+- inner 要素も役割名（`userImage`, `imageOther`）
+- 動的 text は `$VariableName`
+
+AI 生成時も同じ pattern を使う:
+- 既存 Library component（User icon 等）を import + nest
+- inner element に role-based 名
+- 動的 text は `$VariableName`
 
 ---
 
@@ -290,18 +469,24 @@ color: #26A2A6
 
 ### 7.1 Component 命名
 
-- **camelCase**、役割ベース
-- フォーマット: `componentName` / `componentName_variant` / `componentName_state`
+- **役割ベース + 英語**
+- Case style は Library 実例に合わせて柔軟（PascalCase + 空格 / PascalCase 紧凑 / camelCase いずれでも OK）
+- Library 実例:
+  - PascalCase + 空格: `Avatar Pickup Button` / `Like Button` / `Notification Card` / `Bottom Sheet`
+  - PascalCase 紧凑: `EntryAvatarIcon` / `MembershipTierLabel`
+  - camelCase: `userHeader`
 - 見た目ベース（`redButton`, `largeCard`）**禁止**
 - 画面名入り（`loginPageButton`）**禁止**
 - 意味曖昧（`component1`, `commonComponent`）**禁止**
 
 ### 7.2 Layer 命名
 
-- camelCase、役割ベース、英語
-- フォーマット: `[Role][Type]_[Role]_[State]`
-- 例: `primaryButton`, `screenTitleText`, `avatarImage`, `tabBar`
-- Rectangle / Group / Text 等の汎用名 **禁止**
+- **役割ベース + 英語** が絶対条件
+- Case style は柔軟（§1.7 参照、Library 実例に合わせる）
+- 例: `primaryButton` / `Screen Title Text` / `avatarImage` / `TabBar` / `DateStamp` / `MinutesLabel`
+- Rectangle / Group / Frame / Text 等の汎用名 **禁止**（Figma default をそのまま残さない）
+- 日本語・中国語等を layer 名に混入 **禁止**
+- TEXT node の name = 内容 **絶対禁止**（§1.7 参照）
 - 階層は **4 階層以内** が目安（Language variant など構造上やむを得ない場合は超えてよい）
 
 ### 7.3 Screen 命名
