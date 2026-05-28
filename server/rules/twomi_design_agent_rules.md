@@ -127,6 +127,26 @@ case style は component 内で大まかに一致していれば OK。
 - inner / nested 要素は **PascalCase 紧凑** か **camelCase** が多い（例: `FreeInputTitleText`, `userHeader`）
 - どちらでも違反ではない。**英語 + 役割** が守られていれば OK。
 
+#### 動的テキストは `$VariableName` 形式が **推奨**（Library 実例）
+
+Library を実測した結果、**動的に内容が変わるテキスト node** は `$UserName` のような
+**テンプレート変数名**で命名されている:
+
+| Library 実例（生成画面）| 表示する spec の文字 |
+|---|---|
+| `$UserName` | `"Hikari"` / `"サキ"` / `"Yitian Wang"` |
+| `$DisplayName` | spec の表示名 |
+| `$Bio` | spec の自己紹介文 |
+| `$CoinCount` | `"1,200"` / `"12,450"` |
+| `$Rank` | `"1"` / `"2"` / `"3"` |
+
+**ルール**:
+- spec から動的に決まる文字 → `$VariableName` 形式（PascalCase、`$` プレフィックス必須）
+- 固定テキスト（ボタンラベル等）→ 役割名（`primaryActionText`、`sheetTitleText`）
+
+両方とも**実際の文字を name にしない**という大原則は同じ。
+`$VariableName` の方が「あとから内容が変わる」ことが明示できて開発者にも親切。
+
 **役割名が思いつかない場合の最低保証**:
 - セクション内容を表す末尾 `Text`: `bioText` / `priceText` / `dateText`
 - フォーム要素なら: `labelText` / `placeholderText` / `valueText` / `helperText` / `errorText`
@@ -136,6 +156,140 @@ case style は component 内で大まかに一致していれば OK。
 **自己チェック**:
 - 出力する前に **すべての TEXT node の name を grep** して、**仕様書（spec）に出てくる文字列と一致するものがあれば違反**。
 - 例: spec に "Yitian Wang" が含まれている → output に `name="Yitian Wang"` の text node があれば NG。
+
+---
+
+### 1.8 Library 実際の構造パターン（必ず参照、Library - Guideline からの実測）
+
+⚠️ **AI 生成画面は以下の構造パターンに揃えること**。Library で観察された実際のパターンであり、Twomi 設計の現行 standard。
+
+#### A. 階層の深さ（shallow がデフォルト）
+
+| component 種類 | 典型階層数 | 実例 |
+|---|---|---|
+| 単独 button | 2 | `button → icon + text` |
+| Card | 3-4 | `card → row → icon + name + meta` |
+| Bottom Sheet | 4-5 | `sheet → handle + title + body → items → cells` |
+| Full screen | 4-5 | `screen → container → content → section → element` |
+
+**過度なネスト禁止**:
+- 役割が説明できない中間 Frame を作らない
+- 1 child しか持たない wrapper Frame は基本不要（visibility 制御等の理由がない限り）
+
+**Library 実例（Profile Action Button、shallow 2階層）**:
+```
+button (auto-layout, gap=4, padding=8, rounded=10)
+├── icon "Outline / Security / Favorites Unlocked"
+│     └── Vector (SVG path)
+└── text "$ActionLabel"
+```
+
+#### B. AutoLayout がデフォルト
+
+- **すべての container は AutoLayout**（HORIZONTAL or VERTICAL flex）
+- gap で要素間隔を制御（**8 の倍数**: 4, 8, 12, 16, 24, 32...）
+- padding で内側余白を制御
+- **絶対位置（x, y）は overlay / 重なり / floating 以外で使わない**
+
+絶対位置 OK の場面:
+- Bottom Sheet（画面下から overlay）
+- Header overlay（scaffold A/B）
+- 装飾 sparkle ✨（ただし AutoLayout の `sparkleLayer` に集約してから absolute 配置）
+- Toast / notification banner
+
+#### C. Icon 命名 taxonomy（slash 多段分類）
+
+**Library 全 icon が同じ taxonomy**:
+```
+[描画スタイル] / [カテゴリ] / [具体名]
+```
+
+| 段 | 値の例 |
+|---|---|
+| 第 1 段（描画スタイル）| `Outline` / `Bold` / `Liner` / `Filled` |
+| 第 2 段（カテゴリ）| `Security` / `Notifications` / `Users` / `Essentional, UI` |
+| 第 3 段（具体名）| `Favorites Unlocked` / `Bell` / `User Plus Rounded` |
+
+**Library 実例**:
+- `Outline / Security / Favorites Unlocked`
+- `Outline / Notifications / Bell`
+- `Outline / Users / User Plus Rounded`
+- `Outline / Essentional, UI / Magic Stick 3`
+
+新規 icon を作る場合**この slash taxonomy に合わせる**。
+
+#### D. Variant property 命名 format
+
+**必須形式**: `Property1=Value1, Property2=Value2, ...`
+- カンマ + 半角スペース区切り（`Property=Value,Value` ではない）
+- Property は **PascalCase**
+- Value は仕様 enum と一致
+
+**Library 実例**:
+- `Language=JP, State=Default`
+- `User=private, Status=NG Public, Language=JP, Size=Default`
+- `Tier=Tier1, State=Active`
+- `Type=User`（単一 property の場合）
+
+#### E. Sub-component の slash 命名（親子関係を明示）
+
+親 component の内部要素を slash で表現:
+- `Notification Card/IconName`
+- `Chatbox / MikeButton`
+- `Chat Input Bar / VideoButton`
+- `Settings/MembershipListItem`
+
+slash 周りの space は **有り/無し どちらでも OK**（Library 内で混在）。
+意図: 「`Notification Card` の内部に `IconName` がある」ことを命名で示す。
+
+#### F. Component 命名の使い分け
+
+| 種類 | スタイル | 例 |
+|---|---|---|
+| 単独機能 component | PascalCase + spaces | `Profile Action Button`, `Avatar Pickup Button`, `Like Button` |
+| nested / inner | PascalCase 紧凑 | `MembershipTierLabel`, `LiveCommentContextMenu`, `EntryAvatarIcon` |
+| 1-2 word の role | TitleCase | `DateStamp`, `ProgressBar`, `NeonBar`, `Title`, `Container` |
+| Section / page 内 group | camelCase | `userHeader` |
+
+すべて**英語 + 役割ベース**は共通。
+
+#### G. 「Container」「Frame」「Title」など generic 名の使用方針
+
+**Library で実際に使われている**（OK）:
+- `Container` — wrapper の意味で OK
+- `Title` — `titleText` より簡潔、Library で多用
+- `Button` — single button only な場面で OK
+- `Note` / `SubNote` — メモ要素
+
+**Figma default のままは NG**:
+- `Rectangle`, `Frame`, `Group`（自動生成のまま）
+- 大文字始まり `Text`（Figma text node default）
+- `label`（小文字、単独）
+
+**判断基準**:
+1. Library で見たことがある generic 名 → 許容
+2. Library で見たことがない / Figma default のまま → NG
+
+#### H. ネストパターン: 親-子 + reusable component の再利用
+
+実例（Notification Card/IconName）:
+```
+NotificationCardIconName (flex, gap=4)
+├── UserIcon (nested component, 20×20)
+│     └── userImage
+│           └── imageOther (with mask)
+└── text "$UserName" ← 動的テキストは $VariableName
+```
+
+**観察**:
+- 親 component が**他の Library component** を nested 利用（UserIcon を入れる）
+- inner 要素も役割名（`userImage`, `imageOther`）
+- 動的 text は `$VariableName`
+
+AI 生成時も同じ pattern を使う:
+- 既存 Library component（User icon 等）を import + nest
+- inner element に role-based 名
+- 動的 text は `$VariableName`
 
 ---
 

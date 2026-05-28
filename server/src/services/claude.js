@@ -181,20 +181,22 @@ async function reviewAndFixScript(code, screenType) {
 
 ## 命名系チェック（May 28 で発覚）
 7. **⚠️ TEXT node の name が内容**: \`.name = "実際の文字列"\` のパターンを検出。
-   違反パターン例:
+   違反パターン例（**全て NG**、修正必須）:
      - \`textNode.name = "Hello world"\` ← spec の文字列が name に
      - \`textNode.name = "1,200"\` / \`"42"\` / \`"12,450"\` ← 数字
      - \`textNode.name = "❤️"\` / \`"🪙"\` / \`"💎"\` / \`"✨"\` ← 絵文字
      - \`textNode.name = "ギフトを贈る"\` / \`"スタンプ"\` / \`"フォロー"\` ← 日本語ラベル
      - \`textNode.name = "@yitian_wang"\` ← ハンドル
      - \`textNode.name = "Yitian Wang"\` / \`"サキ"\` ← ユーザー名
-   修正後の正しい name 例:
-     - \`bodyText\` / \`titleText\` / \`bioText\` / \`descriptionText\`
-     - \`coinCountText\` / \`statValueText\` / \`rankNumText\`
-     - \`giftIcon\` / \`coinIcon\` / \`sparkleIcon\` / \`congratulationText\`
-     - \`sheetTitleText\` / \`sendCtaText\` / \`primaryActionText\`
-     - \`userHandleText\` / \`displayNameText\` / \`senderNameText\`
-   違反したら **すべての TEXT node の name を役割名にリネーム**。
+   修正の方針（**2 種類の正しい命名**）:
+     **(a) 動的テキスト**（spec から来る、可変）→ \`$VariableName\` 形式（PascalCase + \`$\` prefix）
+       例: \`$UserName\`, \`$CoinCount\`, \`$DisplayName\`, \`$Bio\`, \`$Rank\`, \`$Handle\`
+       Library 実例: \`<p>$UserName</p>\` ← Library の Notification Card/IconName で実測。
+     **(b) 固定テキスト**（ボタンラベル / タイトル等）→ 役割名（camelCase / PascalCase / Title）
+       例: \`sheetTitleText\` / \`SheetTitle\` / \`Sheet Title\`
+       例: \`primaryActionText\` / \`PrimaryAction\` / \`Primary Action\`
+       例: \`giftIcon\` / \`GiftIcon\` / \`Gift Icon\`
+   違反したら **すべての TEXT node の name を役割名 or $VariableName にリネーム**。
 8. **通用名の使用**: \`.name = "Rectangle"\` / \`"Frame"\` / \`"Group"\` / \`"Text"\` / \`"label"\` （Figma default name そのまま）。役割名に置き換え。
 9. **レイヤー名に日本語**: \`stat_投稿\` / \`stamp_お祝い\` 等、英語以外が混入。必ず camelCase + 英語へ。例: \`stat_posts\` / \`stamp_celebration\`。
 
@@ -322,7 +324,7 @@ export async function generateFigmaScript(input) {
   const rulesContent = await loadAllRules();
   console.log(`[rules] loaded ${rulesContent.length} chars from rules/`);
   const rulesSection = rulesContent
-    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（最重要、再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。必ず役割名（〜Text / 〜Label / 〜Icon）で命名する。spec に出てくる文字列を node 名に使ったら MUST 違反。詳細は rules §1.7 参照。**\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n`
+    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（最重要、再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。**\n   - **動的テキスト**（spec から来る user 名・count 等）→ \`$VariableName\` 形式（PascalCase、\`$\` プレフィックス必須）。例: \`$UserName\`, \`$CoinCount\`, \`$DisplayName\`, \`$Bio\`\n   - **固定テキスト**（ボタンラベル等）→ 役割名（\`primaryActionText\`, \`sheetTitleText\`）\n   - 詳細 rules §1.7 参照\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n- **⚠️ Library 実際の構造に合わせる**: 階層 shallow（2-5層）、AutoLayout デフォルト、Icon は \`Outline / Category / Name\` slash taxonomy。詳細 §1.8 参照。\n`
     : '';
 
   // Screen-level schema (2026-05-28): if request's screenName matches a known
