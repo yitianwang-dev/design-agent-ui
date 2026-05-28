@@ -1,0 +1,205 @@
+# ============================================================
+# profile_other.schema.yaml — Screen-level schema
+# ============================================================
+# 他のユーザーのプロフィール画面（USER profile, Other 視点）
+# 構造は profile_self と同じ、permission の違いだけ。
+#
+# Self / Other は同じ画面構造、User variant で差分を吸収するのが
+# Twomi 設計原則。本スキーマと profile_self.schema.yaml の違いは:
+#   - userType: other
+#   - actionButtons: Follow button（single, full-width）
+#   - 編集系UIなし（プロフィール編集ボタンなし）
+# ============================================================
+
+meta:
+  name: Profile / Other
+  description: |
+    他のユーザーのプロフィール画面。Other 視点（観客）。
+    Self（編集者）視点は profile_self.schema.yaml を参照。
+  scaffold: A
+  source_analysis: server/rules/twomi_screen_analysis.md §1 + §4
+  applies_when_screen_name_contains:
+    - profile_other
+    - profileOther
+    - otherProfile
+    - profile / other
+  screen_size: { width: 402, height: 874 }
+  background: "#FFFEFE"
+
+scaffold_setup:
+  type: A
+  selected_nav_tab: Search  # Other profile は通常 Search タブ経由
+
+variants:
+  userType:
+    value: other
+  followStatus:
+    values: [notFollowing, following]
+    note: |
+      Follow button のテキスト・スタイルが切り替わる:
+      notFollowing → "フォロー" / fill teal #35C1C6 / 白テキスト
+      following    → "フォロー中" / outline / #2E2E2E テキスト
+  verifiedBadgeState:
+    values: [notVerified, verified]
+  badgeType:
+    values: [partner, standard, premium, vip]
+    note: spec が badge を言及した場合のみ
+
+required_components:
+  - name: User icon
+    library_component_key: "51faaa59eccc1fd112e9f7c88100c2077004e974"
+    schema_ref: 11_user_icon
+    note: |
+      Profile/Self と同じく **必須**。createEllipse 禁止。
+      Other の場合 variant は type=Other。
+
+forbidden_components:
+  - name: Avatar infomation
+    reason: |
+      Twomi avatar 詳細ページ用 component。人間 profile に絶対に使わない。
+  - name: Avatar icon
+    reason: |
+      Twomi avatar サムネ用。人間 profile には不適切。User icon を使う。
+  - name: Avatar Pickup Button
+    reason: Live 配信用、Profile では使わない。
+  - name: Avatar Bookmark Button
+    reason: Avatar Card 内専用。
+  - name: EntryAvatarIcon
+    reason: 限定コンテンツ設定画面用。
+  - name: AvatarIcon ExclusiveContentLabel
+    reason: Avatar icon に重ねる pill。Profile では使わない。
+
+content_structure:
+  layout: VERTICAL
+  padding: { top: 16, right: 16, bottom: 24, left: 16 }
+  spacing: 24
+  align_horizontal: CENTER
+
+  sections:
+    # ─ Section 1: userHeader（必須）─
+    - id: userHeader
+      description: |
+        他ユーザー情報ブロック — avatar 64×64 + 表示名 + ハンドル + 自己紹介。
+      required: true
+      layout: VERTICAL
+      spacing: 12
+      align: CENTER
+      children:
+        - role: avatar
+          kind: INSTANCE
+          component_ref: User icon
+          variant_selection:
+            State: Profile
+            type: Other   # ← Self との違い
+          size: { width: 64, height: 64 }
+        - role: displayName
+          kind: TEXT
+          font: { family: Noto Sans JP, style: Bold, size: 20 }
+          color: "#2E2E2E"
+          align: CENTER
+          line_height: { unit: PIXELS, value: 28 }
+          content_source: spec.userName || "ユーザー名"
+        - role: handle
+          kind: TEXT
+          font: { family: Noto Sans JP, style: Regular, size: 14 }
+          color: "#767680"
+          align: CENTER
+          line_height: { unit: PIXELS, value: 20 }
+          prefix: "@"
+          content_source: spec.handle
+          conditional: spec.handle != null
+        - role: bio
+          kind: TEXT
+          font: { family: Noto Sans JP, style: Regular, size: 14 }
+          color: "#2E2E2E"
+          align: CENTER
+          line_height: { unit: PIXELS, value: 20 }
+          multiline: true
+          max_lines: 3
+          width: FILL
+          content_source: spec.bio
+          conditional: spec.bio != null
+
+    # ─ Section 2: stats（任意、profile_self と同じ）─
+    - id: stats
+      description: 投稿 / フォロワー / フォロー の 3 列ステータス
+      required: false
+      conditional: spec が followers / posts / following を言及
+      layout: HORIZONTAL
+      spacing: 32
+      align: CENTER
+      items:
+        - { key: posts,     label: "投稿" }
+        - { key: followers, label: "フォロワー" }
+        - { key: following, label: "フォロー" }
+      item_structure:
+        layout: VERTICAL
+        spacing: 4
+        align: CENTER
+        children:
+          - { role: count, kind: TEXT, font: "Noto Sans JP Bold 18", color: "#2E2E2E" }
+          - { role: label, kind: TEXT, font: "Noto Sans JP Regular 12", color: "#767680" }
+
+    # ─ Section 3: followAction（必須・Other は Follow button のみ）─
+    - id: followAction
+      description: |
+        Other 用: Follow button のみ（profile_self の Edit/Share と異なる）。
+        followStatus variant で UI が切り替わる。
+      required: true
+      layout: HORIZONTAL
+      spacing: 0
+      align: CENTER
+      children:
+        - role: followButton
+          kind: FRAME
+          size: { width: 200, height: 40 }
+          corner_radius: 20
+          padding: { top: 0, right: 24, bottom: 0, left: 24 }
+          inner_layout: { direction: HORIZONTAL, primary: CENTER, counter: CENTER }
+          # followStatus による分岐
+          variant_styling:
+            - when: { followStatus: notFollowing }
+              fill: { type: SOLID, color: "#35C1C6" }
+              text: { content: "フォロー", color: "#FFFFFF" }
+            - when: { followStatus: following }
+              fill: TRANSPARENT
+              stroke: { color: "#C4C4C4", weight: 1, align: INSIDE }
+              text: { content: "フォロー中", color: "#2E2E2E" }
+          text_font: { family: Noto Sans JP, style: Medium, size: 14 }
+
+    # ─ Section 4: tabsContent（任意）─
+    - id: tabsContent
+      description: |
+        spec が tab / 投稿 / ライブ配信 / お気に入り 等を言及した場合のみ。
+        通常は省略可。Other は基本 read-only。
+      required: false
+      conditional: spec が "tab" 等を言及
+      layout: VERTICAL
+      spacing: 16
+
+design_principles:
+  - id: self_other_same_structure
+    rule: |
+      Profile/Self と Profile/Other は同じ section 順序・余白・サイズ。
+      違うのは avatar の type variant と actionButtons だけ。
+  - id: follow_button_full_width_centered
+    rule: |
+      Other の follow button は中央 1 つ。Self のような 2 列 outline button にしない。
+  - id: no_edit_ui_for_other
+    rule: |
+      編集系UI（プロフィール編集 / アバター削除 等）は Other に出さない。
+      Self schema にあって本 schema にないものはすべて visibility=false。
+
+known_failure_modes:
+  - id: avatar_information_misuse
+    case: AI が Avatar infomation を選択
+    fix: forbidden_components を遵守。
+  - id: missing_follow_button
+    case: Follow button を忘れる
+    fix: Other の必須 CTA。spec に "フォロー" の指示が無くても出すこと。
+
+self_check:
+  - User icon variant は State=Profile, type=Other か？
+  - Follow button が Other の唯一の CTA として配置されているか？
+  - 編集系UI（プロフィール編集 / シェア）が表示されていないか？
+  - その他の self_check は profile_self.schema.yaml §self_check に準ずる。

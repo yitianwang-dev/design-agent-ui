@@ -1,18 +1,76 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { readFile } from 'fs/promises';
-import { resolve, join, dirname } from 'path';
+import { readFile, readdir } from 'fs/promises';
+import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { parseFigmaUrl, fetchNodeImageAsBase64, fetchNodeStyles, fetchComponentSets } from './figma.js';
 import { loadSchemasForComponents } from './schemas.js';
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const SCAFFOLD_DIR = process.env.SCAFFOLD_DIR || join(__dirname, '../../scaffolds');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const SCAFFOLD_DIR = process.env.SCAFFOLD_DIR || resolve(__dirname, '../../scaffolds');
+const RULES_DIR = process.env.RULES_DIR || resolve(__dirname, '../../rules');
 
 async function loadScaffold(type) {
   const file = resolve(SCAFFOLD_DIR, `scaffold_${type.toLowerCase()}.js`);
   return readFile(file, 'utf-8');
+}
+
+// loadAllRules (2026-05-28): read every .md file in server/rules/ and concatenate
+// them so the system prompt can include the full Design Agent rule set + Twomi
+// design system references (master / structure / component / screen_analysis).
+// Files are sorted alphabetically so the rules file (which starts "twomi_design_agent_")
+// comes before the references. If the folder is missing or empty, returns ''.
+async function loadAllRules() {
+  try {
+    const files = (await readdir(RULES_DIR))
+      .filter(f => f.endsWith('.md'))
+      .sort();
+    if (files.length === 0) return '';
+    const sections = await Promise.all(
+      files.map(async f => {
+        const content = await readFile(resolve(RULES_DIR, f), 'utf-8');
+        return `### Source: ${f}\n\n${content}`;
+      })
+    );
+    return sections.join('\n\n---\n\n');
+  } catch (err) {
+    console.warn(`[loadAllRules] failed to load rules from ${RULES_DIR}: ${err.message}`);
+    return '';
+  }
+}
+
+// loadMatchingScreenSchema (2026-05-28): if the request's screenName matches a
+// screen-level schema in server/schemas/twomi/screens/, load it and return its
+// content. The matching is a normalized substring check: the schema filename
+// (e.g. "profile_self.schema.yaml" → normalized "profileself") must appear
+// inside the normalized screenName. So screenName="testProfileSelf" matches
+// "profile_self.schema.yaml". If no schema matches, returns null and the
+// system falls back to component-level schemas only (current behavior).
+//
+// Screen schemas constrain layout structure + which Library components to use
+// + forbidden components list, eliminating most "AI improvises layout" failures.
+async function loadMatchingScreenSchema(screenName) {
+  const SCREENS_DIR = resolve(__dirname, '../../schemas/twomi/screens');
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const normalizedScreen = normalize(screenName);
+  if (!normalizedScreen) return null;
+  try {
+    const files = (await readdir(SCREENS_DIR)).filter(f => f.endsWith('.schema.yaml'));
+    for (const file of files) {
+      const base = file.replace('.schema.yaml', '');
+      const normalizedBase = normalize(base);
+      if (!normalizedBase) continue;
+      if (normalizedScreen.includes(normalizedBase)) {
+        const content = await readFile(resolve(SCREENS_DIR, file), 'utf-8');
+        return { matched: file, content };
+      }
+    }
+  } catch (err) {
+    console.warn(`[loadMatchingScreenSchema] failed: ${err.message}`);
+  }
+  return null;
 }
 
 async function fetchSpecFromUrl(url) {
@@ -35,8 +93,14 @@ async function fetchSpecFromUrl(url) {
 async function selectComponents(specContent, screenType, screenName, componentSets) {
   if (!componentSets.length) return [];
 
+  // Fix (2026-05-28): increase description slice from 80 → 600 chars so the
+  // structured "【用途 / Usage】/【State】/【注意 / Notes】/【使用画面 / Used in】"
+  // blocks in Twomi Library descriptions are visible to Haiku at selection time.
+  // Average description is 200-400 chars; 600 covers full block for all known
+  // components. With <300 components currently annotated, prompt size impact
+  // is minimal (~150KB worst case).
   const catalogText = componentSets
-    .map(cs => `- ${cs.name} (key: ${cs.key})${cs.description ? ': ' + cs.description.slice(0, 80) : ''}`)
+    .map(cs => `- ${cs.name} (key: ${cs.key})${cs.description ? '\n  ' + cs.description.replace(/\n/g, '\n  ').slice(0, 600) : ''}`)
     .join('\n');
 
   const prompt = `以下の画面仕様をもとに、contentFrameの実装に必要なFigmaコンポーネントをカタログから選んでください。
@@ -48,6 +112,18 @@ async function selectComponents(specContent, screenType, screenName, componentSe
 ${specContent.slice(0, 3000)}
 
 ## コンポーネントカタログ
+各コンポーネントの description には以下の構造化情報が含まれます:
+  - 【用途 / Usage】: そのコンポーネントの本来の使用文脈
+  - 【State】: variant プロパティと値（Enum）
+  - 【注意 / Notes】: deprecation 警告・他コンポーネントとの関係・使用制限
+  - 【使用画面 / Used in】: そのコンポーネントが本来使われる画面
+
+**コンポーネント選択時は description の Usage と Notes を最優先で読み、
+適切な文脈で使うべきコンポーネントだけを選んでください。**
+- 「現行画面では使用しないこと」「deprecated」「旧デザイン」と書いてあるものは選ばない
+- 「○○へ重ねて表示する」と書いてあるものは単独で選ばない（親コンポーネントと併用）
+- Usage に書かれた本来の使用文脈と画面要件が一致しないものは選ばない
+
 ${catalogText}
 
 ## 注意
@@ -193,8 +269,33 @@ export async function generateFigmaScript(input) {
     C: 'タブ型（BottomNav なし）',
   };
 
+  // Load all rules / design-system references from server/rules/*.md.
+  // These are injected into the system prompt so the agent has full context on
+  // Twomi UI rules (MUST/SHOULD/NICE), Library component white/blacklists,
+  // layout / color / naming / philosophy. See server/rules/README or the
+  // twomi_design_agent_rules.md for the rule taxonomy.
+  const rulesContent = await loadAllRules();
+  console.log(`[rules] loaded ${rulesContent.length} chars from rules/`);
+  const rulesSection = rulesContent
+    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n`
+    : '';
+
+  // Screen-level schema (2026-05-28): if request's screenName matches a known
+  // screen schema in server/schemas/twomi/screens/, inject it. This gives the
+  // agent exact layout structure + component constraints + forbidden list for
+  // that specific screen, eliminating most "AI improvises layout" failures.
+  const screenSchema = await loadMatchingScreenSchema(screenName);
+  if (screenSchema) {
+    console.log(`[screenSchema] matched ${screenSchema.matched} for screenName="${screenName}"`);
+  } else {
+    console.log(`[screenSchema] no match for screenName="${screenName}" — falling back to component schemas only`);
+  }
+  const screenSchemaSection = screenSchema
+    ? `\n\n## 🎯 画面固有スキーマ（${screenSchema.matched}）\n\nこのリクエストの screenName="${screenName}" は以下の画面スキーマにマッチしました。\n**この構造を厳格に守ってください。spec と矛盾する場合は本スキーマの構造を優先**（spec は内容を供給する役割、本スキーマは骨格を定義する役割）。\nスキーマに記載された forbidden_components は絶対に使わないこと。required_components は必ず使うこと。\n\n${screenSchema.content}\n`
+    : '';
+
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}
 
 ## Twomiとは
 - 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）
