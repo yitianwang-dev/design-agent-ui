@@ -391,20 +391,80 @@ ${catalogText}
   }
 }
 
-async function reviewAndFixScript(code, screenType) {
+// extractForbiddenComponents (2026-05-29 PR #6): pull `forbidden_components`
+// entries from one or more schema YAML strings. Used to feed the Step 5
+// reviewer a concrete component blacklist so it can flag "Avatar infomation
+// on a profile screen" and similar semantic violations that pure structural
+// lint cannot detect.
+function extractForbiddenComponents(schemaText) {
+  if (!schemaText) return [];
+  const lines = schemaText.split('\n');
+  const forbidden = new Set();
+  let inForbidden = false;
+  let blockIndent = -1;
+  for (const rawLine of lines) {
+    // Strip trailing whitespace; keep leading for indent calc
+    const line = rawLine.replace(/\s+$/, '');
+    if (!line) continue;
+    const trimmed = line.trimStart();
+    const indent = line.length - trimmed.length;
+    // Detect a new top-level YAML key — exits forbidden block if open
+    if (inForbidden && indent <= blockIndent && /^[a-zA-Z_][a-zA-Z0-9_]*:/.test(trimmed)) {
+      inForbidden = false;
+    }
+    if (/^forbidden_components:\s*$/.test(trimmed)) {
+      inForbidden = true;
+      blockIndent = indent;
+      continue;
+    }
+    if (inForbidden) {
+      const m = trimmed.match(/^-\s*name:\s*(.+?)\s*$/);
+      if (m) {
+        const name = m[1].replace(/^["']|["']$/g, '').trim();
+        if (name) forbidden.add(name);
+      }
+    }
+  }
+  return [...forbidden];
+}
+
+async function reviewAndFixScript(code, screenType, selectedComponents = [], forbiddenComponents = []) {
   const typeRules = {
     A: '白背景(#FFFFFF)・Header+Scroll・BottomNav Light',
     B: '黒背景(#000000〜#2E2E2E)・フルスクリーン・BottomNav Dark',
     C: 'BottomNavなし・タブ切り替え',
   };
 
+  // PR #6 (2026-05-29): give the reviewer per-request component context so it
+  // can detect semantic violations the 12 structural checks cannot:
+  //  - missing required imports (AI ignored the catalog and rolled its own)
+  //  - blacklisted components (e.g. Avatar infomation used on a Profile screen)
+  // Pure structural lint passes these because the code is well-formed; only
+  // a context-aware reviewer can catch them.
+  const selectedNames = selectedComponents.map(c => c.name);
+  const componentContextSection = (selectedNames.length || forbiddenComponents.length)
+    ? `
+## 当該リクエストの component 文脈（**13 + 14 のチェックで使用**）
+
+選択された Library component (この画面で **使うべき** もの):
+${selectedNames.length ? selectedNames.map(n => `  - ${n}`).join('\n') : '  （なし）'}
+
+禁止 component (この画面で **使ってはいけない** もの — schema の forbidden_components から抽出):
+${forbiddenComponents.length ? forbiddenComponents.map(n => `  - ${n}`).join('\n') : '  （なし）'}
+`
+    : '';
+
   // Expanded lint review (2026-05-28): added layer-naming + AutoLayout + spacing
   // checks to catch the violations seen in May 28 generation (content-as-name,
   // direct-placement sparkles, Japanese in layer names, etc.). Review pass acts
   // as a hard linter — if any check fails the code MUST be rewritten.
-  const reviewPrompt = `あなたは Figma Plugin JS の品質チェッカーです。以下のコードを **12 項目の lint チェック** で精査し、違反があれば**そのまま修正してコード全文を返す**。
+  // PR #6 (2026-05-29): added items 13 + 14 for component-context lint
+  // (required imports + forbidden component blacklist).
+  const totalChecks = (selectedNames.length || forbiddenComponents.length) ? 14 : 12;
+  const reviewPrompt = `あなたは Figma Plugin JS の品質チェッカーです。以下のコードを **${totalChecks} 項目の lint チェック** で精査し、違反があれば**そのまま修正してコード全文を返す**。
 
 ## 画面タイプ: ${screenType}（${typeRules[screenType]}）
+${componentContextSection}
 
 ## 構造系チェック（Critical）
 1. **Header 重複**: contentFrame に Header / headMenu / SearchField 等を import + createInstance していないか。scaffold が自動追加する。
@@ -439,7 +499,16 @@ async function reviewAndFixScript(code, screenType) {
 10. **直置き禁止**: TEXT / SVG / RECTANGLE（icon 用途）が **AutoLayout でない frame の直接子** になっていないか。違反したら AutoLayout コンテナで包む。特に装飾用 ✨ などの粒子は \`sparkleLayer\` / \`particleLayer\` に集約。
 11. **Gap が 8 の倍数でない**: \`itemSpacing\` / \`gap\` が 4, 8, 12, 16, 20, 24, 32... 以外（例: 5, 7, 10, 13, 15）。8 の倍数または 4 + 8N に修正。
 12. **line-height: Auto**: TEXT に対し lineHeight を設定していない、または \`lineHeight: { unit: 'AUTO' }\`。Noto Sans JP では Auto 禁止。\`lineHeight: { unit: 'PIXELS', value: 数値 }\` に修正。
-
+${selectedNames.length || forbiddenComponents.length ? `
+## Component 文脈チェック（PR #6 新規）
+13. **選択済み Library component の未使用**: 上の「選択された Library component」リストに載っている component が、コード内で \`importComponentSetByKeyAsync\` + \`.createInstance()\` されていない場合は違反。
+   - AI が catalog を無視して \`figma.createFrame()\` + 自作 children で代替している → リストの component を必ず import して使うこと
+   - 例外: scaffold が自動追加する Header / BottomNav 系は対象外（catalog 選択時点で除外済み）
+   - 修正方針: 該当 component が必要な箇所を Library instance に置き換える
+14. **禁止 component の混入**: 上の「禁止 component」リストに載っている **コンポーネント名と完全一致**する文字列が、コード内のどこか（layer name / import の name / コメント以外）に出現していたら違反。
+   - 検出例: 「Avatar infomation」が name に使われている / 「Avatar Card」が profile 画面で createInstance されている
+   - 修正方針: 該当 instance を削除、または schema が指示する代替 component に置き換える。代替が無ければ自作 frame で再現する（name は役割名で）。
+` : ''}
 ## 出力フォーマット
 
 問題なし → 元のコードをそのまま返す。
@@ -710,8 +779,23 @@ ${figmaStyleInfo ? `
 
   const rawCode = match[1].trim();
 
-  // Step 5: Review & fix (Haiku) — structural lint, 12 checks
-  let finalCode = await reviewAndFixScript(rawCode, screenType);
+  // PR #6 (2026-05-29): extract forbidden_components from BOTH the matched
+  // screen-level schema and the component-level schemas, deduped. Used by
+  // Step 5 to lint for semantic violations (e.g. "Avatar infomation" used on
+  // a profile screen). The reviewer also gets selectedComponents so it can
+  // flag "AI ignored catalog and rolled its own frames" violations.
+  const forbiddenComponents = [
+    ...new Set([
+      ...extractForbiddenComponents(schemaContent || ''),
+      ...extractForbiddenComponents(screenSchema?.content || ''),
+    ]),
+  ];
+  if (forbiddenComponents.length) {
+    console.log(`[forbidden] ${forbiddenComponents.length} forbidden components: ${forbiddenComponents.join(', ')}`);
+  }
+
+  // Step 5: Review & fix (Haiku) — structural + component-context lint
+  let finalCode = await reviewAndFixScript(rawCode, screenType, selectedComponents, forbiddenComponents);
 
   // Step 6 (Plan C, 2026-05-28): spec coverage gate with auto-retry.
   // Compares the generated code against the MUST_HAVE_LAYERS checklist
@@ -737,7 +821,9 @@ ${figmaStyleInfo ? `
       // Re-run structural lint on the patched code so the new additions don't
       // violate the 12 naming / layout rules. If lint shortens the code too
       // aggressively, reviewAndFixScript falls back to the patched original.
-      finalCode = await reviewAndFixScript(patched, screenType);
+      // PR #6: also carries component context so the post-patch lint catches
+      // forbidden component re-introductions.
+      finalCode = await reviewAndFixScript(patched, screenType, selectedComponents, forbiddenComponents);
     }
   }
 
