@@ -18,16 +18,25 @@ async function loadScaffold(type) {
 }
 
 // loadAllRules (2026-05-28): read every .md file in server/rules/ and concatenate
-// them so the system prompt can include the full Design Agent rule set + Twomi
-// design system references (master / structure / component / screen_analysis).
+// them so the system prompt can include the full Design Agent rule set.
 // Files are sorted alphabetically so the rules file (which starts "twomi_design_agent_")
-// comes before the references. If the folder is missing or empty, returns ''.
+// comes first. If the folder is missing or empty, returns ''.
 //
 // PR #5 (2026-05-29): module-level cache. Rules files don't change between
-// requests in a running container, and re-reading + re-concatenating ~56KB
-// on every request is wasteful. Cache invalidates only on container restart
-// (which is also when rules files change via redeploy). To force a reload
-// during local dev, restart the server.
+// requests in a running container, and re-reading + re-concatenating on every
+// request is wasteful. Cache invalidates only on container restart (which is
+// also when rules files change via redeploy). To force a reload during local
+// dev, restart the server.
+//
+// PR #11 (2026-05-29): only read top-level .md files. The `references/`
+// subdir (twomi_design_master.md / twomi_design_structure.md /
+// twomi_design_component.md / twomi_screen_analysis.md, total ~38KB) holds
+// design-system reference docs, not actionable rules. They were diluting
+// model attention without contributing enforceable behavior. They remain
+// on disk for future structured loading (e.g. load screen_analysis.md
+// only when its content matches the requested screen) and human reference.
+// readdir + `.endsWith('.md')` already filters out the `references` subdir
+// entry, so no code logic change is needed.
 let _rulesCache = null;
 async function loadAllRules() {
   if (_rulesCache !== null) return _rulesCache;
