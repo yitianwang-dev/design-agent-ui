@@ -22,19 +22,31 @@ async function loadScaffold(type) {
 // design system references (master / structure / component / screen_analysis).
 // Files are sorted alphabetically so the rules file (which starts "twomi_design_agent_")
 // comes before the references. If the folder is missing or empty, returns ''.
+//
+// PR #5 (2026-05-29): module-level cache. Rules files don't change between
+// requests in a running container, and re-reading + re-concatenating ~56KB
+// on every request is wasteful. Cache invalidates only on container restart
+// (which is also when rules files change via redeploy). To force a reload
+// during local dev, restart the server.
+let _rulesCache = null;
 async function loadAllRules() {
+  if (_rulesCache !== null) return _rulesCache;
   try {
     const files = (await readdir(RULES_DIR))
       .filter(f => f.endsWith('.md'))
       .sort();
-    if (files.length === 0) return '';
+    if (files.length === 0) {
+      _rulesCache = '';
+      return _rulesCache;
+    }
     const sections = await Promise.all(
       files.map(async f => {
         const content = await readFile(resolve(RULES_DIR, f), 'utf-8');
         return `### Source: ${f}\n\n${content}`;
       })
     );
-    return sections.join('\n\n---\n\n');
+    _rulesCache = sections.join('\n\n---\n\n');
+    return _rulesCache;
   } catch (err) {
     console.warn(`[loadAllRules] failed to load rules from ${RULES_DIR}: ${err.message}`);
     return '';
@@ -142,11 +154,37 @@ async function checkSpecCoverage(code, checklist) {
 ## 必須チェックリスト
 ${JSON.stringify(required, null, 2)}
 
-## 判定ルール
-- layer の name / textNode.characters / setName() 引数 / createInstance 後の name 設定 などから要素の存在を semantic match で判定
-- role 名は **厳密一致でなく意味マッチ** で OK（例: "sheet_title" ≈ "sheetTitleText" / "SheetTitle" / "title" / "TitleLabel" / "$Title"）
-- count が指定されている場合は code 内のループ / 個別作成回数も数える
-- text が指定されている場合は textNode.characters または近い文字列があるか確認
+## 判定ルール（**最重要：マッチ精度を上げる**）
+
+### 1. 大文字小文字・区切り文字を無視（normalization）
+判定前に role 名・layer 名を以下で正規化:
+  - 全部小文字化
+  - underscore (\`_\`) / hyphen (\`-\`) / dollar (\`$\`) / 数字 を全部削除
+  - 接尾辞 \`_x1\` / \`_x5\` / \`_heart\` / \`_button\` / \`_text\` / \`_label\` などのバリアント suffix も削除
+
+正規化後に文字列マッチすれば OK。例:
+  - "quantity_chip" → "quantitychip"、コード内 "quantityChip_x1" → "quantitychip"（一致）
+  - "send_cta" → "sendcta"、コード内 "sendCtaButton" → "sendcta...button"（部分一致 → 一致）
+  - "gift_item_name" → "giftitemname"、コード内 "giftItemName_heart" → "giftitemname..."（一致）
+
+### 2. count マッチ（複数個ある要素）
+count が指定された role は、**suffix 違いの個別 layer を合算**して数える:
+  - "quantity_chip" count: 3 → "quantityChip_x1" + "quantityChip_x5" + "quantityChip_x10" = 3 個（OK）
+  - "gift_item" count: 6 → "giftItem"が 6 回 createFrame されているなら OK
+  - loop / Array.from / map で 1 つの role を複数生成している場合も OK
+
+### 3. 同義語マッチ（semantic equivalence）
+英単語が同義なら一致扱い:
+  - "cta" ≈ "button" / "Btn"
+  - "label" ≈ "text" / "Caption"
+  - "icon" ≈ "Image" / "Emoji" (TEXT が emoji 文字の場合)
+  - "balance" ≈ "count" / "amount"
+  - "row" ≈ "List" / "Section" / "Container"
+  - "pill" ≈ "Chip" / "Tag" / "Badge"
+
+### 4. **既存性の優先**: コード内に該当 frame / text / instance が **1 つでも存在すれば complete: true**
+迷ったら **complete: true** を返す（**false positive で patch を無駄にしない**）。
+本当に「ゼロから何も無い」場合だけ missing 扱いとする。
 
 ## コード
 \`\`\`javascript
@@ -157,7 +195,7 @@ ${code.slice(0, 12000)}
 {
   "complete": <true|false>,
   "missing": [
-    {"role": "<role 名>", "expected": "<spec での説明>", "reason": "<コードで見つからない具体的な理由>"}
+    {"role": "<role 名>", "expected": "<spec での説明>", "reason": "<コードで該当 layer が **完全に**存在しない具体的根拠（normalization 後の名前リストを示すこと）>"}
   ]
 }`;
 
@@ -220,8 +258,13 @@ ${code}
 \`\`\``;
 
   try {
+    // PR #5 (2026-05-29): switched model from claude-opus-4-7 → claude-sonnet-4-6.
+    // patchMissingItems is a constrained diff task (add only missing items, do
+    // not touch existing nodes). Sonnet handles this category of edits well at
+    // ~5× lower cost and lower latency. Opus reserved for Step 4 generation
+    // where design judgment matters more.
     const message = await client.messages.create({
-      model: 'claude-opus-4-7',
+      model: 'claude-sonnet-4-6',
       max_tokens: 16384,
       messages: [{ role: 'user', content: prompt }],
     });
