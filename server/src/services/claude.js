@@ -460,7 +460,9 @@ ${forbiddenComponents.length ? forbiddenComponents.map(n => `  - ${n}`).join('\n
   // as a hard linter — if any check fails the code MUST be rewritten.
   // PR #6 (2026-05-29): added items 13 + 14 for component-context lint
   // (required imports + forbidden component blacklist).
-  const totalChecks = (selectedNames.length || forbiddenComponents.length) ? 14 : 12;
+  // PR #10 (2026-05-29): added item 10 (sibling content/index suffix) — always
+  // present. Component-context items 14-15 are still conditional.
+  const totalChecks = (selectedNames.length || forbiddenComponents.length) ? 15 : 13;
   const reviewPrompt = `あなたは Figma Plugin JS の品質チェッカーです。以下のコードを **${totalChecks} 項目の lint チェック** で精査し、違反があれば**そのまま修正してコード全文を返す**。
 
 ## 画面タイプ: ${screenType}（${typeRules[screenType]}）
@@ -494,18 +496,45 @@ ${componentContextSection}
    違反したら **すべての TEXT node の name を役割名 or $VariableName にリネーム**。
 8. **通用名の使用**: \`.name = "Rectangle"\` / \`"Frame"\` / \`"Group"\` / \`"Text"\` / \`"label"\` （Figma default name そのまま）。役割名に置き換え。
 9. **レイヤー名に日本語**: \`stat_投稿\` / \`stamp_お祝い\` 等、英語以外が混入。必ず camelCase + 英語へ。例: \`stat_posts\` / \`stamp_celebration\`。
+10. **⚠️ sibling layer に content/index suffix を付ける禁止**（PR #10 新規）:
+    複数の sibling として並ぶ同種 layer に **「具体的なギフト名・色名・絵文字名・通貨単位・数字 index」** を suffix として使ってはいけない。
+    違反パターン（**全て NG**、修正必須）:
+      - \`heartIcon\` / \`bouquetIcon\` / \`crownIcon\` / \`fireworksIcon\` / \`diamondIcon\` / \`rocketIcon\` — 6 個 sibling、ギフト名を suffix にしている
+      - \`heartNameText\` / \`bouquetNameText\` / ... — TEXT node 同上
+      - \`giftItem_heart\` / \`giftItem_bouquet\` — snake_case suffix
+      - \`quantityChipText0\` / \`quantityChipText1\` / \`quantityChipText2\` — 数字 index
+      - \`quantityChip_x1\` / \`quantityChip_x5\` / \`quantityChip_x10\` — 単位 suffix
+      - \`stamp_celebration\` / \`stamp_thanks\` / \`stamp_party\` — sibling として並ぶ場合
+    **背景**: Library 実装の sibling は全員同名（Figma tree の index で区別される）。content-based suffix は「内容を name に書く」の変形であり、§1.7 と同根の違反。
+    修正方針:
+      - sibling は **全員同じ generic name** にする
+        例: 6 個の giftIcon は **全部 \`giftIcon\`**（× 6、同名 sibling）
+        例: 6 個のギフト名 TEXT は **全部 \`giftNameText\`** または **全部 \`$GiftName\`**
+        例: 3 個の chip text は **全部 \`quantityChipText\`** または **全部 \`$QuantityLabel\`**
+      - 動的テキストの場合は \`$VariableName\` に統一すれば 1 件ずつのナンバリングも不要
+      - 親 frame（\`giftItem\` × 6 など）も同名 sibling で良い
+      - layer 区別は Figma の tree index で十分。**name で区別する必要はない**。
+    違反検出例:
+      \`\`\`javascript
+      // BAD
+      giftIcons.forEach((icon, i) => { textNode.name = giftNames[i] + 'Icon'; });
+      //                                                 ^^^^^^^^^^^^^^^^^^^ content from spec
+      // GOOD
+      giftIcons.forEach(() => { textNode.name = 'giftIcon'; });
+      //                                          ^^^^^^^^ same name for all siblings
+      \`\`\`
 
 ## レイアウト系チェック
-10. **直置き禁止**: TEXT / SVG / RECTANGLE（icon 用途）が **AutoLayout でない frame の直接子** になっていないか。違反したら AutoLayout コンテナで包む。特に装飾用 ✨ などの粒子は \`sparkleLayer\` / \`particleLayer\` に集約。
-11. **Gap が 8 の倍数でない**: \`itemSpacing\` / \`gap\` が 4, 8, 12, 16, 20, 24, 32... 以外（例: 5, 7, 10, 13, 15）。8 の倍数または 4 + 8N に修正。
-12. **line-height: Auto**: TEXT に対し lineHeight を設定していない、または \`lineHeight: { unit: 'AUTO' }\`。Noto Sans JP では Auto 禁止。\`lineHeight: { unit: 'PIXELS', value: 数値 }\` に修正。
+11. **直置き禁止**: TEXT / SVG / RECTANGLE（icon 用途）が **AutoLayout でない frame の直接子** になっていないか。違反したら AutoLayout コンテナで包む。特に装飾用 ✨ などの粒子は \`sparkleLayer\` / \`particleLayer\` に集約。
+12. **Gap が 8 の倍数でない**: \`itemSpacing\` / \`gap\` が 4, 8, 12, 16, 20, 24, 32... 以外（例: 5, 7, 10, 13, 15）。8 の倍数または 4 + 8N に修正。
+13. **line-height: Auto**: TEXT に対し lineHeight を設定していない、または \`lineHeight: { unit: 'AUTO' }\`。Noto Sans JP では Auto 禁止。\`lineHeight: { unit: 'PIXELS', value: 数値 }\` に修正。
 ${selectedNames.length || forbiddenComponents.length ? `
-## Component 文脈チェック（PR #6 新規）
-13. **選択済み Library component の未使用**: 上の「選択された Library component」リストに載っている component が、コード内で \`importComponentSetByKeyAsync\` + \`.createInstance()\` されていない場合は違反。
+## Component 文脈チェック（PR #6 新規 — 番号 PR #10 で renumber）
+14. **選択済み Library component の未使用**: 上の「選択された Library component」リストに載っている component が、コード内で \`importComponentSetByKeyAsync\` + \`.createInstance()\` されていない場合は違反。
    - AI が catalog を無視して \`figma.createFrame()\` + 自作 children で代替している → リストの component を必ず import して使うこと
    - 例外: scaffold が自動追加する Header / BottomNav 系は対象外（catalog 選択時点で除外済み）
    - 修正方針: 該当 component が必要な箇所を Library instance に置き換える
-14. **禁止 component の混入**: 上の「禁止 component」リストに載っている **コンポーネント名と完全一致**する文字列が、コード内のどこか（layer name / import の name / コメント以外）に出現していたら違反。
+15. **禁止 component の混入**: 上の「禁止 component」リストに載っている **コンポーネント名と完全一致**する文字列が、コード内のどこか（layer name / import の name / コメント以外）に出現していたら違反。
    - 検出例: 「Avatar infomation」が name に使われている / 「Avatar Card」が profile 画面で createInstance されている
    - 修正方針: 該当 instance を削除、または schema が指示する代替 component に置き換える。代替が無ければ自作 frame で再現する（name は役割名で）。
 ` : ''}
