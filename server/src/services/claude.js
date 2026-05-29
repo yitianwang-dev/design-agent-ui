@@ -156,16 +156,26 @@ ${JSON.stringify(required, null, 2)}
 
 ## 判定ルール（**最重要：マッチ精度を上げる**）
 
-### 1. 大文字小文字・区切り文字を無視（normalization）
-判定前に role 名・layer 名を以下で正規化:
+### 1. 大文字小文字・区切り文字を無視（normalization）— 必須手順
+判定前に role 名・コード中の layer 名 / 変数名 / TEXT node 名を以下で正規化:
   - 全部小文字化
   - underscore (\`_\`) / hyphen (\`-\`) / dollar (\`$\`) / 数字 を全部削除
   - 接尾辞 \`_x1\` / \`_x5\` / \`_heart\` / \`_button\` / \`_text\` / \`_label\` などのバリアント suffix も削除
 
-正規化後に文字列マッチすれば OK。例:
-  - "quantity_chip" → "quantitychip"、コード内 "quantityChip_x1" → "quantitychip"（一致）
-  - "send_cta" → "sendcta"、コード内 "sendCtaButton" → "sendcta...button"（部分一致 → 一致）
-  - "gift_item_name" → "giftitemname"、コード内 "giftItemName_heart" → "giftitemname..."（一致）
+**重要**: 判定する各 role について、以下の作業を**頭の中で必ず実行**:
+  1. role 名を正規化（例: "gift_item_price" → "giftitemprice"）
+  2. コードを文字列検索で、その正規化済み文字列を含む layer 名 / 変数名を探す
+  3. 1 つでも見つかれば match、見つからなければ missing
+
+具体例:
+  - role: "gift_item_price" → 正規化 "giftitemprice"
+    コード内 \`textNode.name = "$GiftItemPrice"\` → 正規化 "giftitemprice" → **一致 → match**
+    コード内 \`textNode.name = "giftItemPrice_heart"\` → 正規化 "giftitemprice" → **一致 → match**
+  - role: "send_cta" → 正規化 "sendcta"
+    コード内 \`frame.name = "sendCtaButton"\` → 正規化 "sendctabutton"（"sendcta" を含む）→ **一致 → match**
+    コード内 \`frame.name = "SendCta"\` → 正規化 "sendcta" → **一致 → match**
+  - role: "coin_balance" → 正規化 "coinbalance"
+    コード内 \`frame.name = "CoinBalance"\` または \`"coinBalancePill"\` → 正規化 "coinbalance" / "coinbalancepill"（含む）→ **一致 → match**
 
 ### 2. count マッチ（複数個ある要素）
 count が指定された role は、**suffix 違いの個別 layer を合算**して数える:
@@ -186,23 +196,31 @@ count が指定された role は、**suffix 違いの個別 layer を合算**�
 迷ったら **complete: true** を返す（**false positive で patch を無駄にしない**）。
 本当に「ゼロから何も無い」場合だけ missing 扱いとする。
 
-## コード
+## コード（全文 — slice しない）
 \`\`\`javascript
-${code.slice(0, 12000)}
+${code}
 \`\`\`
 
 ## 出力（JSON のみ、説明禁止）
+
+**missing 判定する前の必須チェック**: その role を normalize して、コード全文を文字列検索したか？
+**1 個でも一致 layer name が見つかった場合は missing にしない**。
+
 {
   "complete": <true|false>,
   "missing": [
-    {"role": "<role 名>", "expected": "<spec での説明>", "reason": "<コードで該当 layer が **完全に**存在しない具体的根拠（normalization 後の名前リストを示すこと）>"}
+    {"role": "<role 名>", "expected": "<spec での説明>", "normalized_search": "<normalize 後のキー>", "reason": "<コード内で **どの文字列も** 正規化マッチしなかった具体的根拠（探した layer 名のリストを 5 個以上挙げて、いずれも含まないことを示す）>"}
   ]
 }`;
 
   try {
+    // PR #9 (2026-05-29): max_tokens 2048 → 4096. The new prompt asks Haiku
+    // to enumerate searched layer names in `reason` (proving it actually did
+    // the normalize-and-search), so output can be longer when items are
+    // genuinely missing.
     const message = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }],
     });
     const text = message.content[0].text.trim();
@@ -275,9 +293,14 @@ ${code}
       return code;
     }
     const patched = matches[matches.length - 1][1].trim();
-    // Sanity: patched code must be >= 90% of original length (we're ADDING, not shortening).
-    if (patched.length < code.length * 0.9) {
-      console.warn(`[patchMissingItems] patched code shorter than original (${patched.length} < 90% of ${code.length}), keeping original`);
+    // Sanity: patched code must be >= 95% of original length.
+    // PR #9 (2026-05-29): tightened from 90% → 95% after observing attempt 2
+    // in the testGiftPanel run lose 1262 chars (8%) while purportedly only
+    // "adding missing items". The 90% threshold was permissive enough to let
+    // a code-shrinking patch through. We're ADDING items here — a legitimate
+    // patch should not shrink the code at all (much less by 8%).
+    if (patched.length < code.length * 0.95) {
+      console.warn(`[patchMissingItems] patched code shorter than original (${patched.length} < 95% of ${code.length}), keeping original`);
       return code;
     }
     console.log(`[patchMissingItems] original ${code.length} → patched ${patched.length} chars`);
