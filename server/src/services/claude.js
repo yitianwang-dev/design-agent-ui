@@ -320,6 +320,61 @@ ${code}
   }
 }
 
+// fixFabricatedKeys (2026-05-29 PR #12): post-process the final generated
+// code to repair `importComponentSetByKeyAsync("X")` calls where X is not
+// a real 40-char hex Library key. This is a deterministic regex pass — no
+// LLM, no extra latency, no cost.
+//
+// Why: Step 4 generation sometimes fabricates placeholder keys (e.g.
+// `"profile_action_bar_key"`) instead of copying the real key from the
+// catalog import snippet. The fake key causes `importComponentSetByKeyAsync`
+// to throw at runtime, the plugin's old code.js silently swallows the
+// rejection, and the user sees an empty content frame with `status: done`.
+//
+// Strategy:
+//   For each call, validate the key:
+//     - 40 hex chars + present in `selectedComponents` → keep
+//     - Anything else (fake / unknown) → try to resolve by normalized
+//       fuzzy match against component names, substitute the real key
+//     - No match → log warn, leave call alone (will still throw at runtime
+//       but at least the visibility is in the log)
+function fixFabricatedKeys(code, selectedComponents) {
+  if (!selectedComponents || selectedComponents.length === 0) return code;
+  const realKeys = new Set(selectedComponents.map(c => c.key));
+  const normalize = (s) => (s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const fixed = code.replace(
+    /importComponentSetByKeyAsync\(\s*["']([^"']+)["']\s*\)/g,
+    (match, key) => {
+      // Real 40-char hex AND in catalog → trusted, leave alone.
+      if (/^[0-9a-f]{40}$/.test(key) && realKeys.has(key)) return match;
+      // Real-looking hex but not in our catalog — could be from AI memory
+      // of a different file. Log warn but don't change (no safe target).
+      if (/^[0-9a-f]{40}$/.test(key)) {
+        console.warn(`[fixFabricatedKeys] hex key not in catalog (may still work or fail): ${key}`);
+        return match;
+      }
+      // Fake key — try fuzzy match by normalized name.
+      const targetNorm = normalize(key);
+      let best = null;
+      for (const c of selectedComponents) {
+        const compNorm = normalize(c.name);
+        if (!compNorm) continue;
+        if (targetNorm.includes(compNorm) || compNorm.includes(targetNorm)) {
+          best = c;
+          break;
+        }
+      }
+      if (best) {
+        console.log(`[fixFabricatedKeys] "${key}" → "${best.key}" (matched component: "${best.name}")`);
+        return `importComponentSetByKeyAsync("${best.key}")`;
+      }
+      console.warn(`[fixFabricatedKeys] cannot resolve fabricated key: "${key}" (no matching component name)`);
+      return match;
+    }
+  );
+  return fixed;
+}
+
 async function fetchSpecFromUrl(url) {
   const gdocMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
   if (gdocMatch) {
@@ -864,6 +919,11 @@ ${figmaStyleInfo ? `
       finalCode = await reviewAndFixScript(patched, screenType, selectedComponents, forbiddenComponents);
     }
   }
+
+  // PR #12 (2026-05-29): final deterministic guard — repair fabricated
+  // Library keys before returning. Runs after Plan C completes so it
+  // catches both the initial generation and any patch-introduced keys.
+  finalCode = fixFabricatedKeys(finalCode, selectedComponents);
 
   return finalCode;
 }
