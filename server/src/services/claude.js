@@ -320,6 +320,43 @@ ${code}
   }
 }
 
+// fixUnicodeEscapes (2026-06-01 PR #20): post-process the generated code
+// to repair AI's malformed `\u` escape sequences in string literals.
+//
+// Bug observed in 2026-06-01 testAvatarThumbnail run:
+//   const tagLabels = ['ライブ配信', '音\u楽', '新着'];
+//                                                              ^^^^^^^
+//   AI started \u for 楽 but typed the raw character instead of 4 hex digits.
+//   `\u<non-hex>` is a JS syntax error ("Invalid Unicode escape sequence").
+//   The IIFE failed to parse → plugin reported failure.
+//
+// Strategy:
+//   1. Convert any valid \uXXXX (4 hex chars) to the actual character.
+//      Twomi codebase never intentionally uses \u escapes, so this is safe.
+//   2. Strip a botched \u<non-hex> by removing the `\u` prefix and keeping
+//      the following character (which is the char AI meant to encode).
+//
+// Result for the example above: '音楽' becomes raw chars, parseable.
+function fixUnicodeEscapes(code) {
+  let fixed = code;
+  let validEscapeCount = 0;
+  let botchedEscapeCount = 0;
+  // Pass 1: valid \uXXXX → actual character
+  fixed = fixed.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
+    validEscapeCount++;
+    return String.fromCharCode(parseInt(hex, 16));
+  });
+  // Pass 2: botched \u<non-hex> → keep the raw character (AI meant to encode it)
+  fixed = fixed.replace(/\\u(?![0-9a-fA-F]{4})/g, () => {
+    botchedEscapeCount++;
+    return '';
+  });
+  if (validEscapeCount || botchedEscapeCount) {
+    console.log(`[fixUnicodeEscapes] converted ${validEscapeCount} valid \\u escapes, repaired ${botchedEscapeCount} botched ones`);
+  }
+  return fixed;
+}
+
 // fixFabricatedKeys (2026-05-29 PR #12): post-process the final generated
 // code to repair `importComponentSetByKeyAsync("X")` calls where X is not
 // a real 40-char hex Library key. This is a deterministic regex pass — no
@@ -1041,6 +1078,11 @@ ${figmaStyleInfo ? `
   // Library keys before returning. Runs after Plan C completes so it
   // catches both the initial generation and any patch-introduced keys.
   finalCode = fixFabricatedKeys(finalCode, selectedComponents);
+
+  // PR #20 (2026-06-01): repair AI's malformed \u escape sequences.
+  // Runs last so all other passes are done with their string literals
+  // before we touch them.
+  finalCode = fixUnicodeEscapes(finalCode);
 
   return finalCode;
 }
