@@ -8,9 +8,9 @@
 meta:
   name: Avatar TOP / Self
   description: |
-    自分のアバター TOP 画面。アバター動画 + Function タブ（EditTop /
-    LiveStreaming / VideoGallery / Customize）。下部タブで横スワイプ連動。
-    BottomNav なし（fullscreen + 下部タブ型）。
+    自分のアバター TOP 画面。アバター動画 + Function タブ 5 つ
+    （Top / LiveStream / Publish / Customize / Delete）。
+    下部タブで横スワイプ連動。BottomNav なし（fullscreen + 下部タブ型）。
     Other 視点は avatar_top_other.schema.yaml を参照。
   scaffold: C
   scaffold_reason: |
