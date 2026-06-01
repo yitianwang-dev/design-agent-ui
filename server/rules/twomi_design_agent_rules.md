@@ -385,6 +385,56 @@ variant 依存の image layer は `image/<VariantValue>` 形式:
 TEXT node に `Live` という characters があり、wrapper 名も `Live` の場合は §1.7 違反（TEXT name = 内容）。
 **wrapper（frame）名と TEXT node の characters が偶然一致するのは OK**。
 
+#### G. Library instance 内部要素を外部で重複させない（PR #21、2026-06-01 実証）
+
+⚠️ **絶対ルール**。違反は再生成対象。
+
+Library component を `importComponentSetByKeyAsync` + `createInstance` で導入したら、
+その component の variant が**内部で自動レンダリングする要素**を **外側に sibling として再現してはいけない**。
+
+#### 実証バグ (2026-06-01 testProfileSelfWithThumbnail / testAvatarThumbnailPublic)
+
+```
+content
+  avatarThumbnail [INSTANCE]   ← Library が public/tags/favorite/talk を内部表示
+  publicLabelWrapper            ← ❌ 外側に publicLabel を重複作成
+  tagChipsRow > tagChip × 3     ← ❌ tag を重複作成
+  favoriteRow                   ← ❌ favorite を重複作成
+  talkIconRow                   ← ❌ talk icon を重複作成
+```
+
+結果: **二重表示**（Figma 上で同じ要素が 2 回出る）。
+
+#### 正しいパターン
+
+```javascript
+// ✅ correct
+const set = await figma.importComponentSetByKeyAsync("3571bee8...");
+const variant = findVariant(set, { Model: "selfVideo", Status: "True" });
+const instance = variant.createInstance();
+// 内部要素は instance が自動レンダリング。何も追加しない。
+contentFrame.appendChild(instance);
+```
+
+#### 判定方法
+
+`library-dict.json` の `library_internal_elements` フィールドに列挙された要素は
+**Library が内部レンダリング**するもの。これらの要素について：
+- ❌ 外側に wrapper / frame / text を作る
+- ❌ spec に「Public ラベル」「tag 3個」「favorite 数」と書かれていても外側に作る
+- ✅ instance を import + variant を選ぶだけで完結
+
+#### 例外: spec が真に「外部 overlay」を要求した時
+
+spec が明示的に「Library にない / variant に存在しない overlay」を要求した時のみ
+外部要素 OK。例:
+- 「lock 状態の上に独自の解锁 button を中央に重ねる」→ unlockButton 作成 OK
+  （ただし Library Avatar Card の `Locked Exclusive Content` variant に
+  既に lock UI がある場合はそれを優先）
+
+判断基準: `library_internal_elements` に書かれている要素は **必ず内部**、
+書かれていない要素のみ外部追加候補。
+
 #### 違反例 / 修正例
 
 | 違反 | 修正 |
@@ -395,6 +445,7 @@ TEXT node に `Live` という characters があり、wrapper 名も `Live` の�
 | `bookmarkRow` / `favSection` | `Bookmark` |
 | `statusArea` / `publishBadge` | `Status` |
 | 自前 frame で書込 icon + text を組む | `Avatar Bookmark Button` instance を import |
+| Library instance + 外側 publicLabelWrapper | Library instance のみ（PR #21 G 規則） |
 
 #### この規則がいつ適用される
 

@@ -469,6 +469,18 @@ function getTierAForComponent(componentName, dict) {
       .filter(c => c.severity === 'critical')
       .map(c => ({ category: c.category, text: c.en || c.text, impact: c.impact })),
   };
+  // PR #21 (2026-06-01): include do_not_duplicate_library_internals if
+  // present. This tells agent: when importing this component as INSTANCE,
+  // it already shows certain elements internally — do NOT recreate them
+  // as external sibling wrappers. Observed bug 2026-06-01: agent drew
+  // publicLabel/tagChips/favoriteRow/talkIcon outside avatarThumbnail
+  // instance, causing double display.
+  if (entry.agent_usage_hint?.do_not_duplicate_library_internals) {
+    out.do_not_duplicate_library_internals = entry.agent_usage_hint.do_not_duplicate_library_internals;
+  }
+  if (entry.library_internal_elements) {
+    out.library_internal_elements = entry.library_internal_elements.elements_rendered_internally;
+  }
   // PR #15: include layer_structure when present. This tells the agent the
   // exact skeleton (wrapper names, nesting, nested Library components) it
   // should generate when this component is needed.
@@ -885,7 +897,7 @@ export async function generateFigmaScript(input) {
   // identity + default_state + spec_signal_to_state/variant + critical caveats.
   // Footprint: ~500 bytes per matched component, only injected when matches exist.
   const libraryDictSection = libraryDictMatches.length > 0
-    ? `\n\n## 📖 Library Dictionary（state × interaction reference）\n\n以下は **選択された component の dictionary entry** です。spec の文脈から正しい state / variant を選ぶときの一次情報。**critical_caveats は絶対遵守**（違反は再生成対象）。\n\n\`\`\`json\n${JSON.stringify(libraryDictMatches, null, 2)}\n\`\`\`\n\n使用方針:\n1. spec のキーワードを \`spec_signal_to_state\` / \`spec_signal_to_variant\` で照合 → 該当 state / variant を選ぶ\n2. spec に何も signal がない時は \`default_state\` を使う\n3. \`critical_caveats\` は **必ず遵守**（例: Self Avatar に LOCK state は存在しない）\n`
+    ? `\n\n## 📖 Library Dictionary（state × interaction reference）\n\n以下は **選択された component の dictionary entry** です。spec の文脈から正しい state / variant を選ぶときの一次情報。**critical_caveats は絶対遵守**（違反は再生成対象）。\n\n\`\`\`json\n${JSON.stringify(libraryDictMatches, null, 2)}\n\`\`\`\n\n使用方針:\n1. spec のキーワードを \`spec_signal_to_state\` / \`spec_signal_to_variant\` で照合 → 該当 state / variant を選ぶ\n2. spec に何も signal がない時は \`default_state\` を使う\n3. \`critical_caveats\` は **必ず遵守**（例: Self Avatar に LOCK state は存在しない）\n4. **⚠️ \`do_not_duplicate_library_internals\` を厳守**: \`library_internal_elements\` に列挙された要素は Library インスタンスが**内部で自動的にレンダリング**する。spec にそれらが言及されていても、外側に sibling wrapper を作って再現してはならない（二重表示バグの原因）。\`createInstance() + setProperties()\` だけで完結する。\n`
     : '';
 
   // Plan C: await the checklist promise started before Step 1, then inject

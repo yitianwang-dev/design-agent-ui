@@ -103,7 +103,12 @@
             "Model": "OtherVideo",
             "Status": "ExclusiveContentUnlock"
           }
-        ]
+        ],
+        "do_not_duplicate_library_internals": {
+          "_critical": "When importing profile/avatarThumbnail as INSTANCE, the component already shows publicLabel + selectedTags + favoriteCount + name + talkIcon internally. DO NOT create external sibling wrappers like 'publicLabelWrapper' / 'tagChipsRow' / 'favoriteRow' / 'talkIconRow' reproducing them — that causes double display.",
+          "_correct_pattern": "createInstance() + setProperties({ Model, Status }) → done. No extra layers needed for the elements listed in library_internal_elements.",
+          "_incorrect_pattern_observed": "2026-06-01 testProfileSelfWithThumbnail (frame 1:1302): agent drew avatarThumbnail INSTANCE AND avatarOverlay wrapper with duplicated children. Caused double display."
+        }
       },
 
       "context": {
@@ -125,16 +130,20 @@
 
       "purpose": "Profile/thumbnail",
 
-      "display_rules": [
-        "Public / Private label",
-        "Selected tags",
-        { "indent": 1, "bold": true, "text": "Display max 4 lines only" },
-        "Number of favorites",
-        "Name",
-        "Talk icon"
-      ],
+      "library_internal_elements": {
+        "_warning_to_agent": "These elements are rendered AUTOMATICALLY by the Library component instance when imported. Agent MUST NOT create external sibling layers reproducing them. Doing so causes double display (bug observed in 2026-06-01 testProfileSelfWithThumbnail and testAvatarThumbnailPublic — agent drew publicLabel/tagChips/favoriteRow/talkIcon outside the avatarThumbnail instance, duplicating what the instance already shows).",
+        "_correct_usage": "Import profile/avatarThumbnail as INSTANCE with the right Model/Status variant. The variant determines what's shown internally. Do NOT add sibling wrappers for these elements.",
+        "elements_rendered_internally": [
+          "Public / Private label (in Status badge area, via nested profile/AvatarPublish state component)",
+          "Selected tags (in Block > Section area, max 4 lines)",
+          "Number of favorites (in Bookmark group, with Avatar Bookmark Button + $BookmarkCount)",
+          "Name (in Block > $AvatarName, Noto Sans JP SemiBold 16)",
+          "Talk icon (buttonCall component, top-right of nameSection)"
+        ]
+      },
 
       "display_constraints": {
+        "_note": "These are constraints applied by the Library component internally — informational for agent, not actionable as separate layers.",
         "tags": { "max_lines": 4 },
         "layout": "Bottom-aligned, stacked upward"
       },
@@ -601,7 +610,16 @@
             "Image Type": "CommentKeyboard",
             "state": "COMMENT_BOTTOM_SHEET_VIEW (variation 2)"
           }
-        ]
+        ],
+        "do_not_duplicate_library_internals": {
+          "_critical": "Avatar Card is a full-page component. When imported as INSTANCE with the right Use Case + User + Image Type variant, it already renders creator info, avatar video, action buttons (like/comment/share/bookmark), and any state-specific UI (LOCK paywall, PUBLIC display, etc.) internally. DO NOT create sibling wrappers reproducing these.",
+          "_correct_pattern": "createInstance() + setProperties({ Use Case, User, ExclusiveContent, Image Type, Language }). For spec-specific OVERLAY (e.g. paywall button when spec demands specific UI not in Library variant), it's OK to add absolute-positioned overlay AS SIBLING — but never re-implement what Library variant already shows.",
+          "_acceptable_external_additions": [
+            "Lock overlay with unlock button (when spec demands specific UI on top of LOCK variant)",
+            "Custom badges/banners not in Library",
+            "Page-level chrome (header, bottom nav — but scaffold handles these)"
+          ]
+        }
       },
 
       "contexts": ["Self", "Other"],
