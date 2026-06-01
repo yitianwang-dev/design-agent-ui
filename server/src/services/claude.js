@@ -481,6 +481,17 @@ function getTierAForComponent(componentName, dict) {
   if (entry.library_internal_elements) {
     out.library_internal_elements = entry.library_internal_elements.elements_rendered_internally;
   }
+  // PR #23 (2026-06-01): include default_size so agent doesn't resize
+  // Library instances arbitrarily. Bug observed in testAvatarThumbnailPublic
+  // where agent scaled avatarThumbnail to 418×544 (overflowed 402-wide
+  // container). Library default 199.5×260 should be preserved.
+  if (entry.default_size) {
+    out.default_size = {
+      width: entry.default_size.width,
+      height: entry.default_size.height,
+      _note: 'Use Library default size when importing as INSTANCE. Do NOT resize unless spec explicitly requires.'
+    };
+  }
   // PR #15: include layer_structure when present. This tells the agent the
   // exact skeleton (wrapper names, nesting, nested Library components) it
   // should generate when this component is needed.
@@ -908,6 +919,28 @@ export async function generateFigmaScript(input) {
   // a MUST_HAVE_LAYERS section. This is the upfront half of the closed loop —
   // Step 6 (after Step 5) verifies the same list against the final code.
   let checklist = await checklistPromise;
+
+  // PR #23 (2026-06-01): filter out checklist items that scaffold already
+  // provides. parseSpecChecklist sometimes extracts "background", "header",
+  // "footer" etc. from spec — but scaffold A/B/C already creates these.
+  // Observed in testAvatarThumbnailPublic: spec said "背景: 白 #FFFFFF" →
+  // checklist required `background` → agent added redundant rounded-rect.
+  if (checklist?.must_have_layers) {
+    const SCAFFOLD_PROVIDED = new Set([
+      'background', 'screenbackground', 'whitebackground', 'darkbackground',
+      'header', 'topbar', 'topheader',
+      'footer', 'bottomnav', 'bottomnavigation', 'navigationliquid',
+    ]);
+    const filtered = checklist.must_have_layers.filter(item => {
+      const norm = (item.role || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return !SCAFFOLD_PROVIDED.has(norm);
+    });
+    const removed = checklist.must_have_layers.length - filtered.length;
+    if (removed > 0) {
+      console.log(`[checklist] filtered ${removed} scaffold-provided item(s) (background/header/footer/etc)`);
+      checklist = { ...checklist, must_have_layers: filtered };
+    }
+  }
 
   // PR #22 (2026-06-01): coordinate Plan C with dict's library_internal_elements.
   // BUG: parseSpecChecklist extracts layer names from spec text. When spec
