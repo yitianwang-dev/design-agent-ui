@@ -403,23 +403,26 @@ async function loadLibraryDict() {
   }
 }
 
-// getTierAForComponent (PR #14): extract the "Tier A" subset of a dictionary
-// entry — the minimum fields useful at agent generation time.
+// getTierAForComponent (PR #14, extended in PR #15): extract the "Tier A"
+// subset of a dictionary entry — the minimum fields useful at agent
+// generation time.
 //
-// Tier A fields (always inject when component matches, ~500 bytes):
+// Tier A fields (always inject when component matches, ~500B-3KB):
 //   - name, component_key
 //   - default_state
 //   - agent_usage_hint.spec_signal_to_state
 //   - agent_usage_hint.spec_signal_to_variant
 //   - caveats filtered to severity === 'critical'
+//   - (PR #15) layer_structure if present — the real skeleton hierarchy
+//     extracted from Library, so agent generates matching layer names
+//     instead of inventing its own
 //
 // Skip Tier B (display rules, states detail) and Tier C (meta/source) for now.
-// They can be layered in later if Tier A proves valuable.
 function getTierAForComponent(componentName, dict) {
   if (!dict?.components) return null;
   const entry = dict.components.find(c => c.name === componentName);
   if (!entry) return null;
-  return {
+  const out = {
     name: entry.name,
     component_key: entry.component_key,
     default_state: entry.default_state,
@@ -429,6 +432,17 @@ function getTierAForComponent(componentName, dict) {
       .filter(c => c.severity === 'critical')
       .map(c => ({ category: c.category, text: c.en || c.text, impact: c.impact })),
   };
+  // PR #15: include layer_structure when present. This tells the agent the
+  // exact skeleton (wrapper names, nesting, nested Library components) it
+  // should generate when this component is needed.
+  if (entry.layer_structure) {
+    out.layer_structure = {
+      _convention: entry.layer_structure._skeleton_naming_convention,
+      tree: entry.layer_structure.tree,
+      generation_rules: entry.layer_structure.agent_generation_rules,
+    };
+  }
+  return out;
 }
 
 async function fetchSpecFromUrl(url) {

@@ -139,6 +139,139 @@
         "layout": "Bottom-aligned, stacked upward"
       },
 
+      "layer_structure": {
+        "_note": "Real layer hierarchy extracted from Library instance 1812:22845 via get_design_context (PR #15). Agent should generate matching skeleton when this component is used or replicated.",
+        "_source_instance_id": "1812:22845",
+        "_source_extracted_at": "2026-06-01",
+        "_skeleton_naming_convention": "Mix of PascalCase (Container, Contents, Block, Section, Status, Background shadow) and camelCase (thumbnail, background, nameSection). Library component instances keep their original Library names.",
+
+        "tree": {
+          "name": "profile/avatarThumbnail",
+          "type": "INSTANCE (root)",
+          "layout": "flex items-start",
+          "children": [
+            {
+              "name": "thumbnail",
+              "_role": "main display container (aspect-ratio 199.5/260)",
+              "case": "camelCase (domain-specific)",
+              "children": [
+                {
+                  "name": "background",
+                  "_role": "background image wrapper",
+                  "case": "camelCase",
+                  "children": [
+                    {
+                      "name": "image/<ModelVariant>",
+                      "_role": "avatar image — name pattern: image/Self-userSetVideo / image/Other-InCallVideo depending on Model variant",
+                      "_type": "image_layer"
+                    }
+                  ]
+                },
+                {
+                  "name": "Container",
+                  "_role": "bottom overlay container (absolute bottom-aligned)",
+                  "case": "PascalCase (generic wrapper)",
+                  "children": [
+                    {
+                      "name": "Background shadow",
+                      "_role": "gradient overlay (transparent → rgba(0,0,0,0.5)) for text readability",
+                      "_type": "gradient_rectangle"
+                    },
+                    {
+                      "name": "Contents",
+                      "_role": "text content container",
+                      "case": "PascalCase",
+                      "layout": "flex flex-col gap-8 items-start justify-end",
+                      "children": [
+                        {
+                          "name": "Status",
+                          "_role": "publish-state badge area",
+                          "case": "PascalCase",
+                          "children": [
+                            {
+                              "name": "profile/AvatarPublish state",
+                              "_type": "Library_instance",
+                              "_role": "公開状態 badge",
+                              "_state_to_variant_mapping": {
+                                "AVATAR_CREATING": "Creating",
+                                "GENERATION_ERROR": "Error",
+                                "PRIVATE": "Private",
+                                "GENERATING": "Generating",
+                                "PUBLIC": "Public"
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "name": "nameSection",
+                          "_role": "name + call action row",
+                          "case": "camelCase",
+                          "layout": "flex gap-10 items-center",
+                          "children": [
+                            {
+                              "name": "Block",
+                              "_role": "name + bookmark group (left side)",
+                              "case": "PascalCase",
+                              "layout": "flex flex-col gap-4 items-start",
+                              "children": [
+                                {
+                                  "name": "Section",
+                                  "_role": "bookmark sub-row",
+                                  "case": "PascalCase",
+                                  "children": [
+                                    {
+                                      "name": "Bookmark",
+                                      "_role": "bookmark icon + count group",
+                                      "case": "PascalCase",
+                                      "layout": "flex gap-4 items-center",
+                                      "children": [
+                                        {
+                                          "name": "Avatar Bookmark Button",
+                                          "_type": "Library_instance",
+                                          "_library_key": "dde5293adb8b8857f1e2837482a19fa2b1a33b0a",
+                                          "_variant_for_this_context": "Size: profileThumbnail"
+                                        },
+                                        {
+                                          "name": "$BookmarkCount",
+                                          "_type": "TEXT (dynamic)",
+                                          "_style": "SF Pro Medium 10, white"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                },
+                                {
+                                  "name": "$AvatarName",
+                                  "_type": "TEXT (dynamic)",
+                                  "_style": "Noto Sans JP SemiBold 16, white"
+                                }
+                              ]
+                            },
+                            {
+                              "name": "buttonCall",
+                              "_type": "Library_instance",
+                              "_variant_for_this_context": "Icon type: Bubble, size: small, States: True"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+
+        "agent_generation_rules": [
+          "MUST import the 3 nested Library components — do NOT redraw: profile/AvatarPublish state, Avatar Bookmark Button (key dde5293a...), buttonCall",
+          "MUST use the exact wrapper names: thumbnail / background / Container / Contents / Status / nameSection / Block / Section / Bookmark — do NOT invent variants like 'avatarContainer' / 'nameWrap'",
+          "MUST follow the case convention: PascalCase for generic wrappers (Container, Contents, Block, Section, Status, Background shadow), camelCase for domain-specific (thumbnail, background, nameSection)",
+          "MUST name dynamic TEXT nodes with $VariableName ($AvatarName, $BookmarkCount)",
+          "MUST set the image layer name to 'image/<ModelVariant>' matching the Model variant chosen"
+        ]
+      },
+
       "states": {
         "AVATAR_CREATING": {
           "display": [

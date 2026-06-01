@@ -293,6 +293,67 @@ AI 生成時も同じ pattern を使う:
 
 ---
 
+### 1.9 Library 真実の骨格命名規則（PR #15、Library instance 実測）
+
+`profile/avatarThumbnail` の実インスタンス（1812:22845）を分解した結果、Library は以下の **共通骨格名（skeleton wrapper names）** を一貫して使っている。Agent が独自に `userContainer` / `nameWrap` などを発明すると Library と一致しなくなる。**この命名規則を厳守すること**。
+
+#### A. 共通 wrapper の標準名（PascalCase）
+
+generic な構造的役割を持つ wrapper は **PascalCase の固定名** を使う:
+
+| 名前 | 役割 |
+|---|---|
+| `Container` | 絶対定位の overlay コンテナ（bottom-aligned 等） |
+| `Contents` | テキスト・要素の縦並び content container |
+| `Block` | 段落級コンテナ（複数 Section を含む） |
+| `Section` | 行級子段落 |
+| `Status` | 状態 badge の置き場所 |
+| `Background shadow` | グラデーション overlay 層 |
+| `Bookmark` / `Comment` 等 | icon + label / count 操作グループ |
+
+#### B. ドメイン特化 wrapper（camelCase）
+
+その component 専用の役割を持つ wrapper は **camelCase**:
+
+| 名前 | 役割 |
+|---|---|
+| `thumbnail` | サムネイル表示主体 |
+| `background` | 背景画像 wrapper |
+| `nameSection` / `iconSection` 等 | 特定領域 + `Section` 後缀 |
+
+#### C. Library component instance はオリジナル名を保持
+
+ネストされた Library component instance は **Library に登録された名前そのまま**:
+- `profile/AvatarPublish state`（公開状態 badge component）
+- `Avatar Bookmark Button`（書込ボタン component）
+- `buttonCall`（通話ボタン component）
+
+→ 自前で frame + icon + text を組まず、`importComponentSetByKeyAsync` してネスト。
+
+#### D. image layer の命名 pattern
+
+variant 依存の image layer は `image/<VariantValue>` 形式:
+- `image/Self-userSetVideo`
+- `image/Other-InCallVideo`
+
+#### 違反例 / 修正例
+
+| 違反 | 修正 |
+|---|---|
+| `userThumbnail` / `avatarContainer` | `thumbnail` |
+| `bgWrapper` / `imageBg` | `background` |
+| `nameWrap` / `userName_container` | `nameSection` |
+| `bookmarkRow` / `favSection` | `Bookmark` |
+| `statusArea` / `publishBadge` | `Status` |
+| 自前 frame で書込 icon + text を組む | `Avatar Bookmark Button` instance を import |
+
+#### この規則がいつ適用される
+
+1. dict (server/data/library-dict.json) に `layer_structure` がある component を生成するとき → そこに書かれた tree を **完全に守る**
+2. dict にない component でも、骨格的役割が A/B/C に該当する場合は **同じ命名規則を借りる**（一貫性のため）
+
+---
+
 ## 2. Library 使用ルール
 
 ### 2.1 Library 情報
