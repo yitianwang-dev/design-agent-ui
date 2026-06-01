@@ -58,6 +58,12 @@
       "default_state": "PUBLIC",
       "_default_state_note": "Most common state across user contexts. Agent should pick another state only when spec explicitly mentions: creating, error, private, generating, or exclusive content access (lock/unlock).",
 
+      "default_size": {
+        "_note": "Library master dimensions. When importing as INSTANCE, use these — do NOT resize unless spec explicitly requires a different size. Observed bug 2026-06-01 testAvatarThumbnailPublic: agent scaled to 418×544 which overflowed the 402-wide container.",
+        "width": 199.5,
+        "height": 260
+      },
+
       "agent_usage_hint": {
         "_note": "Mapping spec keywords → state / variant. Agent uses this to deterministically pick the right configuration from the spec text.",
         "spec_signal_to_state": {
@@ -535,6 +541,34 @@
 
       "default_state": "DEFAULT",
       "_default_state_note": "Standard browse state. Agent should pick another state only when spec mentions: locked exclusive content (LOCK), unlocked premium (UNLOCK), publish/visibility flow (PUBLISH — Self only), comment panel (COMMENT_BOTTOM_SHEET_VIEW), or transition animation (PRE_TRANSITION — prototype only, rarely use in real screens).",
+
+      "default_size": {
+        "_note": "Avatar Card fills the full screen in Home feed (TikTok-style). When importing as INSTANCE, use these dimensions — do NOT resize unless spec explicitly requires.",
+        "width": 402,
+        "height": 874
+      },
+
+      "library_internal_elements": {
+        "_warning_to_agent": "These elements are rendered AUTOMATICALLY by the Avatar Card Library component instance when imported. Agent MUST NOT create external sibling wrappers reproducing them. Doing so causes double display (bug observed 2026-06-01 testHomeFeedLocked: agent drew creatorNameWrapper / followButton / actionIcon × 4 outside avatarCard instance, duplicating what's already inside).",
+        "_correct_usage": "Import Avatar Card as INSTANCE with the right variant. The variant determines what's shown internally including creator info, action buttons, sound toggle, etc.",
+        "elements_rendered_internally": [
+          "Creator name + follow button (via nested creator-name-follow component)",
+          "Avatar video / image (per Image Type variant)",
+          "Action buttons stack — like / comment / bookmark / share (via nested ActionEngagement + individual button components)",
+          "Sound toggle (via Sound toggle component)",
+          "Hashtag settings button (via HashSettings component)",
+          "Live badge when applicable (via LiveBadge for Home AvatarCard component)",
+          "Heart / like icon (via Like Button component)",
+          "Comment icon (via Avatar Comments Button component)",
+          "Bookmark icon (via Avatar Bookmark Button component)",
+          "Share icon (via Shared Button component)"
+        ],
+        "_acceptable_external_overlays": [
+          "Lock paywall UI (centerOverlay with lock icon + label + unlock CTA) — when spec demands and LOCK variant alone is insufficient",
+          "Custom badges/banners not in any Library variant",
+          "Page-level chrome handled by scaffold (header / bottom nav)"
+        ]
+      },
 
       "agent_usage_hint": {
         "_note": "Mapping spec keywords → state / variant. Agent uses this to deterministically pick the right configuration from spec text.",
