@@ -34,9 +34,11 @@ variants:
     note: |
       Self は編集者視点。Other（観客視点）は avatar_top_other.schema.yaml。
   functionScreen:
-    values: [editTop, liveStreaming, videoGallery, customize]
+    values: [editTop, liveStreaming, publishSettings, customize, delete]
     note: |
       下部タブで選択中の function。FunctionContent が variant で切り替わる。
+      (PR #17 Hori 修正: 4→5 タブ。videoGallery は実在しないので削除し、
+       publishSettings + delete を追加。)
   menuState:
     values: [old, feature]
     note: |
@@ -55,8 +57,9 @@ required_components:
       W403×H80 の下部 function 選択 bar。
       Library にある専用 component。**メンテナンスコスト削減のための
       ネスト component の例外**。
-      menu = EditTop / LiveStream / Publish / Customize、
+      menu = Top / LiveStream / Publish / Customize / Delete、
       State = Old / feature、Language = JP / EN。
+      (PR #17: 4→5 タブ。Library variant 名は確認待ち。)
 
 forbidden_components:
   - name: navigation_liquid（BottomNav）
@@ -79,10 +82,11 @@ content_structure:
       description: |
         画面上部全体に avatar 動画 / 静止画 / 編集画面を表示。
         FunctionContent が functionScreen variant により切り替わる:
-          - editTop: 編集モード（avatar 全身 + 編集 UI）
-          - liveStreaming: Live 配信画面（Beta バッジ表示）
-          - videoGallery: 動画ギャラリー（grid）
-          - customize: AI チャット形式の customize 画面
+          - editTop: トップ（avatar 全身 + 編集 UI 表示モード）
+          - liveStreaming: ライブ配信画面（Beta バッジ表示）
+          - publishSettings: 公開設定画面
+          - customize: カスタマイズ画面（AI チャット形式）
+          - delete: 削除画面
       required: true
       layout: ABSOLUTE
       size: { width: 402, height: 794 }   # 874 - 80（FunctionMenuSection 分）
@@ -94,8 +98,8 @@ content_structure:
     # ─ Section 2: functionMenuSection（必須・下部）─
     - id: functionMenuSection
       description: |
-        下部 80px の Function 選択 bar。横並び 4 項目:
-        EditTop / LiveStream / Publish / Customize。
+        下部 80px の Function 選択 bar。横並び 5 項目（PR #17 修正、4→5）:
+        Top / LiveStream / Publish / Customize / Delete。
         選択中の menu はハイライト、他は dim。
       required: true
       layout: ABSOLUTE
