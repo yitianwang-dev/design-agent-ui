@@ -710,6 +710,10 @@ ${componentContextSection}
 ## レイアウト系チェック
 11. **直置き禁止**: TEXT / SVG / RECTANGLE（icon 用途）が **AutoLayout でない frame の直接子** になっていないか。違反したら AutoLayout コンテナで包む。特に装飾用 ✨ などの粒子は \`sparkleLayer\` / \`particleLayer\` に集約。
 12. **Gap が 8 の倍数でない**: \`itemSpacing\` / \`gap\` が 4, 8, 12, 16, 20, 24, 32... 以外（例: 5, 7, 10, 13, 15）。8 の倍数または 4 + 8N に修正。
+12.5 **⚠️ Gap = 0 で sibling box が貼りつく**（PR #22 新規）: 複数 sibling frame（card / chip / item / tab 等の box 系）を横並べる AutoLayout で \`itemSpacing: 0\` を設定すると box が貼りつき視覚的に粘着する。
+    違反検出: horizontal AutoLayout の親 frame で itemSpacing === 0 かつ children に 2 個以上の frame がある場合。
+    例外: spec が「flush」「edge-to-edge」「contiguous」を明言した場合のみ 0 許可。
+    修正: \`itemSpacing: 8\` （または spec が指定する値）に変更。tab / chip / card の標準は 8 px、ギフトアイテム grid 等の塊は 12〜16 px が目安。
 13. **line-height: Auto**: TEXT に対し lineHeight を設定していない、または \`lineHeight: { unit: 'AUTO' }\`。Noto Sans JP では Auto 禁止。\`lineHeight: { unit: 'PIXELS', value: 数値 }\` に修正。
 ${selectedNames.length || forbiddenComponents.length ? `
 ## Component 文脈チェック（PR #6 新規 — 番号 PR #10 で renumber）
@@ -903,7 +907,48 @@ export async function generateFigmaScript(input) {
   // Plan C: await the checklist promise started before Step 1, then inject
   // a MUST_HAVE_LAYERS section. This is the upfront half of the closed loop —
   // Step 6 (after Step 5) verifies the same list against the final code.
-  const checklist = await checklistPromise;
+  let checklist = await checklistPromise;
+
+  // PR #22 (2026-06-01): coordinate Plan C with dict's library_internal_elements.
+  // BUG: parseSpecChecklist extracts layer names from spec text. When spec
+  // mentions elements that are part of a Library component (e.g. "Public ラベル"
+  // for profile/avatarThumbnail), checklist requires them — but those elements
+  // are rendered INTERNALLY by the Library instance. Without this filter,
+  // checkSpecCoverage flags them as missing → patchMissingItems forces agent
+  // to create duplicate external wrappers. Observed in test-dictionary
+  // file 2026-06-01.
+  //
+  // Fix: after dict matches are known, filter out checklist items whose role
+  // is covered by any matched component's library_internal_elements.
+  if (checklist?.must_have_layers && libraryDictMatches.length > 0) {
+    const internalCovers = [];
+    for (const m of libraryDictMatches) {
+      if (m.library_internal_elements) {
+        for (const e of m.library_internal_elements) {
+          internalCovers.push(e.toLowerCase());
+        }
+      }
+    }
+    if (internalCovers.length) {
+      const filtered = checklist.must_have_layers.filter(item => {
+        const words = (item.role || '').toLowerCase().split(/[^a-z0-9]/).filter(Boolean);
+        if (words.length === 0) return true;
+        // If at least half the role's words appear in some internal element →
+        // treat as covered by the Library instance.
+        for (const elem of internalCovers) {
+          const matchedCount = words.filter(w => elem.includes(w)).length;
+          if (matchedCount >= Math.ceil(words.length / 2)) return false;
+        }
+        return true;
+      });
+      const removed = checklist.must_have_layers.length - filtered.length;
+      if (removed > 0) {
+        console.log(`[checklist] filtered ${removed} item(s) covered by Library internal elements`);
+        checklist = { ...checklist, must_have_layers: filtered };
+      }
+    }
+  }
+
   const checklistSection = checklist && checklist.must_have_layers && checklist.must_have_layers.length > 0
     ? `\n\n## ✅ MUST HAVE LAYERS（spec から抽出した必須要素チェックリスト）\n\n以下のすべての要素は **必ず生成コードに含めること**。spec の文章を読み飛ばさず、各 entry を 1 つ以上の layer / TEXT / instance として実装してください。**1 つでも欠けると Step 6 で検出され再生成対象になります。**\n\n\`\`\`json\n${JSON.stringify(checklist.must_have_layers, null, 2)}\n\`\`\`\n\n各 entry の解釈:\n- \`role\`: 役割名（layer name に近い形で命名すること）\n- \`text\`: 固定文字列がある場合は textNode.characters にそのまま設定\n- \`count\`: 個数指定。ループまたは複数 instance 作成で満たす\n- \`position\`: 配置位置の文脈（例: "右上" → padding-right + AutoLayout primaryAxis END）\n- \`optional: true\` のものは省略可、それ以外は **必須**\n`
     : '';

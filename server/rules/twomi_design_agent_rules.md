@@ -50,6 +50,9 @@
 - アイコン・テキスト・component の **直置き禁止**
 - 必ず AutoLayout コンテナに入れて余白を制御
 - Gap は **8 の倍数**（4, 8, 12, 16, 24, 32...）
+- **⚠️ 複数 sibling の box（card / chip / item / tab 等）を横並べる時、最小 itemSpacing = 8**（PR #22）。0 だと box が貼りつき視覚的に粘着して見にくい。
+  - 例外: spec が「flush」「edge-to-edge」「contiguous」を明言した時のみ 0 許可
+  - 目安: tab / chip は 8, ギフトアイテム grid は 12〜16
 - 幅は固定しない（HUG または FILL）
 - 高さは内包要素に依存させる（Header / BottomNav など明確な理由がある場合のみ固定）
 
