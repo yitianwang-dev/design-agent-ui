@@ -1,0 +1,1057 @@
+{
+  "_meta": {
+    "library_file_key": "CPe64VQc7petbZawTE6J8o",
+    "library_name": "Library - Guideline",
+    "synced_at": "2026-06-01T10:00:00+09:00",
+    "synced_by": "claude (v4 — enriched with user flows + agent hints + related components + caveats + variant aliases)",
+    "version": "v4-enriched",
+    "intent": "Dictionary is a behavioral spec: state × interaction × display rule. Agent uses it to: (1) pick the right state from spec context, (2) apply display rules to layers, (3) wire onClick / Prototype based on interactions.",
+    "v4_additions": [
+      "1. avatarThumbnail also has _inferred_user_flow per state (parity with Avatar Card)",
+      "2. default_state field per component (which state to assume when spec is ambiguous)",
+      "3. agent_usage_hint with spec_signal_to_state / spec_signal_to_variant mappings + common_combinations examples",
+      "4. caveats[] unified array (replaces old notes/constraints/highlights with severity-tagged structure)",
+      "5. related_components[] with appears_alongside (keys included) + appears_on_screens + navigates_to",
+      "6. _variant_aliases explaining what Hori's variant values mean in plain terms"
+    ],
+    "inference_disclaimer": "All `_inferred*` fields are Claude's interpretation, not Hori-confirmed. Wang should review with Hori and mark/remove false ones."
+  },
+
+  "components": [
+    {
+      "name": "profile/avatarThumbnail",
+      "page_id": "1812:22531",
+      "page_name": "⚒️ Component State - Profile/avatarThumbnail",
+      "component_key": "3571bee8cab019ce15c75dd53466302e6bdc33f3",
+      "library_key": "lk-2b570cc394ec8deae2796a9d879914f41253c93175e846e085e91e2a6655303a06ded25596c9bdb23759b67de53f76c519b334fa32675deaee37932b98386b90",
+      "asset_type": "component_set",
+      "updated_at": "2026-05-29T07:46:35Z",
+
+      "catalog_description": {
+        "usage_jp": "プロフィール画面のアバターサムネイル。ModelとStatusの組み合わせで表示を切り替える。",
+        "usage_en": "Avatar thumbnail on Profile screen. Switch display by Model and Status combination.",
+        "see_also": "Cheat Sheet > profile/avatarThumbnail"
+      },
+
+      "variants": {
+        "Model": ["selfVideo", "selfInCallVideo", "OtherVideo", "OtherInCallVideo"],
+        "Status": ["True", "publicGenerating", "placeholder", "ExclusiveContentLock", "ExclusiveContentUnlock"]
+      },
+
+      "_variant_aliases": {
+        "_note": "Hori's variant values explained in plain terms (Claude-authored — Hori may refine).",
+        "Model": {
+          "selfVideo": "User viewing their own avatar in normal video mode",
+          "selfInCallVideo": "User viewing their own avatar while in call mode",
+          "OtherVideo": "User viewing another user's avatar in normal video mode",
+          "OtherInCallVideo": "User viewing another user's avatar while in call mode"
+        },
+        "Status": {
+          "True": "Avatar published and live (default success state for Other to view)",
+          "publicGenerating": "Avatar in process of being published — waiting period after Self hit Publish",
+          "placeholder": "No avatar image / video yet (newly created, before any upload)",
+          "ExclusiveContentLock": "Other user encounters exclusive content they haven't unlocked",
+          "ExclusiveContentUnlock": "Other user has purchased / been granted access to exclusive content"
+        }
+      },
+
+      "default_state": "PUBLIC",
+      "_default_state_note": "Most common state across user contexts. Agent should pick another state only when spec explicitly mentions: creating, error, private, generating, or exclusive content access (lock/unlock).",
+
+      "agent_usage_hint": {
+        "_note": "Mapping spec keywords → state / variant. Agent uses this to deterministically pick the right configuration from the spec text.",
+        "spec_signal_to_state": {
+          "「生成中 / generating」 (during avatar creation)": "AVATAR_CREATING",
+          "「生成エラー / generation failed」": "GENERATION_ERROR",
+          "「非公開 / 未公開 / private」": "PRIVATE",
+          "「公開中 / public / published」": "PUBLIC",
+          "「公開待ち / processing publish」": "GENERATING"
+        },
+        "spec_signal_to_variant": {
+          "Model": {
+            "「Self が自分の avatar を見ている」": "selfVideo",
+            "「Self が通話中の avatar」": "selfInCallVideo",
+            "「Other（他人）の avatar」": "OtherVideo",
+            "「Other の通話中 avatar」": "OtherInCallVideo"
+          },
+          "Status": {
+            "「限定コンテンツ / locked / 有料」": "ExclusiveContentLock",
+            "「解锁 / unlocked / paid access」": "ExclusiveContentUnlock",
+            "(no spec signal → default)": "True"
+          }
+        },
+        "common_combinations": [
+          {
+            "scenario": "Self user views own avatar after publishing (normal case)",
+            "Model": "selfVideo",
+            "Status": "True",
+            "state": "PUBLIC"
+          },
+          {
+            "scenario": "Other user views avatar with exclusive content they haven't paid for",
+            "Model": "OtherVideo",
+            "Status": "ExclusiveContentLock"
+          },
+          {
+            "scenario": "Self user just hit Publish, avatar is being processed",
+            "Model": "selfVideo",
+            "Status": "publicGenerating",
+            "state": "GENERATING"
+          },
+          {
+            "scenario": "Other user views avatar after unlocking exclusive content",
+            "Model": "OtherVideo",
+            "Status": "ExclusiveContentUnlock"
+          }
+        ]
+      },
+
+      "context": {
+        "user_role": "Self",
+        "flow": "Create",
+        "_source_label": "Usage frame says: 'Self / Create' (page-level context)"
+      },
+
+      "image_models": [
+        {
+          "name": "Video set",
+          "_source": "ImageModel frame 1812:22542 (yellow-bordered label)"
+        },
+        {
+          "name": "Avatar / In Call Video",
+          "_source": "ImageModel frame 1812:22545"
+        }
+      ],
+
+      "purpose": "Profile/thumbnail",
+
+      "display_rules": [
+        "Public / Private label",
+        "Selected tags",
+        { "indent": 1, "bold": true, "text": "Display max 4 lines only" },
+        "Number of favorites",
+        "Name",
+        "Talk icon"
+      ],
+
+      "display_constraints": {
+        "tags": { "max_lines": 4 },
+        "layout": "Bottom-aligned, stacked upward"
+      },
+
+      "states": {
+        "AVATAR_CREATING": {
+          "display": [
+            "Display the uploaded image at 50% opacity.",
+            "Display the label as \"Avatar generating.\""
+          ],
+          "actions": {
+            "call_button": "disabled"
+          },
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "User started avatar creation flow (uploaded photo, configured options, hit create)",
+            "user_intent": "Wait for avatar generation to complete",
+            "next_actions": [
+              "wait — system processes the upload",
+              "Call button disabled, no user actions possible during this state"
+            ],
+            "preceded_by": "Avatar create / upload screen",
+            "next_state_on_success": "PUBLIC (or PRIVATE if user chose private at creation time)",
+            "next_state_on_failure": "GENERATION_ERROR"
+          }
+        },
+
+        "GENERATION_ERROR": {
+          "display": [
+            "Use the same background as the Generating state",
+            "Display the status label as Error"
+          ],
+          "primary_feedback": "Toast notification",
+          "fallback": {
+            "condition": "Toast has already disappeared",
+            "behavior": "allow users to tap and navigate to the avatar creation flow"
+          },
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "Avatar generation failed (technical error during AVATAR_CREATING)",
+            "user_intent": "Recover from the error — likely retry creation",
+            "next_actions": [
+              "primary: see Toast notification with error info",
+              "fallback: tap the thumbnail → navigate to avatar creation flow to retry",
+              "if Toast still visible, user may dismiss it"
+            ],
+            "preceded_by": "AVATAR_CREATING failed",
+            "next_state_on_retry": "AVATAR_CREATING"
+          }
+        },
+
+        "PRIVATE": {
+          "description": "Avatar is set to private",
+          "variants": [
+            {
+              "case": "Never published",
+              "tags": "No tags exist."
+            },
+            {
+              "case": "Changed to private after setting tags",
+              "tags": "If tags exist, display them. Only the status changes (content remains unchanged)."
+            }
+          ],
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "Either (1) Self user kept avatar private from the start, OR (2) Self user toggled a previously public avatar to private",
+            "user_intent": "Personal viewing only — avatar not visible to Other users",
+            "next_actions": [
+              "toggle Publish → enters GENERATING (then PUBLIC)",
+              "view Profile / Avatar TOP",
+              "delete avatar"
+            ],
+            "preceded_by_variant1": "AVATAR_CREATING (newly created, never published — corresponds to PRIVATE.variants[0])",
+            "preceded_by_variant2": "PUBLIC (user un-published — corresponds to PRIVATE.variants[1])",
+            "next_state_on_publish": "GENERATING"
+          }
+        },
+
+        "GENERATING": {
+          "display": "Displayed when a waiting period occurs after publishing the avatar",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "Self user hit Publish from PRIVATE or settings — system is processing the public release",
+            "user_intent": "Wait for publish to complete",
+            "next_actions": [
+              "wait — auto-transitions to PUBLIC when processing completes",
+              "user typically cannot interact during this state"
+            ],
+            "preceded_by": "PRIVATE → user toggled Publish",
+            "next_state_on_success": "PUBLIC",
+            "next_state_on_failure": "GENERATION_ERROR (rare for publish step, more common in AVATAR_CREATING)"
+          }
+        },
+
+        "PUBLIC": {
+          "description": "Publishing State Display",
+          "rules": [
+            "If the user has not set any tags, do not display tags.",
+            "If there are many tags, display up to four lines."
+          ],
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "Either (1) GENERATING just completed (Self just published), OR (2) ambient state when Other user views any published avatar",
+            "user_intent": "View / share / interact with the published avatar",
+            "next_actions": [
+              "for Self: edit tags (max 4 lines), toggle to PRIVATE",
+              "for Other: tap call button → Call screen",
+              "for Other: tap other area → Avatar TOP (avatar detail)",
+              "for Other: bookmark, follow, comment via adjacent buttons (see related_components)"
+            ],
+            "preceded_by_variant1": "GENERATING (Self just published)",
+            "preceded_by_variant2": "ambient (Other navigating into profile / feed)",
+            "next_state_on_unpublish": "PRIVATE (Self only)",
+            "next_state_on_exclusive_lock": "Status variant changes to ExclusiveContentLock (when avatar has exclusive content and viewer is unpaid Other)"
+          }
+        }
+      },
+
+      "interactions": [
+        {
+          "trigger": "tap callButton",
+          "result": "navigate to Call screen"
+        },
+        {
+          "trigger": "tap other area",
+          "result": "navigate to Avatar TOP (avatar detail screen)"
+        }
+      ],
+
+      "related_components": {
+        "_note": "Components that typically appear alongside avatarThumbnail or are part of its flow. Keys verified from Library catalog.",
+        "appears_alongside": [
+          {
+            "name": "creator-name-follow",
+            "key": "d4920240f99d3d2367512a1d8d5f5ffb84f54397",
+            "context": "Creator name + follow button overlay shown with the thumbnail"
+          },
+          {
+            "name": "Avatar Bookmark Button",
+            "key": "dde5293adb8b8857f1e2837482a19fa2b1a33b0a",
+            "context": "Bookmark action — use `Size: profileThumbnail` variant for this context"
+          }
+        ],
+        "appears_on_screens": [
+          "Profile / Avatar Top (main display location)",
+          "Call screen (after tap callButton — navigates to call view)"
+        ],
+        "navigates_to": [
+          {
+            "from_state": "any (callable)",
+            "via": "tap callButton",
+            "to": "Call screen"
+          },
+          {
+            "from_state": "any",
+            "via": "tap other area",
+            "to": "Avatar TOP (Profile / Avatar Top)"
+          },
+          {
+            "from_state": "GENERATION_ERROR",
+            "via": "tap (after Toast disappears — fallback)",
+            "to": "Avatar creation flow",
+            "_inferred": true
+          }
+        ]
+      },
+
+      "caveats": [
+        {
+          "severity": "warning",
+          "category": "layout",
+          "text": "Layout of elements on the thumbnail: Bottom-aligned, stacked upward — Hori marked this in red (#ff3e1c) in the Figma Note table"
+        },
+        {
+          "severity": "warning",
+          "category": "interaction",
+          "text": "Transition rules use red border (#ff3e1c) in Figma — Hori emphasized importance"
+        },
+        {
+          "severity": "info",
+          "category": "display",
+          "text": "Tags display has hard max of 4 lines (display_constraints.tags.max_lines = 4)"
+        },
+        {
+          "severity": "info",
+          "category": "state",
+          "text": "AVATAR_CREATING state disables Call button. Agent must NOT add a clickable Call button in this state."
+        }
+      ],
+
+      "_source": {
+        "template": "noteCategoryTable",
+        "usage_frame_id": "1812:22536",
+        "image_model_frame_ids": ["1812:22542", "1812:22545"],
+        "note_frame_id": "1812:22557",
+        "category_nodes": ["1812:22559", "1812:22566", "1812:22589"],
+        "table_nodes": ["1812:22561", "1812:22568", "1812:22591"],
+        "fully_extracted": true
+      }
+    },
+
+    {
+      "name": "Avatar Card",
+      "page_id": "2883:32849",
+      "page_name": "⚒️ Component State - AvatarCard",
+      "component_key": "fe32a4dbab65359ebe4c88374e8532ff45150639",
+      "library_key": "lk-2b570cc394ec8deae2796a9d879914f41253c93175e846e085e91e2a6655303a06ded25596c9bdb23759b67de53f76c519b334fa32675deaee37932b98386b90",
+      "asset_type": "component_set",
+      "updated_at": "2026-05-29T01:25:45Z",
+
+      "catalog_description": {
+        "usage_jp": "アバターを表示するメインcard。Use CaseとUserの組み合わせで画面・表示内容を切り替える。",
+        "usage_en": "Main card displaying avatar. Switch screen and content by Use Case and User combination.",
+        "used_in": ["Home feed", "Avatar TOP", "Zoom on Home", "Publish"],
+        "notes_jp": "Variant配置で用途が自明。詳細はFigma上のVariant配置を参照。",
+        "notes_en": "See Figma Variant layout for details."
+      },
+
+      "variants": {
+        "Use Case": ["Home", "Home Pre-transition", "Avatar TOP", "Zoom on Home", "Publish", "Locked Exclusive Content"],
+        "User": ["Self", "Other"],
+        "ExclusiveContent": ["True", "False"],
+        "Image Type": ["User Set Video", "InCallVideo", "Comment", "CommentKeyboard"],
+        "Language": ["JP", "EN"]
+      },
+
+      "_variant_aliases": {
+        "_note": "Hori's variant values explained in plain terms (Claude-authored — Hori may refine).",
+        "Use Case": {
+          "Home": "Avatar Card as it appears in the Home feed (TikTok-style scroll)",
+          "Home Pre-transition": "Transition variant before zooming into Home Zoom screen (Prototype only)",
+          "Avatar TOP": "Avatar Card as it appears on Avatar TOP / Profile screen",
+          "Zoom on Home": "Avatar Card when zoomed into Home video (full-screen view)",
+          "Publish": "Avatar Card during publish flow (visibility settings)",
+          "Locked Exclusive Content": "Avatar Card showing exclusive content that is gated (paywall variant)"
+        },
+        "User": {
+          "Self": "User is viewing their own avatar (editor / creator perspective)",
+          "Other": "User is viewing another user's avatar (audience / viewer perspective)"
+        },
+        "ExclusiveContent": {
+          "True": "Avatar has exclusive content attached",
+          "False": "Avatar has no exclusive content (default)"
+        },
+        "Image Type": {
+          "User Set Video": "Default video the user uploaded as their avatar",
+          "InCallVideo": "Live video shown when avatar is in call",
+          "Comment": "Comment overlay display variant",
+          "CommentKeyboard": "Comment with keyboard variant (taller comment sheet for typing)"
+        },
+        "Language": {
+          "JP": "Japanese text",
+          "EN": "English text"
+        }
+      },
+
+      "default_state": "DEFAULT",
+      "_default_state_note": "Standard browse state. Agent should pick another state only when spec mentions: locked exclusive content (LOCK), unlocked premium (UNLOCK), publish/visibility flow (PUBLISH — Self only), comment panel (COMMENT_BOTTOM_SHEET_VIEW), or transition animation (PRE_TRANSITION — prototype only, rarely use in real screens).",
+
+      "agent_usage_hint": {
+        "_note": "Mapping spec keywords → state / variant. Agent uses this to deterministically pick the right configuration from spec text.",
+        "spec_signal_to_state": {
+          "「デフォルト / 通常 / standard」": "DEFAULT",
+          "「限定コンテンツ / locked / 有料 paywall」": "LOCK (Other only)",
+          "「解锁 / unlocked / paid access」": "UNLOCK (Other only)",
+          "「コメント表示 / comment panel」": "COMMENT_BOTTOM_SHEET_VIEW",
+          "「公開設定 / publish / visibility setting」": "PUBLISH (Self only)",
+          "「animation / transition between screens」": "PRE_TRANSITION (prototype-only — rarely use in real screens)"
+        },
+        "spec_signal_to_variant": {
+          "User": {
+            "「自分の avatar / Self の動画」": "Self",
+            "「他人の avatar / Other / クリエイター」": "Other"
+          },
+          "Use Case": {
+            "「Home feed の中で表示」": "Home",
+            "「Zoom 全画面表示」": "Zoom on Home",
+            "「Avatar TOP / Profile 画面で表示」": "Avatar TOP",
+            "「公開フロー」": "Publish",
+            "「animation transition」": "Home Pre-transition (prototype only)"
+          },
+          "ExclusiveContent": {
+            "「有料 / exclusive」mentioned": "True",
+            "no mention": "False"
+          },
+          "Image Type": {
+            "「In Call 中の動画」": "InCallVideo",
+            "「コメント表示時」": "Comment",
+            "「コメント入力 keyboard」": "CommentKeyboard",
+            "default": "User Set Video"
+          },
+          "Language": {
+            "JP spec text": "JP",
+            "EN spec text": "EN"
+          }
+        },
+        "common_combinations": [
+          {
+            "scenario": "Other user browses Home feed and sees an avatar (no exclusive content)",
+            "User": "Other",
+            "Use Case": "Home",
+            "ExclusiveContent": "False",
+            "Image Type": "User Set Video",
+            "state": "DEFAULT"
+          },
+          {
+            "scenario": "Other user encounters a paywalled exclusive avatar on Home feed",
+            "User": "Other",
+            "Use Case": "Home",
+            "ExclusiveContent": "True",
+            "state": "LOCK"
+          },
+          {
+            "scenario": "Self user opens publish settings for their avatar",
+            "User": "Self",
+            "Use Case": "Publish",
+            "ExclusiveContent": "False",
+            "state": "PUBLISH"
+          },
+          {
+            "scenario": "Other user opens comment panel from Home Zoom",
+            "User": "Other",
+            "Use Case": "Zoom on Home",
+            "Image Type": "Comment",
+            "state": "COMMENT_BOTTOM_SHEET_VIEW"
+          },
+          {
+            "scenario": "Other user starts typing a comment (keyboard up)",
+            "User": "Other",
+            "Use Case": "Zoom on Home",
+            "Image Type": "CommentKeyboard",
+            "state": "COMMENT_BOTTOM_SHEET_VIEW (variation 2)"
+          }
+        ]
+      },
+
+      "contexts": ["Self", "Other"],
+      "screens": ["Home Zoom", "Profile / Avatar Top"],
+
+      "_inferred_flows_note": "Each state has `_inferred_user_flow` field with enter_via / user_intent / next_actions. These are Claude's interpretation, NOT Hori-confirmed.",
+
+      "states": {
+        "DEFAULT": {
+          "applies_to": ["Self.Home", "Self.ProfileAvatarTop", "Other.Home", "Other.ProfileAvatarTop"],
+          "description": "Standard avatar card display",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "User opens Home feed and scrolls to this avatar / opens this avatar's Profile / Avatar Top screen",
+            "user_intent": "Browse avatar content normally (no special state)",
+            "next_actions": [
+              "tap card body → PRE_TRANSITION → Home Zoom screen",
+              "tap Avatar TOP entry icon → Profile / Avatar Top screen",
+              "(Other only) swipe → R1 AD Card",
+              "tap Comment button → COMMENT_BOTTOM_SHEET_VIEW"
+            ]
+          }
+        },
+        "UNLOCK": {
+          "applies_to": ["Other.Home", "Other.ProfileAvatarTop"],
+          "description": "Exclusive content unlocked (paid user / accessible)",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "User has previously purchased / been granted access to this avatar's exclusive content (state persists after purchase)",
+            "user_intent": "View the exclusive content they paid for",
+            "next_actions": [
+              "tap card body → Home Zoom screen (with exclusive content visible / playable)",
+              "all DEFAULT-state interactions also available"
+            ],
+            "preceded_by": "LOCK → user completed payment / unlock flow"
+          }
+        },
+        "LOCK": {
+          "applies_to": ["Other.Home", "Other.ProfileAvatarTop"],
+          "description": "Exclusive content locked (paywall)",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "User encounters an Other avatar whose content is marked exclusive AND user has not unlocked it yet",
+            "user_intent": "Sees that exclusive content exists but is gated; may want to unlock",
+            "next_actions": [
+              "tap card body → paywall / unlock flow (exact destination needs Hori confirmation)",
+              "tap Avatar TOP entry icon → Profile / Avatar Top (where unlock options may be shown)"
+            ],
+            "next_state_on_purchase": "UNLOCK"
+          }
+        },
+        "PRE_TRANSITION": {
+          "applies_to": ["Self", "Other"],
+          "description": "Transition variant before Zoom display",
+          "purpose": "For Prototype use only",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "User just tapped the avatar card; this is the brief animation frame between tap and full Zoom view",
+            "user_intent": "Not a user-actionable state — purely visual transition",
+            "next_actions": [
+              "auto-transitions to Home Zoom screen after animation completes"
+            ],
+            "_note": "Hori marked this 'for Prototype use' — exists to demonstrate animation in Figma Prototypes, not a real product state to design layouts against."
+          }
+        },
+        "PUBLISH": {
+          "applies_to": ["Self only"],
+          "description": "Publish state for Self Avatar (visibility toggle, public/private)",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "Self user navigates to publish flow — either via 'visibility settings' link from Home Zoom screen, or directly from Profile / Avatar Top",
+            "user_intent": "Manage avatar visibility (set Public or Private)",
+            "next_actions": [
+              "toggle Public ↔ Private",
+              "navigate to publish settings screen (per Home Zoom Self description)",
+              "exit to DEFAULT state after settings saved"
+            ],
+            "supporting_quote_from_hori": "Self: 'Emergency fallback actions for video Public / Private status, and a navigation link to the visibility settings screen.'"
+          }
+        },
+        "COMMENT_BOTTOM_SHEET_VIEW": {
+          "applies_to": ["Self", "Other"],
+          "description": "Variant when Comment BottomSheet is open",
+          "variations": 2,
+          "purpose": "Two Bottom Sheet Height Variations for Layout Support",
+          "_inferred_user_flow": {
+            "_inferred": true,
+            "enter_via": "User taps the Comment button on the avatar (likely from Home Zoom view)",
+            "user_intent": "Read or write comments on the avatar's content",
+            "next_actions": [
+              "scroll comments within the bottom sheet",
+              "tap input area → switches to keyboard variation (taller sheet — Image Type: CommentKeyboard)",
+              "submit a comment",
+              "swipe down / tap outside → close sheet, return to DEFAULT"
+            ],
+            "_variation_note": "2 variations correspond to: (1) sheet at standard height with comment list (Image Type: Comment), (2) sheet expanded for keyboard typing (Image Type: CommentKeyboard)"
+          }
+        }
+      },
+
+      "interactions": [
+        {
+          "trigger": "tap avatar card",
+          "result": "navigate to Home Zoom screen (the avatar's video zoom view)",
+          "transition": "may go through PRE_TRANSITION state first"
+        },
+        {
+          "trigger": "tap Avatar TOP entry icon",
+          "result": "navigate to Profile / Avatar Top screen",
+          "context": "Entry Profile > Thumbnail flow"
+        },
+        {
+          "trigger": "swipe (Other context only)",
+          "result": "navigate to R1 AD Card (1 Variation)",
+          "constraint": "Self does not have this swipe interaction"
+        }
+      ],
+
+      "related_components": {
+        "_note": "Components from Library catalog (search_design_system) that commonly pair with Avatar Card on Twomi screens. Keys verified.",
+        "appears_alongside": [
+          {
+            "name": "creator-name-follow",
+            "key": "d4920240f99d3d2367512a1d8d5f5ffb84f54397",
+            "context": "Creator name + follow button overlay on the card"
+          },
+          {
+            "name": "Sound toggle",
+            "key": "847618dbae58cd2c0127c8498553de4cc3659d19",
+            "context": "Sound ON/OFF toggle for video playback"
+          },
+          {
+            "name": "Avatar Bookmark Button",
+            "key": "dde5293adb8b8857f1e2837482a19fa2b1a33b0a",
+            "context": "Favorite / bookmark action"
+          },
+          {
+            "name": "Shared Button",
+            "key": "fa9440494190838a91e0b1ff8d0ad43027321eda",
+            "context": "Share action"
+          },
+          {
+            "name": "Avatar Comments Button",
+            "key": "c0ef7e7132cd85e12ab239aeb1a3f26fb4aab997",
+            "context": "Comments toggle button — opens COMMENT_BOTTOM_SHEET_VIEW state"
+          },
+          {
+            "name": "followSettings",
+            "key": "56ae252ee0b10f82fb230db6d63953e6d0d49eb9",
+            "context": "Follow / Following state button"
+          },
+          {
+            "name": "HashSettings",
+            "key": "1c3971511da20f7018b6919d197e04d32080817a",
+            "context": "Hashtag settings button"
+          },
+          {
+            "name": "LiveBadge for Home AvatarCard",
+            "key": "15b1802cc66a70254ae383f03a1bde8794962441",
+            "context": "Live streaming badge overlay (Home feed only)"
+          },
+          {
+            "name": "ActionEngagement",
+            "key": "19b34f6b0dedf133f20e39af72f08a4b34ac11b8",
+            "context": "Engagement actions group (bookmark + comment + share container)"
+          },
+          {
+            "name": "AvatarCardIndicatorSection",
+            "key": "0b0b184d5f204eeb7026d439c5ade33a37101010",
+            "context": "Carousel indicator section (when Avatar Card is in a carousel — currently max 2 indicators)"
+          },
+          {
+            "name": "AvatarCardIndicator",
+            "key": "058928231993a57146399b18836745718d0c2ef8",
+            "context": "Individual carousel indicator dot (ON / OFF states)"
+          }
+        ],
+        "appears_on_screens": [
+          "Home feed (main usage — vertical scroll feed, TikTok-style)",
+          "Avatar TOP / Profile (profile page main avatar display)",
+          "Home Zoom (full-screen zoomed view of the avatar's video)",
+          "Publish settings (Self only — visibility configuration flow)"
+        ],
+        "navigates_to": [
+          {
+            "from_state": "DEFAULT (any context)",
+            "via": "tap card body",
+            "to": "Home Zoom screen",
+            "transition": "passes through PRE_TRANSITION animation"
+          },
+          {
+            "from_state": "UNLOCK (Other)",
+            "via": "tap card body",
+            "to": "Home Zoom screen (with exclusive content visible)"
+          },
+          {
+            "from_state": "LOCK (Other)",
+            "via": "tap card body",
+            "to": "Paywall / Unlock flow",
+            "_inferred": true,
+            "_inferred_note": "Exact paywall screen destination needs Hori confirmation"
+          },
+          {
+            "from_state": "DEFAULT (any context)",
+            "via": "tap Avatar TOP entry icon",
+            "to": "Profile / Avatar Top screen"
+          },
+          {
+            "from_state": "DEFAULT (Other only)",
+            "via": "swipe",
+            "to": "R1 AD Card (1 Variation)"
+          },
+          {
+            "from_state": "DEFAULT (any)",
+            "via": "tap Comment button (Avatar Comments Button component)",
+            "to": "COMMENT_BOTTOM_SHEET_VIEW state (overlay on same screen)"
+          },
+          {
+            "from_state": "Self-only flow",
+            "via": "navigate to visibility settings",
+            "to": "PUBLISH state / Publish settings screen"
+          }
+        ]
+      },
+
+      "screen_purposes": [
+        {
+          "screen": "Home Zoom",
+          "context": "Self",
+          "jp": "テキスト情報などを除外し、Home動画のみを閲覧するための画面。Selfの場合：緊急避難用の動画公開 / 非公開操作と、公開設定画面への導線リンクを表示。直前の画面（Feed上）ですでに詳細情報を表示しているため、Zoom画面では最小限のActionと説明のみを表示する。",
+          "en": "A screen dedicated to viewing only the Home video, excluding text information and other details. Self: Emergency fallback actions for video Public / Private status, and a navigation link to the visibility settings screen. Since detailed information is already displayed on the previous screen (Feed state), the Zoom screen only displays minimal actions and descriptions."
+        },
+        {
+          "screen": "Home Zoom",
+          "context": "Other",
+          "jp": "テキスト情報などを除外し、Home動画のみを閲覧するための画面。Otherの場合：Contentには、アバター状態を示す最小情報（Default / Unlock / Lock）のみ表示。直前の画面（Feed上）ですでに詳細情報を表示しているため、Zoom画面では最小限のActionと説明のみを表示する。",
+          "en": "A screen dedicated to viewing only the Home video, excluding text information and other details. Other: Only minimal avatar state information is displayed in the content area (Default / Unlock / Lock). Since detailed information is already displayed on the previous screen (Feed state), the Zoom screen only displays minimal actions and descriptions."
+        }
+      ],
+
+      "caveats": [
+        {
+          "severity": "critical",
+          "category": "constraint",
+          "context": "Self",
+          "jp": "Self AvatarにExclusive Content LockContentは存在しない",
+          "en": "Exclusive Content and Lock Content do not exist for Self Avatar.",
+          "impact": "UNLOCK and LOCK states only apply to Other context. Agent should NEVER generate Avatar Card with User=Self + ExclusiveContent=True or User=Self + state=LOCK/UNLOCK."
+        },
+        {
+          "severity": "info",
+          "category": "prototype",
+          "text": "PRE_TRANSITION state is for Figma Prototype use only — exists to demo animation between Home feed and Home Zoom. Don't use it for static layout designs."
+        },
+        {
+          "severity": "info",
+          "category": "deprecated",
+          "text": "LiveSettings component (key: 9338b8e204b56f4868912b12f67e55261bc0fe63) is flagged 'possibly to be deleted' in catalog — avoid using if alternative exists."
+        }
+      ],
+
+      "_source": {
+        "template": "useCaseInstanceGrid",
+        "section_ids": [
+          { "id": "2883:38098", "name": "AvatarCard / Self / UseCase", "note_label": "Self" },
+          { "id": "2886:38490", "name": "AvatarCard / Other / UseCase", "note_label": "Other" },
+          { "id": "2962:33262", "name": "Avatar Card / information / Variant", "purpose": "variant grid (visual only)" }
+        ],
+        "use_case_frames": {
+          "Self": [
+            { "id": "2962:34480", "label": "Default", "screen": "Home" },
+            { "id": "2962:34483", "label": "Unlock", "screen": "Home" },
+            { "id": "2962:34486", "label": "Lock", "screen": "Home" },
+            { "id": "2883:37562", "label": "Tap to enter Zoom", "screen": "Home" },
+            { "id": "2883:36925", "label": "Pre-transition", "subtitle": "Transition variant before Zoom display (for Prototype use)", "screen": "Home" },
+            { "id": "2883:36921", "label": "Comment BottomSheet view", "subtitle": "Two Bottom Sheet Height Variations for Layout Support", "screen": "Home" },
+            { "id": "2883:37671", "label": "Avatar TOP", "subtitle": "Entry Profile > Thumbnail", "screen": "Profile / Avatar Top" },
+            { "id": "2962:34534", "label": "Default", "screen": "Profile / Avatar Top" },
+            { "id": "2883:37934", "label": "Publish", "screen": "Profile / Avatar Top" }
+          ],
+          "Other": [
+            { "id": "2962:34235", "label": "Default", "screen": "Home" },
+            { "id": "2962:34238", "label": "Unlock", "screen": "Home" },
+            { "id": "2962:34241", "label": "Lock", "screen": "Home" },
+            { "id": "2962:34001", "label": "Default", "screen": "Home (alt)" },
+            { "id": "2962:34004", "label": "Unlock", "screen": "Home (alt)" },
+            { "id": "2962:34007", "label": "Lock", "screen": "Home (alt)" },
+            { "id": "2962:34244", "label": "Default", "screen": "Profile / Avatar Top" },
+            { "id": "2962:34247", "label": "Unlock", "screen": "Profile / Avatar Top" },
+            { "id": "2962:34250", "label": "Lock", "screen": "Profile / Avatar Top" },
+            { "id": "2886:38507", "label": "Default / Self / Use case state" },
+            { "id": "2886:38501", "label": "Avatar TOP", "subtitle": "Entry Profile > Thumbnail", "screen": "Profile / Avatar Top" },
+            { "id": "2886:38519", "label": "Tap to enter Zoom (2Variation)", "screen": "Home" },
+            { "id": "2886:38522", "label": "Pre-transition", "subtitle": "Transition variant before Zoom display (for Prototype use)", "screen": "Home" },
+            { "id": "3246:37965", "label": "Swipe to R1 AD Card (1Variation)", "screen": "Home" }
+          ]
+        },
+        "screen_frames": ["2885:38099", "2885:38102", "2886:38510", "2886:38513"],
+        "note_frames": ["2883:36220 (Self)", "2886:38528 (Other)"],
+        "fully_extracted": true
+      }
+    }
+  ],
+
+  "_screens_index": {
+    "_note": "Inverted index — lookup by screen name to find which components appear and in what states. Built from related_components.appears_on_screens + states.applies_to across all components. Helps agent quickly answer: 'For screen X, which components should I import and what states?'",
+
+    "Home feed": {
+      "_aka": ["Home", "Feed"],
+      "scaffold_type": "B (fullscreen, BottomNav Dark)",
+      "primary_component": "Avatar Card",
+      "components": [
+        {
+          "name": "Avatar Card",
+          "key": "fe32a4dbab65359ebe4c88374e8532ff45150639",
+          "default_variant_choice": { "Use Case": "Home", "User": "Self or Other (per spec)", "ExclusiveContent": "False" },
+          "default_state": "DEFAULT",
+          "alt_states": ["LOCK (Other + ExclusiveContent=True)", "UNLOCK (Other + ExclusiveContent unlocked)"],
+          "purpose": "Main avatar card filling the feed page (TikTok-style scroll)"
+        },
+        {
+          "name": "creator-name-follow",
+          "key": "d4920240f99d3d2367512a1d8d5f5ffb84f54397",
+          "purpose": "Creator name + follow button overlay on Avatar Card"
+        },
+        {
+          "name": "Sound toggle",
+          "key": "847618dbae58cd2c0127c8498553de4cc3659d19",
+          "purpose": "Volume ON/OFF for the video"
+        },
+        {
+          "name": "LiveBadge for Home AvatarCard",
+          "key": "15b1802cc66a70254ae383f03a1bde8794962441",
+          "purpose": "Live indicator if avatar is live-streaming"
+        },
+        {
+          "name": "ActionEngagement",
+          "key": "19b34f6b0dedf133f20e39af72f08a4b34ac11b8",
+          "purpose": "Right-side action stack (bookmark + comment + share)"
+        }
+      ],
+      "navigation_in": ["From app launch", "From BottomNav 'Home' tab"],
+      "navigation_out": [
+        "tap card → Home Zoom",
+        "tap creator name / Avatar TOP icon → Profile / Avatar Top",
+        "swipe (Other only) → R1 AD Card"
+      ]
+    },
+
+    "Home Zoom": {
+      "_aka": ["Zoom on Home", "Home Zoom screen", "Fullscreen avatar view"],
+      "scaffold_type": "B (fullscreen)",
+      "primary_component": "Avatar Card",
+      "components": [
+        {
+          "name": "Avatar Card",
+          "key": "fe32a4dbab65359ebe4c88374e8532ff45150639",
+          "default_variant_choice": { "Use Case": "Zoom on Home", "User": "per spec" },
+          "default_state": "DEFAULT",
+          "alt_states": ["COMMENT_BOTTOM_SHEET_VIEW (when Comment button tapped)"],
+          "purpose": "Fullscreen zoomed avatar video"
+        },
+        {
+          "name": "Avatar Comments Button",
+          "key": "c0ef7e7132cd85e12ab239aeb1a3f26fb4aab997",
+          "purpose": "Trigger Comment BottomSheet"
+        }
+      ],
+      "navigation_in": ["tap Avatar Card from Home feed (via PRE_TRANSITION)"],
+      "navigation_out": [
+        "swipe down / close → Home feed",
+        "Self only: tap visibility settings → Publish settings"
+      ],
+      "per_context_notes": {
+        "Self": "Shows emergency Public/Private toggle + link to visibility settings (per Hori's Home Zoom Self description)",
+        "Other": "Shows only minimal avatar state (Default / Unlock / Lock) — minimum actions"
+      }
+    },
+
+    "Profile / Avatar Top": {
+      "_aka": ["Avatar TOP", "Profile screen"],
+      "scaffold_type": "A or C (depends on layout)",
+      "components": [
+        {
+          "name": "Avatar Card",
+          "key": "fe32a4dbab65359ebe4c88374e8532ff45150639",
+          "default_variant_choice": { "Use Case": "Avatar TOP", "User": "Self or Other" },
+          "default_state": "DEFAULT (Other) / PUBLISH (Self if managing visibility)",
+          "purpose": "Main avatar display at top of profile"
+        },
+        {
+          "name": "profile/avatarThumbnail",
+          "key": "3571bee8cab019ce15c75dd53466302e6bdc33f3",
+          "default_variant_choice": { "Model": "selfVideo or OtherVideo", "Status": "True (most common)" },
+          "default_state": "PUBLIC",
+          "purpose": "Thumbnail variant of avatar (compact display, often paired with multiple)"
+        },
+        {
+          "name": "creator-name-follow",
+          "key": "d4920240f99d3d2367512a1d8d5f5ffb84f54397",
+          "purpose": "Name + follow button (with appropriate type variant for profile context)"
+        }
+      ],
+      "navigation_in": [
+        "tap Avatar TOP icon from Home feed",
+        "tap Avatar TOP from Notifications",
+        "search → tap user"
+      ],
+      "navigation_out": [
+        "tap avatarThumbnail → Call screen",
+        "tap card body → Home Zoom",
+        "back → previous screen"
+      ]
+    },
+
+    "Call screen": {
+      "_aka": ["Calling screen"],
+      "scaffold_type": "B (fullscreen)",
+      "components": [
+        {
+          "name": "Calling Connecting",
+          "key": "be674d76d46a7dc9429637eb942fa088071826a2",
+          "purpose": "Calling/connecting screen component (AutoLayout-rebuilt). Layout reference: Top 202px / Center"
+        }
+      ],
+      "navigation_in": ["tap callButton on avatarThumbnail"],
+      "navigation_out": ["end call → previous screen"]
+    },
+
+    "Publish settings": {
+      "_aka": ["Publish flow", "Visibility settings"],
+      "scaffold_type": "A (settings list)",
+      "context": "Self only",
+      "components": [
+        {
+          "name": "Avatar Card",
+          "key": "fe32a4dbab65359ebe4c88374e8532ff45150639",
+          "default_variant_choice": { "Use Case": "Publish", "User": "Self" },
+          "default_state": "PUBLISH",
+          "purpose": "Preview of avatar with publish controls (toggle Public/Private)"
+        }
+      ],
+      "navigation_in": [
+        "Home Zoom (Self) → tap visibility settings link",
+        "Profile / Avatar Top → tap publish entry"
+      ],
+      "navigation_out": [
+        "toggle Public → avatarThumbnail enters GENERATING then PUBLIC",
+        "back without saving → previous screen"
+      ]
+    },
+
+    "Avatar creation flow": {
+      "_aka": ["Avatar create", "Avatar upload"],
+      "scaffold_type": "Multi-step wizard",
+      "_status": "Not yet documented in Library dictionary — referenced via GENERATION_ERROR fallback navigation",
+      "components": [],
+      "navigation_in": ["tap on GENERATION_ERROR avatarThumbnail (fallback when Toast disappeared)"],
+      "navigation_out": ["complete → avatarThumbnail enters AVATAR_CREATING"]
+    },
+
+    "Paywall / Unlock flow": {
+      "_aka": ["Exclusive content paywall"],
+      "scaffold_type": "Unknown",
+      "_status": "Not yet documented — inferred from Avatar Card LOCK state interactions. Exact destination needs Hori confirmation.",
+      "components": [],
+      "navigation_in": ["tap Avatar Card in LOCK state (Other context, ExclusiveContent=True)"],
+      "navigation_out": ["complete purchase → Avatar Card enters UNLOCK state"]
+    },
+
+    "R1 AD Card": {
+      "_aka": ["Ad card via swipe"],
+      "scaffold_type": "Unknown",
+      "_status": "Referenced via Avatar Card 'Swipe to R1 AD Card (1Variation)' UseCase frame in Section 2 Other context",
+      "components": [],
+      "navigation_in": ["swipe on Avatar Card (Other context only)"],
+      "navigation_out": []
+    }
+  },
+
+  "_agent_integration_examples": {
+    "_note": "Concrete 'spec → lookup → output' walkthroughs showing how an agent would use this dictionary at generation time. These are templates for the integration code (server/src/services/claude.js extension) that should be written when ≥20 components are documented.",
+
+    "scenario_1_self_published_avatar_on_profile": {
+      "spec_text": "Self user の profile 画面、avatar はすでに公開済み、tag は 3 個設定済み",
+      "lookup_steps": [
+        "1. Identify component from screen context: 'profile 画面' → look in _screens_index['Profile / Avatar Top'].components",
+        "2. Pick component: profile/avatarThumbnail (or Avatar Card depending on which is requested)",
+        "3. Pick variant from agent_usage_hint.spec_signal_to_variant:",
+        "   - 'Self が自分の avatar' → Model: selfVideo",
+        "   - '公開済み' → Status: True (default)",
+        "4. Pick state from agent_usage_hint.spec_signal_to_state:",
+        "   - '公開済み' → PUBLIC",
+        "5. Read PUBLIC state's display rules: 'If many tags → max 4 lines'",
+        "6. Spec says 3 tags → display all 3 (within max 4 lines limit)"
+      ],
+      "expected_layers": [
+        "Public label (status indicator)",
+        "Tag list (3 tags, all visible within 4-line limit)",
+        "Number of favorites",
+        "Name",
+        "Talk icon"
+      ],
+      "code_snippet_sketch": "const dict = libraryDict.components.find(c => c.name === 'profile/avatarThumbnail'); const variant = { Model: 'selfVideo', Status: 'True' }; const state = dict.states.PUBLIC; const displayRules = [...dict.display_rules, ...state.rules];"
+    },
+
+    "scenario_2_other_user_locked_exclusive_content": {
+      "spec_text": "Other user encounters an exclusive avatar they haven't unlocked, on Home feed",
+      "lookup_steps": [
+        "1. screen: 'Home feed' → _screens_index['Home feed'].primary_component = Avatar Card",
+        "2. spec keyword 'exclusive' + 'haven't unlocked' → agent_usage_hint.spec_signal_to_state['「限定コンテンツ / locked / 有料 paywall」'] = LOCK",
+        "3. Variant: User=Other, Use Case=Home, ExclusiveContent=True",
+        "4. Check caveats: 'critical: Self does not have LOCK' — confirm User=Other ✓",
+        "5. Lookup state.LOCK._inferred_user_flow.next_actions for interaction hints"
+      ],
+      "expected_layers": [
+        "Avatar Card with lock visual indicator",
+        "Tap target: navigates to Paywall / Unlock flow (per related_components.navigates_to)"
+      ],
+      "agent_warnings_to_emit": [
+        "Add comment '// tap → paywall flow (destination needs Hori confirmation)' in generated code",
+        "Mark navigation as _inferred for future Hori review"
+      ]
+    },
+
+    "scenario_3_self_publishing_in_progress": {
+      "spec_text": "Self user just tapped Publish, waiting for processing to complete",
+      "lookup_steps": [
+        "1. Component: profile/avatarThumbnail",
+        "2. Variant: Model=selfVideo, Status=publicGenerating",
+        "3. State (from variant alias): publicGenerating maps to GENERATING state per agent_usage_hint",
+        "4. Read GENERATING.display: 'Displayed when a waiting period occurs after publishing'",
+        "5. Read _inferred_user_flow.next_actions: 'wait — auto-transitions to PUBLIC when processing completes'"
+      ],
+      "expected_layers": [
+        "Avatar thumbnail with 'processing' visual treatment",
+        "No interactive actions (user is waiting)"
+      ],
+      "interaction_handling": "agent should NOT add any tap handlers (waiting state, user can't act)"
+    },
+
+    "scenario_4_open_comment_panel_on_zoom": {
+      "spec_text": "Other user is watching Home Zoom view and opens comments",
+      "lookup_steps": [
+        "1. screen: 'Home Zoom' → components include Avatar Card + Avatar Comments Button",
+        "2. Avatar Card variant: Use Case=Zoom on Home, User=Other, Image Type=Comment (or CommentKeyboard if typing)",
+        "3. state: COMMENT_BOTTOM_SHEET_VIEW",
+        "4. variations: 2 — pick variation 1 (Comment) or 2 (CommentKeyboard) based on whether keyboard is up",
+        "5. Related components: Avatar Comments Button (key c0ef7e71...) handles trigger"
+      ],
+      "expected_layers": [
+        "Avatar Card (Image Type: Comment) — bottom sheet at standard height",
+        "Comment list inside the sheet",
+        "Input area at bottom (taps activate keyboard variation)"
+      ],
+      "_inferred_warning": "Whether keyboard appears with sheet at standard height or expanded is _inferred — confirm with Hori if 2 variations differ this way"
+    },
+
+    "scenario_5_generation_error_recovery": {
+      "spec_text": "User's avatar generation failed, show error state with recovery option",
+      "lookup_steps": [
+        "1. Component: profile/avatarThumbnail",
+        "2. state: GENERATION_ERROR (from agent_usage_hint spec_signal '生成エラー')",
+        "3. Read state.display: 'Use the same background as the Generating state, Display status label as Error'",
+        "4. Read state.primary_feedback: 'Toast notification'",
+        "5. Read state.fallback: 'condition: Toast has already disappeared, behavior: allow tap → avatar creation flow'",
+        "6. Generate both primary (Toast trigger placeholder) and fallback (tap → creation flow)"
+      ],
+      "expected_layers": [
+        "Avatar thumbnail with error background",
+        "Status label: 'Error'",
+        "(Toast component is separate — usually handled at screen level, not in component)",
+        "Tap handler on whole thumbnail → navigate to avatar creation flow (fallback only)"
+      ],
+      "agent_note": "Toast is screen-level UI not in this component — agent shouldn't generate Toast as child of thumbnail"
+    }
+  },
+
+  "_next_steps": [
+    "DONE v4: All 6 enrichments applied — _inferred_user_flow on all states, default_state, agent_usage_hint, related_components, caveats, _variant_aliases.",
+    "DONE v4.1: Added _screens_index (inverted lookup by screen) + _agent_integration_examples (5 walkthroughs showing dict → spec → generated layout pattern).",
+    "REVIEW: Each `_inferred*` field needs Wang or Hori review for accuracy.",
+    "EXPAND: Wait for Hori to make more ⚒️ Component State pages; re-run dump for each new component.",
+    "INTEGRATE: When ≥20 components have dictionary entries, design how server/services/claude.js loads this JSON into agent generation pipeline (use agent_usage_hint + _screens_index as primary signal mappers; reference _agent_integration_examples for implementation pattern)."
+  ]
+}
