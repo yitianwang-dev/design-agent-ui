@@ -809,10 +809,24 @@ export async function generateFigmaScript(input) {
   // Twomi UI rules (MUST/SHOULD/NICE), Library component white/blacklists,
   // layout / color / naming / philosophy. See server/rules/README or the
   // twomi_design_agent_rules.md for the rule taxonomy.
+  // PR #19 (2026-06-01): split rules into 2 sections by attention zone.
+  //   mustRulesSummary (~1KB):   hand-curated MUST list. Goes in SYSTEM TOP
+  //                              (high-attention) so MUST is always primed.
+  //   extendedRulesAppendix (~20KB): full agent rules markdown. Goes in
+  //                              USER MESSAGE END (also high-attention,
+  //                              framed as reference appendix).
+  //
+  // Rationale: LLM attention is strongest at system-top and user-end. The old
+  // layout put 20KB rules in system-middle (low attention) and buried per-
+  // request schema/dict/checklist after it. Reorder so per-request content
+  // gets system-top, rules content occupies user-end.
   const rulesContent = await loadAllRules();
   console.log(`[rules] loaded ${rulesContent.length} chars from rules/`);
-  const rulesSection = rulesContent
-    ? `\n\n## ⚠️ Twomi Design Agent Rules — 必ず厳守（違反は再生成対象）\n\n以下のルール群は最優先。仕様書や参照デザインと矛盾する場合は本ルールに従うこと。\n\n${rulesContent}\n\n## 上記ルール群の要約（最重要、再確認）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。**\n   - **動的テキスト**（spec から来る user 名・count 等）→ \`$VariableName\` 形式（PascalCase、\`$\` プレフィックス必須）。例: \`$UserName\`, \`$CoinCount\`, \`$DisplayName\`, \`$Bio\`\n   - **固定テキスト**（ボタンラベル等）→ 役割名（\`primaryActionText\`, \`sheetTitleText\`）\n   - 詳細 rules §1.7 参照\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n- **⚠️ Library 実際の構造に合わせる**: 階層 shallow（2-5層）、AutoLayout デフォルト、Icon は \`Outline / Category / Name\` slash taxonomy。詳細 §1.8 参照。\n`
+  const mustRulesSummary = rulesContent
+    ? `\n\n## ⚠️ MUST Rules — 必ず厳守（違反は出力破棄・再生成）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。**\n   - **動的テキスト**（spec から来る user 名・count 等）→ \`$VariableName\` 形式（PascalCase、\`$\` プレフィックス必須）。例: \`$UserName\`, \`$CoinCount\`, \`$DisplayName\`, \`$Bio\`\n   - **固定テキスト**（ボタンラベル等）→ 役割名（\`primaryActionText\`, \`sheetTitleText\`）\n   - 詳細は user メッセージ末尾の Extended Rules §1.7 参照\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n- **⚠️ Library 実際の構造に合わせる**: 階層 shallow（2-5層）、AutoLayout デフォルト、Icon は \`Outline / Category / Name\` slash taxonomy。詳細は Extended Rules §1.8 / §1.9 参照。\n`
+    : '';
+  const extendedRulesAppendix = rulesContent
+    ? `\n\n---\n\n## 📚 Appendix: Extended Twomi Design Agent Rules（参照用）\n\n以下は詳細仕様・SHOULD / NICE 改善・過去失敗モード等を含む参照ドキュメント。**システムプロンプト冒頭の MUST 要約と矛盾する場合は MUST が優先**。本セクションは判断に迷ったときの根拠として参照する。\n\n${rulesContent}\n`
     : '';
 
   // Screen-level schema (2026-05-28): if request's screenName matches a known
@@ -845,8 +859,13 @@ export async function generateFigmaScript(input) {
     ? `\n\n## ✅ MUST HAVE LAYERS（spec から抽出した必須要素チェックリスト）\n\n以下のすべての要素は **必ず生成コードに含めること**。spec の文章を読み飛ばさず、各 entry を 1 つ以上の layer / TEXT / instance として実装してください。**1 つでも欠けると Step 6 で検出され再生成対象になります。**\n\n\`\`\`json\n${JSON.stringify(checklist.must_have_layers, null, 2)}\n\`\`\`\n\n各 entry の解釈:\n- \`role\`: 役割名（layer name に近い形で命名すること）\n- \`text\`: 固定文字列がある場合は textNode.characters にそのまま設定\n- \`count\`: 個数指定。ループまたは複数 instance 作成で満たす\n- \`position\`: 配置位置の文脈（例: "右上" → padding-right + AutoLayout primaryAxis END）\n- \`optional: true\` のものは省略可、それ以外は **必須**\n`
     : '';
 
+  // PR #19: systemPrompt now contains only role + MUST summary + per-request
+  // library dict + per-request checklist + scaffold boundary + output format.
+  // Per-request screen schema moved to user-top, extended rules moved to
+  // user-end. Each attention-rich position now hosts content that benefits
+  // most from being noticed.
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}${libraryDictSection}${checklistSection}
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${mustRulesSummary}${libraryDictSection}${checklistSection}
 
 ## Twomiとは
 - 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）
@@ -903,7 +922,14 @@ SCAFFOLD_CODE_HEREの部分には下記のScaffoldコード全体を置き換え
 
   const componentSection = catalogSection + schemaSection;
 
-  const userTextContent = `## リクエスト
+  // PR #19: user message order optimized for attention.
+  //   TOP   →  screenSchemaSection (per-request structural constraint)
+  //         →  Request header
+  //         →  Scaffold code
+  //         →  Spec
+  //         →  Components (catalog + schemas)
+  //   BOT   →  extendedRulesAppendix (reference rules in high-attention zone)
+  const userTextContent = `${screenSchemaSection}## リクエスト
 - 画面名: ${screenName}
 - 画面タイプ: ${screenType}（${typeDesc[screenType]}）
 ${screenType !== 'C' ? `- 選択タブ: ${selectedTab}` : ''}
@@ -921,7 +947,7 @@ ${figmaStyleInfo ? `
 - ノード名: ${figmaStyleInfo.name}
 - 使用カラー: ${figmaStyleInfo.colors.join(', ')}
 - テキスト要素: ${figmaStyleInfo.texts.join(' / ')}
-` : ''}${componentSection}`;
+` : ''}${componentSection}${extendedRulesAppendix}`;
 
   // Build message content
   const contentBlocks = [];
