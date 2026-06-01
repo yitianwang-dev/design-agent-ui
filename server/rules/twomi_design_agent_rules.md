@@ -74,6 +74,17 @@
 text node（TEXT type のノード）の `name` プロパティを **実際の文字内容**（`characters`）と
 同じにすることは絶対禁止。**必ず役割名**で命名する。
 
+#### 適用範囲（PR #16、Library master 実測で判明）
+
+このルールは **agent が生成するコード（画面・instance 層）に適用**する。
+**Library master 自体の TEXT node は対象外**:
+- Library master の TEXT node は Figma 既定名（"Text"）または sample 文字（"HANA"・"LIVE"・"0" 等）のままになっていることが実測で判明
+- master は固定 sample。instance 利用時に characters を override する設計
+- agent は **新しい instance / screen を生成する側** なので、自分が作る TEXT には `$VariableName` / 役割名を使う義務がある
+
+→ **agent が import + createInstance する Library master の中身 TEXT は触らない**（既定名のまま）。
+→ **agent が自前で createText した TEXT のみ** §1.7 適用対象。
+
 #### Library 実際の命名 convention（参考、Library - Guideline からの実測）
 
 Twomi Library で **実際に使われている** 命名スタイル（このコンベンションに合わせること）:
@@ -308,6 +319,7 @@ generic な構造的役割を持つ wrapper は **PascalCase の固定名** を�
 | `Block` | 段落級コンテナ（複数 Section を含む） |
 | `Section` | 行級子段落 |
 | `Status` | 状態 badge の置き場所 |
+| `Background` | 単純な背景層（buttonCall 内で実測） |
 | `Background shadow` | グラデーション overlay 層 |
 | `Bookmark` / `Comment` 等 | icon + label / count 操作グループ |
 
@@ -335,6 +347,43 @@ generic な構造的役割を持つ wrapper は **PascalCase の固定名** を�
 variant 依存の image layer は `image/<VariantValue>` 形式:
 - `image/Self-userSetVideo`
 - `image/Other-InCallVideo`
+
+#### E. State-prefixed wrapper（多 state component の内部 sub-element）（PR #16）
+
+一つの component が複数 state を持ち、各 state が異なる sub-element を表示する場合、
+**`<StateName><Type>` PascalCase** で命名する:
+
+| Pattern | 実例（profile/AvatarPublish state component で実測） |
+|---|---|
+| `<State>Icon` | `LockIcon`, `UnlockIcon` |
+| `<State>Text` | `LockText`, `UnlockText` |
+
+これは「sibling 同名禁止」（§1.7 + lint 10）と矛盾しないことに注意:
+- `Lock` state では `LockIcon` + `LockText` が表示される
+- `Unlock` state では `UnlockIcon` + `UnlockText` が表示される
+- **同時に表示されない**（state により条件レンダリング）→ sibling として並ばない
+
+→ sibling として並ぶ場合は §1.7 ルール通り generic 名で揃える（`chipLabel × 3`）。
+
+#### F. 業務 PascalCase 単語を wrapper 名に使う（PR #16）
+
+業務文脈で意味が明確な単語は **PascalCase 単語または短い語句** で wrapper 名に使う:
+
+| 実例（Library 内で実測） | 出処 |
+|---|---|
+| `Live` / `Watcher` / `Count` | LiveBadge for Home AvatarCard |
+| `Creator info` | creator-name-follow（PascalCase 句、空白含む） |
+| `LiveIcon` | LiveBadge |
+| `Volume Loud Video, Audio, Sound` | Sound toggle（icon container の用途説明名） |
+
+ルール:
+- 1〜2 単語の業務語 → PascalCase 単語（`Live`, `Watcher`, `Count`）
+- 複数語の説明 → PascalCase + 空白（`Creator info`, `Background shadow`）
+- generic 役割名（A 組: Container/Contents 等）と区別される: A は構造的役割、F は業務意味
+
+注: §1.7 違反ではない理由 = これは **wrapper frame の名前**であって TEXT node の characters ではない。
+TEXT node に `Live` という characters があり、wrapper 名も `Live` の場合は §1.7 違反（TEXT name = 内容）。
+**wrapper（frame）名と TEXT node の characters が偶然一致するのは OK**。
 
 #### 違反例 / 修正例
 
