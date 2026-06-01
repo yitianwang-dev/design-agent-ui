@@ -375,6 +375,62 @@ function fixFabricatedKeys(code, selectedComponents) {
   return fixed;
 }
 
+// loadLibraryDict (2026-06-01 PR #14): load the component state × interaction
+// dictionary from server/data/library-dict.json. Each entry describes a
+// Library component's states, interactions, display rules, variant aliases,
+// and agent usage hints (spec keyword → state/variant mapping).
+//
+// Current coverage: 2 of 286 Library components (profile/avatarThumbnail,
+// Avatar Card) — Hori is in early documentation phase. Other 284 components
+// have no dictionary entry yet, so this only fires when one of the 2 is
+// selected by Step 2 selectComponents.
+//
+// Cached at module level since the file doesn't change between requests in
+// a running container.
+const LIBRARY_DICT_PATH = process.env.LIBRARY_DICT_PATH || resolve(__dirname, '../../data/library-dict.json');
+let _libraryDictCache = null;
+async function loadLibraryDict() {
+  if (_libraryDictCache !== null) return _libraryDictCache;
+  try {
+    const raw = await readFile(LIBRARY_DICT_PATH, 'utf-8');
+    _libraryDictCache = JSON.parse(raw);
+    console.log(`[libraryDict] loaded ${_libraryDictCache.components?.length || 0} entries from ${LIBRARY_DICT_PATH}`);
+    return _libraryDictCache;
+  } catch (err) {
+    console.warn(`[libraryDict] failed to load: ${err.message}`);
+    _libraryDictCache = { components: [] };
+    return _libraryDictCache;
+  }
+}
+
+// getTierAForComponent (PR #14): extract the "Tier A" subset of a dictionary
+// entry — the minimum fields useful at agent generation time.
+//
+// Tier A fields (always inject when component matches, ~500 bytes):
+//   - name, component_key
+//   - default_state
+//   - agent_usage_hint.spec_signal_to_state
+//   - agent_usage_hint.spec_signal_to_variant
+//   - caveats filtered to severity === 'critical'
+//
+// Skip Tier B (display rules, states detail) and Tier C (meta/source) for now.
+// They can be layered in later if Tier A proves valuable.
+function getTierAForComponent(componentName, dict) {
+  if (!dict?.components) return null;
+  const entry = dict.components.find(c => c.name === componentName);
+  if (!entry) return null;
+  return {
+    name: entry.name,
+    component_key: entry.component_key,
+    default_state: entry.default_state,
+    spec_signal_to_state: entry.agent_usage_hint?.spec_signal_to_state,
+    spec_signal_to_variant: entry.agent_usage_hint?.spec_signal_to_variant,
+    critical_caveats: (entry.caveats || [])
+      .filter(c => c.severity === 'critical')
+      .map(c => ({ category: c.category, text: c.en || c.text, impact: c.impact })),
+  };
+}
+
 async function fetchSpecFromUrl(url) {
   const gdocMatch = url.match(/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)/);
   if (gdocMatch) {
@@ -688,6 +744,19 @@ export async function generateFigmaScript(input) {
   );
   console.log(`[schemas] ${schemaContent ? schemaContent.split('###').length - 1 : 0} schema(s) matched`);
 
+  // Step 3.5 (PR #14, 2026-06-01): look up each selected component in the
+  // Library dictionary. Currently only 2 of 286 components are documented
+  // (profile/avatarThumbnail, Avatar Card), so most generations will have
+  // 0 matches and this is a no-op. As Hori adds more dictionary pages,
+  // coverage grows. Only Tier A fields injected (~500 bytes per match).
+  const libraryDict = await loadLibraryDict();
+  const libraryDictMatches = selectedComponents
+    .map(c => getTierAForComponent(c.name, libraryDict))
+    .filter(Boolean);
+  if (libraryDictMatches.length) {
+    console.log(`[libraryDict] matched ${libraryDictMatches.length}/${selectedComponents.length} selected components: ${libraryDictMatches.map(m => m.name).join(', ')}`);
+  }
+
   // Fetch style reference images (product-level, always included)
   const styleRefImages = [];
   for (const refUrl of (product.styleRefUrls || []).slice(0, 2)) {
@@ -746,6 +815,14 @@ export async function generateFigmaScript(input) {
     ? `\n\n## 🎯 画面固有スキーマ（${screenSchema.matched}）\n\nこのリクエストの screenName="${screenName}" は以下の画面スキーマにマッチしました。\n**この構造を厳格に守ってください。spec と矛盾する場合は本スキーマの構造を優先**（spec は内容を供給する役割、本スキーマは骨格を定義する役割）。\nスキーマに記載された forbidden_components は絶対に使わないこと。required_components は必ず使うこと。\n\n${screenSchema.content}\n`
     : '';
 
+  // PR #14 (2026-06-01): build the library-dict section. Only present when
+  // selected components have dictionary entries. Tier A subset only —
+  // identity + default_state + spec_signal_to_state/variant + critical caveats.
+  // Footprint: ~500 bytes per matched component, only injected when matches exist.
+  const libraryDictSection = libraryDictMatches.length > 0
+    ? `\n\n## 📖 Library Dictionary（state × interaction reference）\n\n以下は **選択された component の dictionary entry** です。spec の文脈から正しい state / variant を選ぶときの一次情報。**critical_caveats は絶対遵守**（違反は再生成対象）。\n\n\`\`\`json\n${JSON.stringify(libraryDictMatches, null, 2)}\n\`\`\`\n\n使用方針:\n1. spec のキーワードを \`spec_signal_to_state\` / \`spec_signal_to_variant\` で照合 → 該当 state / variant を選ぶ\n2. spec に何も signal がない時は \`default_state\` を使う\n3. \`critical_caveats\` は **必ず遵守**（例: Self Avatar に LOCK state は存在しない）\n`
+    : '';
+
   // Plan C: await the checklist promise started before Step 1, then inject
   // a MUST_HAVE_LAYERS section. This is the upfront half of the closed loop —
   // Step 6 (after Step 5) verifies the same list against the final code.
@@ -755,7 +832,7 @@ export async function generateFigmaScript(input) {
     : '';
 
   const systemPrompt = `あなたはFigmaデザインを自動生成するDesign Agentです。
-Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}${checklistSection}
+Twomiというアプリのスクリーンを、仕様書と参照デザインに基づいてFigma Plugin JavaScriptとして生成します。${rulesSection}${screenSchemaSection}${libraryDictSection}${checklistSection}
 
 ## Twomiとは
 - 日本のAIアバターコンテンツ作成・配信アプリ（TikTok系ショート動画）
