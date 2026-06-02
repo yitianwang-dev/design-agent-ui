@@ -955,6 +955,152 @@
         "note_frames": ["2883:36220 (Self)", "2886:38528 (Other)"],
         "fully_extracted": true
       }
+    },
+
+    {
+      "_added_in": "PR #26 (2026-06-02)",
+      "_added_reason": "testLiveTippingWatch 2026-06-02 で headMenu を import した closeButton が width=402（ComponentSet 全体）として配置される bug 発生。agent が defaultVariant を取らず ComponentSet root を直接 createInstance した（または default が close 以外）。dict に default_variant + spec_signal_to_variant を持たせて Close variant 選択を強制する。",
+      "name": "headMenu",
+      "component_key": "f5ed07919150302ef05f6608dde1f552e4037bcc",
+      "asset_type": "component_set",
+
+      "catalog_description": {
+        "usage_jp": "画面ヘッダー右側に置く小さなボタン（戻る・閉じる・三点メニュー等）。41 variants で State / titlePosition / mode を組み合わせる。",
+        "usage_en": "Small button placed in screen header right side (back / close / kebab menu etc). 41 variants combining State / titlePosition / mode."
+      },
+
+      "variants": {
+        "State": ["Default", "Back", "Close", "Menu", "More", "Edit", "Done", "Share"],
+        "titlePosition": ["left", "center", "none"],
+        "mode": ["Light", "Dark"]
+      },
+
+      "_variant_aliases": {
+        "_note": "Variant 値の意味（Claude 推測、Hori 確認待ち）",
+        "State": {
+          "Default": "通常のヘッダーボタン（icon 任意）",
+          "Back": "戻るボタン（< chevron-left）",
+          "Close": "閉じる × ボタン（modal / sheet / fullscreen viewer を閉じる）",
+          "Menu": "ハンバーガー menu",
+          "More": "三点メニュー（・・・）",
+          "Edit": "鉛筆 edit ボタン",
+          "Done": "完了テキスト button",
+          "Share": "シェア icon button"
+        }
+      },
+
+      "default_state": "Default",
+      "default_variant": {
+        "_critical": "Agent が variant を選ばずに ComponentSet root から createInstance すると width=402 全体（ComponentSet bounding box）が配置されるバグが発生（testLiveTippingWatch 2026-06-02 実証）。必ず variants の中から特定の variant を選んで createInstance すること。",
+        "_correct_pattern": "const set = await figma.importComponentSetByKeyAsync(KEY);\nconst variant = set.children.find(v => v.variantProperties.State === 'Close');\nif (!variant) throw new Error('headMenu Close variant not found');\nconst instance = variant.createInstance();",
+        "_incorrect_pattern": "const instance = set.createInstance(); // ← これだと defaultVariant か ComponentSet root が返る → 想定外サイズ"
+      },
+
+      "default_size": {
+        "_note": "単一 variant instance の想定サイズ。ComponentSet 全体（width 402）ではない。",
+        "width": 40,
+        "height": 40
+      },
+
+      "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "State": {
+            "「閉じる」「× ボタン」「close」「閉じる × ボタン」": "Close",
+            "「戻る」「back」「< 戻る」": "Back",
+            "「メニュー」「kebab」「三点」「more」": "More",
+            "「ハンバーガー」「menu icon」": "Menu",
+            "「編集」「edit」「鉛筆」": "Edit",
+            "「完了」「done」": "Done",
+            "「シェア」「share」「共有」": "Share",
+            "(no spec signal → default)": "Default"
+          },
+          "mode": {
+            "「黒背景」「dark」「scaffold B」「scaffold C」「immersive 視聴」": "Dark",
+            "「白背景」「light」「scaffold A」": "Light"
+          }
+        },
+        "common_combinations": [
+          {
+            "scenario": "Live Stream Watch / Avatar Zoom 等のフルスクリーン視聴で閉じるボタン",
+            "State": "Close",
+            "mode": "Dark",
+            "titlePosition": "none"
+          },
+          {
+            "scenario": "Profile 画面の戻るボタン（白背景）",
+            "State": "Back",
+            "mode": "Light",
+            "titlePosition": "left"
+          }
+        ]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "variant を選ばず ComponentSet root を createInstance するの禁止。必ず .children.find() で variant 選択 → variant.createInstance()。",
+          "_why": "ComponentSet root から createInstance すると Figma は defaultVariant（または set root）を返すが、サイズ・variant が想定と違うことが多い。testLiveTippingWatch で width=402 として配置されて画面外にはみ出すバグ実証。"
+        }
+      ]
+    },
+
+    {
+      "_added_in": "PR #26 (2026-06-02)",
+      "_added_reason": "testLiveTippingWatch 2026-06-02 で agent が LiveBadge instance を import したと同時に外側に viewerCountLabel を自前で作成 → 二重表示 bug。LiveBadge 自身が視聴者数を内部レンダリングする旨を library_internal_elements で明示。",
+      "name": "LiveBadge for Home AvatarCard",
+      "asset_type": "component",
+
+      "catalog_description": {
+        "usage_jp": "ホーム feed の AvatarCard 右上に重ねる Live 配信中バッジ。視聴者数を自動表示。",
+        "usage_en": "Live streaming badge overlay placed on top-right of Home feed AvatarCard. Auto-displays viewer count."
+      },
+
+      "default_size": {
+        "width": 76,
+        "height": 22
+      },
+
+      "library_internal_elements": {
+        "_warning_to_agent": "LiveBadge instance を import したら、視聴者数・LIVE dot・テキストはすべて instance 内部でレンダリングされる。外側に viewerCountLabel / viewerCount frame / live dot 等の sibling を作成してはいけない。",
+        "_correct_usage": "Import LiveBadge as INSTANCE only. To set viewer count, use instance setProperties or override the inner text node via instance.componentProperties.",
+        "_incorrect_pattern_observed": "2026-06-01 testLiveTippingWatch (frame 1:1436 + 1:1459): agent は LiveBadge を 76×22 で import した上、同じ x=16 y=80 に viewerCountLabel 69×34 を別 frame として作成 → 完全重複表示。",
+        "elements_rendered_internally": [
+          "LIVE 赤 dot",
+          "「LIVE」ラベルテキスト",
+          "視聴者数 (numeric value)",
+          "視聴者数の右側 viewer icon (場合により)"
+        ]
+      },
+
+      "agent_usage_hint": {
+        "do_not_duplicate_library_internals": {
+          "_critical": "LiveBadge を import した時点で視聴者数 + LIVE dot + ラベルは内部表示済み。外側に sibling を作らないこと（PR #21/#22/#23 で確立した anti-duplication ルール § 1.9 G 適用）。",
+          "_correct_pattern": "createInstance() + setProperties({ viewerCount: '1,247' }) のみで完結。",
+          "_incorrect_pattern": "LiveBadge instance + 別 frame viewerCountLabel sibling を contentFrame に並べる → 二重表示。"
+        },
+        "common_combinations": [
+          {
+            "scenario": "Home Feed AvatarCard 上に重ねる（Pattern 1/2/3）",
+            "position": "x:254.73, y:109 (絶対位置 overlay)"
+          },
+          {
+            "scenario": "Live Stream Watch View 左上",
+            "position": "top:80, left:16"
+          }
+        ]
+      },
+
+      "related_components": {
+        "appears_on_screens": ["Home / Feed (Pattern 1/2/3)", "Live Stream / Watch"]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "LiveBadge instance import 後、外側に viewer count / LIVE label / dot 等の sibling を作らない（§1.9 G、library_internal_elements で内部 rendering 済み）。",
+          "_why": "二重表示 bug の典型。testLiveTippingWatch 2026-06-02 で再現した。"
+        }
+      ]
     }
   ],
 
