@@ -260,7 +260,7 @@ async function patchMissingItems(code, missingItems, specContent, screenType) {
 3. scaffold が返す container / content / footer / header の階層は触らない
 4. TEXT node の name は **動的→\`$VariableName\` / 固定→役割名**（Japanese / 数字 / emoji を name にしない）
 5. icon / TEXT / RECTANGLE は **AutoLayout コンテナの中**に配置（直置き禁止）
-6. AutoLayout の itemSpacing は 4/8/12/16/20/24/32 のみ
+6. AutoLayout の itemSpacing / padding は spacing token のみ: base {0, 8, 16, 24, 32, 40} / adjust {2, 4}（Master §2.8、12 と 20 は非推奨）
 7. font は \`await figma.loadFontAsync({ family, style })\` で必ずロード
 
 ## 欠落要素（追加対象）
@@ -720,7 +720,13 @@ ${componentContextSection}
 
 ## レイアウト系チェック
 11. **直置き禁止**: TEXT / SVG / RECTANGLE（icon 用途）が **AutoLayout でない frame の直接子** になっていないか。違反したら AutoLayout コンテナで包む。特に装飾用 ✨ などの粒子は \`sparkleLayer\` / \`particleLayer\` に集約。
-12. **Gap が 8 の倍数でない**: \`itemSpacing\` / \`gap\` が 4, 8, 12, 16, 20, 24, 32... 以外（例: 5, 7, 10, 13, 15）。8 の倍数または 4 + 8N に修正。
+12. **Spacing token 違反**（PR #24 / Master §2.8 同期）: \`itemSpacing\` / \`paddingLeft/Right/Top/Bottom\` の値が **token セット {0, 2, 4, 8, 16, 24, 32, 40} のいずれにも該当しない**（例: 5, 6, 7, 10, 12, 13, 15, 20, 28）。修正方針:
+    - 構造的余白（base）= {0, 8, 16, 24, 32, 40} のいずれかに丸める
+    - 視覚調整（adjust）= {2, 4} は icon↔text 等の微調整のみ
+    - 縦方向 list item 間の default = 32（横 padding 16 の倍、Master §2.8 注記）
+    - 横方向 section / chip / tab 間 default = 16 または 8
+    - **❌ 12, 20, 28 等は非推奨**（旧 8 の倍数ルールから token システムへ移行、Master §2.8）
+    - 例外: optical 値（天地中央視覚調整等）はコメント \`// optical: 理由\` を付ければ token 外 OK
 12.5 **⚠️ Gap = 0 で sibling box が貼りつく**（PR #22 新規）: 複数 sibling frame（card / chip / item / tab 等の box 系）を横並べる AutoLayout で \`itemSpacing: 0\` を設定すると box が貼りつき視覚的に粘着する。
     違反検出: horizontal AutoLayout の親 frame で itemSpacing === 0 かつ children に 2 個以上の frame がある場合。
     例外: spec が「flush」「edge-to-edge」「contiguous」を明言した場合のみ 0 許可。
@@ -887,7 +893,7 @@ export async function generateFigmaScript(input) {
   const rulesContent = await loadAllRules();
   console.log(`[rules] loaded ${rulesContent.length} chars from rules/`);
   const mustRulesSummary = rulesContent
-    ? `\n\n## ⚠️ MUST Rules — 必ず厳守（違反は出力破棄・再生成）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、Gap 8の倍数、line-height は数値指定必須\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。**\n   - **動的テキスト**（spec から来る user 名・count 等）→ \`$VariableName\` 形式（PascalCase、\`$\` プレフィックス必須）。例: \`$UserName\`, \`$CoinCount\`, \`$DisplayName\`, \`$Bio\`\n   - **固定テキスト**（ボタンラベル等）→ 役割名（\`primaryActionText\`, \`sheetTitleText\`）\n   - 詳細は user メッセージ末尾の Extended Rules §1.7 参照\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n- **⚠️ Library 実際の構造に合わせる**: 階層 shallow（2-5層）、AutoLayout デフォルト、Icon は \`Outline / Category / Name\` slash taxonomy。詳細は Extended Rules §1.8 / §1.9 参照。\n`
+    ? `\n\n## ⚠️ MUST Rules — 必ず厳守（違反は出力破棄・再生成）\n- Library Component を必ず使う。createEllipse / createRectangle で頭像・アバターを代替する禁止\n- 既存 component を編集しない（参照のみ）\n- 画面 W402×H874、SafeArea Top 64 / Bottom 34 / L+R 16、Header 110 / BottomNav 102\n- **Spacing token のみ**: itemSpacing/padding は base {0, 8, 16, 24, 32, 40} / adjust {2, 4} のいずれか（12, 20 は不可、Master §2.8）\n- line-height は数値指定必須\n- **Language=JP/EN variant**: テキスト含 component は必ず Language variant を持つ（Master §7）\n- **用語禁止**: 「ファン」「課金」「決済」「エラーが発生しました」等 → §6 表参照\n- screen copy しない。差分は variant / visibility / Prototype で吸収\n- Avatar infomation を人間 profile に使わない\n- **⚠️ TEXT node の name は絶対に内容（characters）にしない。**\n   - **動的テキスト**（spec から来る user 名・count 等）→ \`$VariableName\` 形式（PascalCase、\`$\` プレフィックス必須）。例: \`$UserName\`, \`$CoinCount\`, \`$DisplayName\`, \`$Bio\`\n   - **固定テキスト**（ボタンラベル等）→ 役割名（\`primaryActionText\`, \`sheetTitleText\`）\n   - 詳細は user メッセージ末尾の Extended Rules §1.7 参照\n- **⚠️ アイコン・テキストの直置き禁止。すべて AutoLayout コンテナの中に入れる（装飾用 ✨ パーティクルも例外なし）。**\n- **⚠️ Library 実際の構造に合わせる**: 階層 shallow（2-5層）、AutoLayout デフォルト、Icon は \`Outline / Category / Name\` slash taxonomy。詳細は Extended Rules §1.8 / §1.9 参照。\n`
     : '';
   const extendedRulesAppendix = rulesContent
     ? `\n\n---\n\n## 📚 Appendix: Extended Twomi Design Agent Rules（参照用）\n\n以下は詳細仕様・SHOULD / NICE 改善・過去失敗モード等を含む参照ドキュメント。**システムプロンプト冒頭の MUST 要約と矛盾する場合は MUST が優先**。本セクションは判断に迷ったときの根拠として参照する。\n\n${rulesContent}\n`
