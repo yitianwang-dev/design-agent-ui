@@ -1105,17 +1105,27 @@ ${figmaStyleInfo ? `
   generateFigmaScript._lastSelectedComponents = selectedComponents;
 
   // Step 4: Generate JS (Opus)
+  // 2026-06-02: bumped max_tokens 8192 → 16384. The 8192 ceiling was set when
+  // we were still on early-Sonnet days. With complex screens (e.g. Live
+  // Tipping Watch with 10+ elements + per-element constraints + anti-pattern
+  // lists) Opus was hitting the cap mid-codeblock — output truncated before
+  // the closing ``` → match below failed → empty fallback. Opus 4.7 supports
+  // up to 32K output tokens; 16K gives generous headroom while keeping cost
+  // bounded. Logging extended to flag truncation explicitly for future debug.
   const message = await client.messages.create({
     model: 'claude-opus-4-7',
-    max_tokens: 8192,
+    max_tokens: 16384,
     system: systemPrompt,
     messages: [{ role: 'user', content: messageContent }],
   });
 
   const generated = message.content[0].text;
+  if (message.stop_reason === 'max_tokens') {
+    console.warn('[claude] generation hit max_tokens cap — output may be truncated. response length:', generated.length);
+  }
   const match = generated.match(/```javascript\n([\s\S]*?)```/);
   if (!match) {
-    console.error('[claude] no code block found. response length:', generated.length);
+    console.error('[claude] no code block found. response length:', generated.length, 'stop_reason:', message.stop_reason);
     console.error('[claude] response preview:', generated.slice(0, 500));
     throw new Error('JavaScriptコードの生成に失敗しました');
   }
