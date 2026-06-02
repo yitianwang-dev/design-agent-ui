@@ -958,81 +958,45 @@
     },
 
     {
-      "_added_in": "PR #26 (2026-06-02)",
-      "_added_reason": "testLiveTippingWatch 2026-06-02 で headMenu を import した closeButton が width=402（ComponentSet 全体）として配置される bug 発生。agent が defaultVariant を取らず ComponentSet root を直接 createInstance した（または default が close 以外）。dict に default_variant + spec_signal_to_variant を持たせて Close variant 選択を強制する。",
+      "_added_in": "PR #26 (2026-06-02), revised 2026-06-02 (direct push fix)",
+      "_added_reason": "testLiveTippingWatch 2026-06-02: agent imported headMenu (the whole menu bar ComponentSet) and tried to use it as a single close button → width=402 → broken. PR #26's first attempt invented Close/Back/Menu State values that don't exist in the real Library → agent's find() threw → all generation halted. This revision: (a) corrects variant naming guidance — actual State values are 20 combinations like 'Arrow+Name+ThreeDot / Search / Close only' which we don't fully know yet, (b) redirects to headMenu/SingleButton for single-button needs, (c) tells agent to NEVER throw on variant find — fallback to defaultVariant.",
       "name": "headMenu",
       "component_key": "f5ed07919150302ef05f6608dde1f552e4037bcc",
       "asset_type": "component_set",
 
       "catalog_description": {
-        "usage_jp": "画面ヘッダー右側に置く小さなボタン（戻る・閉じる・三点メニュー等）。41 variants で State / titlePosition / mode を組み合わせる。",
-        "usage_en": "Small button placed in screen header right side (back / close / kebab menu etc). 41 variants combining State / titlePosition / mode."
+        "usage_jp": "画面ヘッダー全体のメニューバー（複数 button を含む組み合わせ）。単独 button が欲しい場合は headMenu/SingleButton を使う。",
+        "usage_en": "Whole header menu bar (combination of multiple buttons). For a single button, use headMenu/SingleButton instead."
+      },
+
+      "use_singlebutton_instead_when": {
+        "_critical": "spec が単独の close / back / menu button だけを欲しい場合、headMenu 全体を import するのは間違い。代わりに headMenu/SingleButton (key: a43345d9c0c498ffb7a4d34c260edb53f8ae3003) を使うこと。headMenu/SingleButton の variants は: mode (Light/Dark), OS (iOS26/Older), State (Default/Disabled), Size (44/32)。",
+        "_alternative_component_key": "a43345d9c0c498ffb7a4d34c260edb53f8ae3003",
+        "_alternative_component_name": "headMenu/SingleButton"
       },
 
       "variants": {
-        "State": ["Default", "Back", "Close", "Menu", "More", "Edit", "Done", "Share"],
-        "titlePosition": ["left", "center", "none"],
+        "_note": "20 種以上の State 組み合わせがあり、完全な enumeration は未確認。Library description によれば 'Arrow+Name+ThreeDot / Search / Close only など20種'。Title position: Left / center | mode: Light / Dark。確実なのは titlePosition と mode のみ。",
+        "titlePosition": ["left", "center"],
         "mode": ["Light", "Dark"]
       },
 
-      "_variant_aliases": {
-        "_note": "Variant 値の意味（Claude 推測、Hori 確認待ち）",
-        "State": {
-          "Default": "通常のヘッダーボタン（icon 任意）",
-          "Back": "戻るボタン（< chevron-left）",
-          "Close": "閉じる × ボタン（modal / sheet / fullscreen viewer を閉じる）",
-          "Menu": "ハンバーガー menu",
-          "More": "三点メニュー（・・・）",
-          "Edit": "鉛筆 edit ボタン",
-          "Done": "完了テキスト button",
-          "Share": "シェア icon button"
-        }
-      },
-
-      "default_state": "Default",
-      "default_variant": {
-        "_critical": "Agent が variant を選ばずに ComponentSet root から createInstance すると width=402 全体（ComponentSet bounding box）が配置されるバグが発生（testLiveTippingWatch 2026-06-02 実証）。必ず variants の中から特定の variant を選んで createInstance すること。",
-        "_correct_pattern": "const set = await figma.importComponentSetByKeyAsync(KEY);\nconst variant = set.children.find(v => v.variantProperties.State === 'Close');\nif (!variant) throw new Error('headMenu Close variant not found');\nconst instance = variant.createInstance();",
-        "_incorrect_pattern": "const instance = set.createInstance(); // ← これだと defaultVariant か ComponentSet root が返る → 想定外サイズ"
-      },
-
       "default_size": {
-        "_note": "単一 variant instance の想定サイズ。ComponentSet 全体（width 402）ではない。",
-        "width": 40,
-        "height": 40
+        "_note": "ComponentSet 全体（複数 button 含む）の bounding box は width=402 付近。単一 button のみ欲しい時は headMenu/SingleButton を使うこと（こちらは 44×44 or 32×32）。"
       },
 
       "agent_usage_hint": {
-        "spec_signal_to_variant": {
-          "State": {
-            "「閉じる」「× ボタン」「close」「閉じる × ボタン」": "Close",
-            "「戻る」「back」「< 戻る」": "Back",
-            "「メニュー」「kebab」「三点」「more」": "More",
-            "「ハンバーガー」「menu icon」": "Menu",
-            "「編集」「edit」「鉛筆」": "Edit",
-            "「完了」「done」": "Done",
-            "「シェア」「share」「共有」": "Share",
-            "(no spec signal → default)": "Default"
-          },
-          "mode": {
-            "「黒背景」「dark」「scaffold B」「scaffold C」「immersive 視聴」": "Dark",
-            "「白背景」「light」「scaffold A」": "Light"
-          }
+        "variant_selection_strategy": {
+          "_critical": "headMenu の variant 名は Library で 20+ 個あり、agent 側で完全な列挙を持っていない。spec が variant 名を明示しない限り、`set.defaultVariant.createInstance()` を fallback として使うこと。`set.children.find()` が undefined を返した時に throw して全 generation を halt させない。",
+          "_safe_pattern": "const set = await figma.importComponentSetByKeyAsync(KEY);\nlet variant = null;\nif (spec_specifies_variant) {\n  variant = set.children.find(v => v.variantProperties.State === SPEC_VALUE);\n}\nconst instance = (variant || set.defaultVariant).createInstance(); // ← never throw, always fallback",
+          "_anti_pattern": "if (!variant) throw new Error('variant not found'); // ← halt 全 generation、これが 2026-06-02 black screen bug の原因"
         },
-        "common_combinations": [
-          {
-            "scenario": "Live Stream Watch / Avatar Zoom 等のフルスクリーン視聴で閉じるボタン",
-            "State": "Close",
-            "mode": "Dark",
-            "titlePosition": "none"
-          },
-          {
-            "scenario": "Profile 画面の戻るボタン（白背景）",
-            "State": "Back",
-            "mode": "Light",
-            "titlePosition": "left"
-          }
-        ]
+        "alternative_for_single_button": {
+          "_use_this_for": "spec が単一 button (close / back / menu single icon) を要求する場合",
+          "component": "headMenu/SingleButton",
+          "key": "a43345d9c0c498ffb7a4d34c260edb53f8ae3003",
+          "variants": "mode (Light/Dark) × OS (iOS26/Older) × State (Default/Disabled) × Size (44/32)"
+        }
       },
 
       "critical_caveats": [
