@@ -46,15 +46,51 @@
 - BottomNav 高さ: 102px
 - 各画面の content area = scaffold で確保された contentFrame の中だけに描画する
 
-### 1.4 AutoLayout 必須・直置き禁止
+### 1.4 AutoLayout 必須・直置き禁止 + Spacing Token（PR #24, Master §2.8 同期）
 - アイコン・テキスト・component の **直置き禁止**
 - 必ず AutoLayout コンテナに入れて余白を制御
-- Gap は **8 の倍数**（4, 8, 12, 16, 24, 32...）
-- **⚠️ 複数 sibling の box（card / chip / item / tab 等）を横並べる時、最小 itemSpacing = 8**（PR #22）。0 だと box が貼りつき視覚的に粘着して見にくい。
-  - 例外: spec が「flush」「edge-to-edge」「contiguous」を明言した時のみ 0 許可
-  - 目安: tab / chip は 8, ギフトアイテム grid は 12〜16
 - 幅は固定しない（HUG または FILL）
 - 高さは内包要素に依存させる（Header / BottomNav など明確な理由がある場合のみ固定）
+
+#### Spacing Token（Master §2.8 と一致、Figma Variables `spacing/*`）
+
+**構造的余白（spacing/base）** — itemSpacing / padding に使用:
+
+| Token | 値 | 用途 |
+|---|---|---|
+| `spacing/base/0` | 0 | フルスクリーン・画面端まで使用する場合のみ |
+| `spacing/base/8` | 8 | ボタン内 padding・コンポーネント間 gap・chip/tab 間隔 |
+| `spacing/base/16` | 16 | 画面端 padding・セクション内 gap・横方向 default |
+| `spacing/base/24` | 24 | タップ領域確保・Header 内 padding |
+| `spacing/base/32` | 32 | **縦方向 list アイテム間 default**（横 16 の倍で「区切り」を強調） |
+| `spacing/base/40` | 40 | セクション間（最大、滅多に使わない）|
+
+**視覚調整（spacing/adjust）** — icon↔text 等の微調整のみ:
+
+| Token | 値 | 用途 |
+|---|---|---|
+| `spacing/adjust/2` | 2 | アイコン↔テキスト密集部の視覚調整 |
+| `spacing/adjust/4` | 4 | テキスト間の微調整 |
+
+**重要原則**:
+- itemSpacing / padding は **必ず上記 8 token のいずれか**（0, 2, 4, 8, 16, 24, 32, 40）
+- **❌ 12, 20, 28, 36 等は使わない**（Master の token に存在しない）
+- 縦方向 list の標準は **32**（横方向の 16 と意図的に違える、Master §2.8 注記）
+- 横方向の標準は **16**（section 間）または **8**（chip / tab 間隔）
+
+**例外: optical 値（Variables 化しない）**
+天地中央が視覚的にズレる等、token から外れた値が必要な場合のみ。コードコメントで理由を明示すること:
+```javascript
+itemSpacing: 6 // optical: icon vertical alignment requires non-token value
+```
+
+#### sibling box gap 最小値（PR #22 継続）
+
+**⚠️ 複数 sibling の box（card / chip / item / tab 等）を横並べる時、最小 itemSpacing = 8**。
+0 だと box が貼りつき視覚的に粘着して見にくい。
+- 例外: spec が「flush」「edge-to-edge」「contiguous」を明言した時のみ 0 許可
+- chip / tab の default = 8（spacing/base/8）
+- card grid の default = 16（spacing/base/16）
 
 ### 1.5 line-height を Auto にしない
 - 必ず数値指定（PIXELS または PERCENT）
@@ -655,15 +691,46 @@ color: #26A2A6
 
 ### 7.3 Screen 命名
 
+Master §11「スクリーン命名規則」と一致:
+
 ```
-Section名 / 画面名
-画面名 = [View] / [State] または [State] / [View]
+Context / Purpose / State / Type
+
+Context: 機能・操作の文脈（LiveControl / Setup / Profile など）
+Purpose: 画面・UIの目的
+State:   状態（Followed / Empty / Error など）※ある場合のみ
+Type:    UIの種類（Dialog / BottomSheet など）※Screen は省略
 ```
 
 例:
-- `Profile / Self / Create`
-- `Profile / Self / Create Empty`
-- `Home / Other-following`
+- `Profile / Self / Create`（TOP 画面、Type=Screen 省略）
+- `Profile / Self / Create / Empty`（派生、State 付加）
+- `Live Control / End / Dialog`（Overlay）
+- `Live Control / Report / BottomSheet`
+
+### 7.4 Language variant（PR #24, Master §7 同期）
+
+⚠️ **テキストを含む component は必ず `Language=JP/EN` variant を持つ**
+
+| プロパティ | バリアント値 |
+|-----------|------------|
+| Language | `JP` / `EN` |
+
+**対象**: ラベル・ボタンテキスト・エラーメッセージ・空状態メッセージなど、表示テキストを持つ component 全般。
+
+**実例（Library 実測）**:
+```
+primaryButton    Language=JP  →「公開する」
+primaryButton    Language=EN  →「Publish」
+emptyState       Language=JP  →「まだ配信はありません」
+emptyState       Language=EN  →「No streams yet」
+```
+
+**Agent への含意**:
+- 新規 component を作る時、`Language=JP` を default として variant に含める
+- spec が EN を指定 → `Language=EN` variant を選択
+- spec に language 指示なし → `Language=JP`（保守的選択）
+- 既存 Library component が `Language` variant を持つ場合は必ず variant 値を明示
 
 ---
 
@@ -780,3 +847,4 @@ Step 4 でコード生成後、**出力する前に**以下を自問する。1 �
 | Version | Date | Note |
 |---|---|---|
 | v0.1 (Phase 1) | 2026-05-28 | 初版。実測失敗モード（5/27 テスト）を §8 に反映 |
+| v0.2 (PR #24) | 2026-06-02 | Master §2.8 Spacing token システム同期（base {0,8,16,24,32,40} / adjust {2,4}、12/20 廃止）+ §7.4 Language=JP/EN variant 必須化 + §7.3 Screen 命名 Master §11 整合 |
