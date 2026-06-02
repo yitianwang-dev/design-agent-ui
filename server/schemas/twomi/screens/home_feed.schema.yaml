@@ -17,6 +17,9 @@ meta:
     フルスクリーン + BottomNav Float。Header は overlay、コンテンツは
     画面全体を使う。
   source_analysis: server/rules/twomi_screen_analysis.md §2
+  # PR #25 (2026-06-02): Hori 作成の 5 Pattern snapshot を正式参照
+  source_snapshot: server/rules/snapshots/home_feed_patterns_20260602.md
+  source_figma: "Sandbox-Profile-test_20260601 / node-id: 53022-20455"
   applies_when_screen_name_contains:
     - home_feed
     - homeFeed
@@ -46,6 +49,111 @@ variants:
     values: [true, false]
   tag:
     values: [true, false]
+
+# ============================================================
+# 5 Pattern 定義（PR #25, Hori snapshot 2026-06-02 同期）
+# ============================================================
+# Home Feed は 5 つの異なる Pattern を縦に積み上げる。各 Pattern は
+# 異なるレイヤー構造を持つ。spec の文脈から Pattern を判定する。
+# 詳細レイヤー tree は source_snapshot を参照。
+patterns:
+  - id: self_normal
+    name: Avatar Card / Self Normal
+    when: ログインユーザー自身の Avatar をフィードに表示
+    structure_summary: |
+      Avatar image（フルスクリーン背景）+ Sound toggle（左上）+
+      LiveBadge（右上、条件表示）+ information（下詰め bottom:132px）
+      information 内: Avatar Profile Header（ExclusiveContentBadge +
+      MainSection [Name + buttonCall] + ActionEngagement [Bookmark + Share]）
+      + creator-name-follow（type: Self Home）
+    variant_mapping:
+      user: self
+      exclusiveContent: false
+    creator_name_follow_type: "Self Home"
+
+  - id: other_normal
+    name: Avatar Card / Other Normal
+    when: 他ユーザーの Avatar をフィードに表示
+    structure_summary: |
+      Self Normal と同構造。creator-name-follow の type のみ変更。
+      followSettings（Follow / Following button）が追加される。
+    variant_mapping:
+      user: otherFollowing or otherFollow
+      exclusiveContent: false
+    creator_name_follow_type: "other"
+    design_principle: |
+      Self と Other で画面を分けない。同じ構造・異なる権限。
+      Self は編集者、Other は観客。
+
+  - id: r1_carousel
+    name: Exclusive Content Avatar / R1 CarouselContainer
+    when: Creator が限定コンテンツ運営中 かつ 閲覧者未購入（Promotion 手法 1）
+    structure_summary: |
+      AvatarCard（w:402 Pattern 2 と同構造）+ FeedCarousel_Rail（w:402、
+      横スワイプで表示）が横に並ぶ。両方に AvatarCardIndicatorSection が
+      bottom:107px に置かれる。Rail 内に EdgeRecommendationCard
+      （Background blur:25px + R1PromotionMessage + PR-StackingCards_Video）。
+    variant_mapping:
+      user: otherFollowing or otherFollow
+      exclusiveContent: true
+      viewStatus: true  # 横スワイプ可能な R1
+    layout_note: |
+      縦スクロール（Creator 間移動）と横スワイプ（Promotion 表示）で
+      動線を分離する。snap scroll で 1 枚単位切替。
+    indicator_position: { bottom: 107 }
+
+  - id: livestream
+    name: HomeFeed LiveStream
+    when: Live 配信中の Avatar をフィードに表示
+    structure_summary: |
+      他 Pattern と異なり Title が上部、情報順序が「何か（配信内容）→
+      誰か（Creator）」。Background = NeonBar 画像（ステージ連動）。
+      Container（pt:102px px:26px）に Title + Cast（Host 左半分 + Guest
+      右半分 h:244px）。StreamInformation（top:596px px:20px）。
+      CreatorInformation（bottom:132px）。Sound toggle（left:20px top:192px）。
+    variant_mapping:
+      avatarStatus: liveStreaming  # spec で live を言及した場合
+    design_principle: |
+      Host + Guest 2 分割は配信の性質（対談・会話）を画面構造に反映。
+      背景はステージ選択と連動し「設定を体験にする」設計哲学の実践。
+
+  - id: r2_blur_card
+    name: R2 AvatarBlurCard
+    when: Creator が限定コンテンツ運営中 かつ 閲覧者未購入（Promotion 手法 2）
+    structure_summary: |
+      Avatar image に blur:5px + Exclude マスク（mix-blend-multiply）で
+      Locked 状態を表現。ExclusiveContentInformation（bottom:132px）+
+      R2PromotionMessage（bottom:208px 中央：UserNameIcon + LockText +
+      ctaButton h:55px 半透明）。
+    variant_mapping:
+      user: otherFollowing or otherFollow
+      exclusiveContent: true
+      viewStatus: false  # blur 表示
+    design_principle: |
+      「存在するが見えない」状態を blur + Exclude マスクで表現。
+      唯一のアクションが CTA のため中央配置。
+    cta_button:
+      height: 55
+      note: ルール策定前の既存値を踏襲
+
+# ============================================================
+# 全 Pattern 共通の spacing 仕様（PR #25, Hori snapshot 2026-06-02）
+# ============================================================
+# これらは Master §2.8 Spacing token の例外ではない場所もあるが、
+# Hori snapshot が明示した値を踏襲する。
+pattern_spacing:
+  information_position:
+    bottom: 132  # 全 Pattern 共通：BottomNav 102 + 余白 30
+    px: 20       # 全 Pattern 共通：optical 値（token 外）
+    reason: |
+      主役は Avatar の顔。情報を上に置くと顔に被る。下詰めにすることで
+      Avatar を邪魔しない。親指の操作範囲（画面下部）とも一致。
+  action_engagement_gap: 24  # タップ領域確保のため意図的に広め
+  shadow:
+    top: 492
+    height: 382
+  r1_indicator_bottom: 107
+  r2_promotion_bottom: 208
 
 # Avatar Card は Library にある複雑な ComponentSet。
 # 詳細な variant は Library 側で定義済み。spec の文脈から適切な
