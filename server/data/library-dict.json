@@ -976,8 +976,18 @@
       },
 
       "variants": {
-        "_note": "20 種以上の State 組み合わせがあり、完全な enumeration は未確認。Library description によれば 'Arrow+Name+ThreeDot / Search / Close only など20種'。Title position: Left / center | mode: Light / Dark。確実なのは titlePosition と mode のみ。",
-        "titlePosition": ["left", "center"],
+        "_source": "server/schemas/twomi/04_headmenu.schema.yaml 行 180-227 から正確に同期（2026-06-02 direct push）",
+        "_total_combinations": 41,
+        "State": [
+          "Arrow only", "Close only", "Arrow+Name", "onlyTitle",
+          "Arrow+Name+ThreeDot", "Arrow+ThreeDot", "Arrow+Name+ThreeLine",
+          "Arrow+Name+Settings", "Close + ThreeDot", "Name+ThreeLine",
+          "ThreeLine", "Name + Credit", "Arrow + Credit",
+          "Arrow + Name + Credit", "Arrow+Name+ThreeDot+credit",
+          "Cloth + Credit", "ticketDisplay",
+          "Search", "Search+Cancel", "Studio"
+        ],
+        "titlePosition": ["center", "Left"],
         "mode": ["Light", "Dark"]
       },
 
@@ -986,13 +996,47 @@
       },
 
       "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "State": {
+            "「閉じる」「× ボタン」「close button」「閉じる × ボタン」（単独）": "Close only",
+            "「戻る」「< 戻る」「back button」（単独）": "Arrow only",
+            "「戻る + タイトル」": "Arrow+Name",
+            "「タイトルのみ」": "onlyTitle",
+            "「検索」「search bar」": "Search",
+            "「検索 + キャンセル」": "Search+Cancel",
+            "「Studio」（クリエイター画面）": "Studio",
+            "「ticketDisplay」（チケット表示）": "ticketDisplay"
+          },
+          "mode": {
+            "「黒背景」「dark」「scaffold B」「scaffold C」「immersive 視聴」": "Dark",
+            "「白背景」「light」「scaffold A」": "Light"
+          },
+          "titlePosition": {
+            "「Live / Avatar Top / Search 等」": "Left",
+            "「Profile / Settings 等の通常画面」": "center"
+          }
+        },
+        "common_combinations": [
+          {
+            "scenario": "Live Stream Watch / Avatar Zoom 等のフルスクリーン視聴で閉じるボタン",
+            "State": "Close only",
+            "titlePosition": "center",
+            "mode": "Dark"
+          },
+          {
+            "scenario": "Profile / Settings の戻るボタン（白背景）",
+            "State": "Arrow only",
+            "titlePosition": "center",
+            "mode": "Light"
+          }
+        ],
         "variant_selection_strategy": {
-          "_critical": "headMenu の variant 名は Library で 20+ 個あり、agent 側で完全な列挙を持っていない。spec が variant 名を明示しない限り、`set.defaultVariant.createInstance()` を fallback として使うこと。`set.children.find()` が undefined を返した時に throw して全 generation を halt させない。",
-          "_safe_pattern": "const set = await figma.importComponentSetByKeyAsync(KEY);\nlet variant = null;\nif (spec_specifies_variant) {\n  variant = set.children.find(v => v.variantProperties.State === SPEC_VALUE);\n}\nconst instance = (variant || set.defaultVariant).createInstance(); // ← never throw, always fallback",
-          "_anti_pattern": "if (!variant) throw new Error('variant not found'); // ← halt 全 generation、これが 2026-06-02 black screen bug の原因"
+          "_critical": "spec で variant 値を明示されていない場合、または find() が undefined を返した場合は throw せず `set.defaultVariant.createInstance()` にフォールバックする。throw すると全 generation が halt し空のフレームが出力される（2026-06-02 testLiveTippingWatch black-screen bug 実証済）。",
+          "_safe_pattern": "const set = await figma.importComponentSetByKeyAsync(KEY);\nconst variant = set.children.find(v => v.variantProperties.State === 'Close only') || set.defaultVariant;\nconst instance = variant.createInstance();",
+          "_anti_pattern": "if (!variant) throw new Error('variant not found');"
         },
         "alternative_for_single_button": {
-          "_use_this_for": "spec が単一 button (close / back / menu single icon) を要求する場合",
+          "_use_this_for": "spec が単一 button (close / back / menu single icon) を欲しい場合は headMenu でなく headMenu/SingleButton を使う",
           "component": "headMenu/SingleButton",
           "key": "a43345d9c0c498ffb7a4d34c260edb53f8ae3003",
           "variants": "mode (Light/Dark) × OS (iOS26/Older) × State (Default/Disabled) × Size (44/32)"
@@ -1009,9 +1053,10 @@
     },
 
     {
-      "_added_in": "PR #26 (2026-06-02)",
-      "_added_reason": "testLiveTippingWatch 2026-06-02 で agent が LiveBadge instance を import したと同時に外側に viewerCountLabel を自前で作成 → 二重表示 bug。LiveBadge 自身が視聴者数を内部レンダリングする旨を library_internal_elements で明示。",
+      "_added_in": "PR #26 (2026-06-02), key added 2026-06-02 (direct push fix)",
+      "_added_reason": "testLiveTippingWatch 2026-06-02 で agent が LiveBadge instance を import したと同時に外側に viewerCountLabel を自前で作成 → 二重表示 bug。LiveBadge 自身が視聴者数を内部レンダリングする旨を library_internal_elements で明示。初版で component_key を入れ忘れた → agent が catalog の名前マッチで違う component を import するバグを引き起こした → key を追加。",
       "name": "LiveBadge for Home AvatarCard",
+      "component_key": "15b1802cc66a70254ae383f03a1bde8794962441",
       "asset_type": "component",
 
       "catalog_description": {
