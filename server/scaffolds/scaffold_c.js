@@ -5,14 +5,15 @@
 //
 // 使い方:
 //   1. '__SCREEN_NAME__' を画面名に置換 (camelCase)
-//   2. Figma Plugin Console / use_figma で実行
-//   3. 返り値の contentFrameNodeId の中身だけを Design Agent が埋める
+//   2. '__PROJECT_NAME__' をプロジェクト名に置換 (PR #28: 出力 page 振り分け)
+//   3. Figma Plugin Console / use_figma で実行
+//   4. 返り値の contentFrameNodeId の中身だけを Design Agent が埋める
 //
 // 適用画面例: avatarProfileSelf / creatorStudio / liveStreamFull
 // 特徴: NavigationLiquid なし / Header のみ / content 全画面
 // ============================================================
 
-(async function scaffoldC(screenName) {
+(async function scaffoldC(screenName, projectName) {
 
   // ==================== 丸暗記定数 (変更禁止) ====================
   const W = 402, H = 874;
@@ -24,7 +25,18 @@
   // NavigationLiquid なし
   // ================================================================
 
-  const page = figma.currentPage;
+  // PR #28: 出力を project ごとに分ける。projectName と同名の page を探し、
+  // 無ければ作る。これで複数 project の screen が一つの page に堆積して乱れる
+  // 問題を解消（Hori 2026-06-03 リクエスト）。
+  let page = figma.currentPage;
+  if (projectName && projectName !== 'default') {
+    let target = figma.root.children.find(p => p.name === projectName);
+    if (!target) {
+      target = figma.createPage();
+      target.name = projectName;
+    }
+    page = target;
+  }
 
   // 1. 外枠スクリーン (402×874, r=32, black)
   const screen = figma.createFrame();
@@ -77,4 +89,4 @@
     contentFrameNodeId: contentFrame.id,
   };
 
-})('__SCREEN_NAME__');
+})('__SCREEN_NAME__', '__PROJECT_NAME__');

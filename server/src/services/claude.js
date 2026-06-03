@@ -781,12 +781,15 @@ ${code}
 }
 
 export async function generateFigmaScript(input) {
-  const { screenName, screenType, selectedTab, specUrl, specText, figmaRefUrl, product } = input;
+  const { screenName, screenType, selectedTab, projectName, specUrl, specText, figmaRefUrl, product } = input;
 
   const rawScaffold = await loadScaffold(screenType);
   const scaffoldCode = rawScaffold
     .replace(/'__SCREEN_NAME__'/g, JSON.stringify(screenName))
-    .replace(/'__SELECTED_TAB__'/g, JSON.stringify(selectedTab || 'Home'));
+    .replace(/'__SELECTED_TAB__'/g, JSON.stringify(selectedTab || 'Home'))
+    // PR #28: project name routes output to a dedicated Figma page.
+    // Empty / 'default' → keep current page (back-compat with existing flows).
+    .replace(/'__PROJECT_NAME__'/g, JSON.stringify(projectName || 'default'));
 
   // Fetch spec URL content
   let specContent = specText || '';

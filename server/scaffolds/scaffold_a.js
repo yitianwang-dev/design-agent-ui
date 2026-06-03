@@ -6,13 +6,14 @@
 // 使い方:
 //   1. '__SCREEN_NAME__' を画面名に置換 (camelCase)
 //   2. '__SELECTED_TAB__' を 'Home'/'Search'/'Create'/'notes'/'Profile' に置換
-//   3. Figma Plugin Console / use_figma で実行
-//   4. 返り値の contentFrameNodeId の中身だけを Design Agent が埋める
+//   3. '__PROJECT_NAME__' をプロジェクト名に置換 (PR #28: 出力 page 振り分け)
+//   4. Figma Plugin Console / use_figma で実行
+//   5. 返り値の contentFrameNodeId の中身だけを Design Agent が埋める
 //
 // 適用画面例: packageSelect / settingsTop / userProfile / shopTop
 // ============================================================
 
-(async function scaffoldA(screenName, selectedTab) {
+(async function scaffoldA(screenName, selectedTab, projectName) {
 
   // ==================== 丸暗記定数 (変更禁止) ====================
   const W = 402, H = 874;
@@ -31,7 +32,17 @@
   const NAV_KEY   = '250f4ab25c2aa2c1eced9b44b7c13056301ce6b7'; // Home, DarkMode=Dark ✅ → setPropertiesでLightに切替
   // ================================================================
 
-  const page = figma.currentPage;
+  // PR #28: 出力を project ごとに分ける。projectName と同名の page を探し、
+  // 無ければ作る（Hori 2026-06-03 リクエスト）。
+  let page = figma.currentPage;
+  if (projectName && projectName !== 'default') {
+    let target = figma.root.children.find(p => p.name === projectName);
+    if (!target) {
+      target = figma.createPage();
+      target.name = projectName;
+    }
+    page = target;
+  }
 
   // 1. 外枠スクリーン (402×874, r=32, white)
   const screen = figma.createFrame();
@@ -111,4 +122,4 @@
     contentFrameNodeId: contentFrame.id,  // Design Agent はここの中身だけ生成する
   };
 
-})('__SCREEN_NAME__', '__SELECTED_TAB__');
+})('__SCREEN_NAME__', '__SELECTED_TAB__', '__PROJECT_NAME__');

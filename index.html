@@ -563,7 +563,15 @@
     <div class="section">
       <div class="section-header">
         <div class="section-num">2</div>
-        <div class="section-title">Screen Name</div>
+        <div class="section-title">Project &amp; Screen Name</div>
+      </div>
+      <!-- PR #28: Project name routes the generated screen to a dedicated
+           Figma page so multi-project outputs stay organized. Leave blank to
+           place on the file's current page (back-compat). -->
+      <div class="field">
+        <label>Project name</label>
+        <input type="text" id="project-name" placeholder="e.g. TicketGift / LiveStreamRevamp">
+        <div class="input-hint">All screens with the same project name land on one dedicated page (auto-created). Blank = current page.</div>
       </div>
       <div class="field">
         <label>Screen name <span style="color:var(--error)">*</span></label>
@@ -830,6 +838,7 @@ function saveUserId() {
 async function submitJob() {
   const userId = document.getElementById('user-id').value.trim();
   const productId = document.getElementById('product-select').value;
+  const projectName = document.getElementById('project-name').value.trim();
   const screenName = document.getElementById('screen-name').value.trim();
   const specUrl = document.getElementById('spec-url').value.trim();
   const specText = document.getElementById('spec-text').value.trim();
@@ -851,7 +860,7 @@ async function submitJob() {
     const res = await fetch(`${API_BASE}/jobs`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId, screenName, screenType: selectedType, selectedTab, specUrl, specText, figmaRefUrl, product }),
+      body: JSON.stringify({ userId, projectName, screenName, screenType: selectedType, selectedTab, specUrl, specText, figmaRefUrl, product }),
     });
     if (!res.ok) {
       const err = await res.json();
