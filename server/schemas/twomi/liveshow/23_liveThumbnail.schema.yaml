@@ -1,0 +1,227 @@
+# ============================================================
+# Schema PJ — Live Thumbnail (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Profile タブ Live 配信 tab 内に表示される Live サムネイル。
+# Type で内部構造大きく変化:
+#   Multi    → Stadium 背景 + Host+Guest 2 avatar + 画像 Title + Live Toggle
+#   SingleAI → SingleInformation (Topic + Description + Duration) + 単一 Avatar + LiveBadge
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Live Thumbnail
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "4dc05805f63bd902765357b6808b1ba6549687ad"
+  library_description_raw: |
+    【用途 / Usage】
+    ProfileThumbnail内のLive配信サムネイル。TypeでMulti/SingleAIを切り替える。
+    Live streaming thumbnail inside ProfileThumbnail.
+    【State】
+    Type: Multi / SingleAI｜Language: JP / EN
+  description: |
+    ProfileThumbnail (schema 別) 内の Live 配信予告 / 進行中サムネイル。
+    Multi (複数 AI / 対談 / イベント形式 - Stadium 背景 + 2 cast) と
+    SingleAI (単一 AI 配信 - Topic + Description + 1 avatar) の 2 形式。
+    両方 200×261 size、限定コンテンツ Badge と Live 状態 indicator 含む。
+  screen_usage:
+    - "Profile / Live 配信タブ (Profile thumbnail container 内)"
+  dependencies:
+    - "LiveStreaming Toggle (Multi 用 - schema 別, key 53179c56...)"
+    - "LiveBadge (SingleAI 用 - schema 11, key 06e24...)"
+    - "exclusiveContentBadge (LockIcon + 限定 text)"
+    - "image/Self-userSetVideo / image/Self-InCallVideo (Multi avatars)"
+    - "image/Men02-InCallVideo (SingleAI avatar)"
+    - "Stadium / NeonBar (Multi 背景)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Live Thumbnail": 4
+    implemented: full
+    notes: |
+      4 variants = Type (Multi / SingleAI) × Language (JP / EN)。
+      全部 200×261。Multi と SingleAI で内部構造別物 (共通要素なし以外)。
+  review_status: ai-draft
+
+components:
+  - id: Live Thumbnail
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "4dc05805f63bd902765357b6808b1ba6549687ad"
+
+    variants:
+      combinations:
+        - { Language: JP, Type: Multi }
+        - { Language: EN, Type: Multi }
+        - { Language: JP, Type: SingleAI }
+        - { Language: EN, Type: SingleAI }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Type=${Type}"
+      size:
+        value: { width: 200, height: 261 }
+
+    # Internal structure varies dramatically by Type
+    structure_by_type:
+      Multi:
+        description: "対談 / 複数 AI / イベント形式 — Stadium 背景 + Host+Guest 2 avatars"
+        children_order:
+          - { name: Background, contains: "Stadium + NeonBar (199×354 each)" }
+          - id: Cast
+            description: "Host (左半 100×168) + Guest (右半 100×168)"
+            children:
+              - { name: Host,  image: "image/Self-userSetVideo (136×255)" }
+              - { name: Guest, image: "image/Self-InCallVideo (141×265)" }
+          - id: Container
+            children:
+              - id: Title
+                children:
+                  - { name: Typography, image: "image 2 (180×57) — 配信タイトル画像" }
+                  - { name: SubTitle, text: "subtitle (font 10)" }
+            text_samples:
+              subtitle:
+                JP: "はっきり言うけどたぶん優しい！"
+                EN: "(同 JP — Library 未 localize?)"
+          - id: LiveStreaming_Toggle_nested
+            type: INSTANCE
+            ref: "LiveStreaming Toggle (key 53179c56...)"
+            size_by_language:
+              JP: { width: 96, height: 24 }
+              EN: { width: 117, height: 24 }
+            text:
+              JP: "Live配信中"
+              EN: "Live Streaming"
+
+      SingleAI:
+        description: "単一 AI 配信 — Topic + Description + 単一 cast avatar"
+        children_order:
+          - id: Container
+            children:
+              - id: SingleInformation
+                size: { width: 183, height: 77 }
+                children:
+                  - id: Information
+                    children:
+                      - id: Topic
+                        type: TEXT
+                        font_size: 17
+                        characters:
+                          JP: "雑談・ゆるトーク"
+                          EN: "Casual・Chill Talk"
+                      - id: FreeInputText
+                        type: TEXT
+                        font_size: 11
+                        characters:
+                          JP: "今日はアニメについて話します！"
+                          EN: "Today we're talking about anime!"
+                  - id: DurationTime
+                    children:
+                      - id: FreeInputText
+                        font_size: 10
+                        characters:
+                          JP: "配信時間 : 60分"
+                          EN: "Duration : 60m"
+              - id: CastAvatar
+                size: { width: 183, height: 160 }
+                image: "image/Men02-InCallVideo (200×375)"
+          - id: LiveBadge_nested
+            type: INSTANCE
+            ref:
+              key: "06e24908301644775e2c93cd4cb8e333cc0ac3a9"
+              schema: 11
+            default_variant: { State: "LIve", Language: JP }
+            size: { width: 76, height: 22 }
+
+    # Always-present elements (both Multi and SingleAI)
+    children_common:
+      - id: exclusiveContentBadge
+        node_type: INSTANCE
+        name: exclusiveContentBadge
+        size: { width: 52, height: 18 }
+        description: "LockIcon (Membership_Lock_Bold) + '限定' text — 限定コンテンツ表示"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Multi vs SingleAI で internal element 大きく異なる。
+    Multi: Stadium / NeonBar / Host / Guest / Title image / Toggle
+    SingleAI: SingleInformation / Topic / DurationTime / Avatar / LiveBadge
+    Variant 経由で完全切替、自前で element 作成禁止。
+  elements_rendered_internally:
+    multi_variant:
+      - "Background (Stadium + NeonBar)"
+      - "Cast (Host + Guest 2 avatars)"
+      - "Container > Title (image + SubTitle)"
+      - "LiveStreaming Toggle (Live 配信中 indicator)"
+      - "exclusiveContentBadge"
+    singleai_variant:
+      - "Container > SingleInformation (Topic + Description + DurationTime)"
+      - "CastAvatar (single avatar image)"
+      - "LiveBadge (Live + Watcher count)"
+      - "exclusiveContentBadge"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Type:
+      "「multi」「複数 cast」「対談」「Host + Guest」「event」 or default": Multi
+      "「single」「単一 AI」「solo」「個人配信」": SingleAI
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    Type: Multi
+
+  common_scenarios:
+    "multi_event_thumbnail":
+      description: "対談 / event 型 Live 配信のサムネイル (Host + Guest)"
+      variant: { Type: Multi, Language: JP }
+    "single_ai_thumbnail":
+      description: "個人 AI 配信 (Topic + Description + 単一 avatar)"
+      variant: { Type: SingleAI, Language: JP }
+
+  default_decision_logic:
+    rules:
+      - if: "spec に「Host」「Guest」「対談」「複数 cast」「event」「stadium」"
+        → { Type: Multi }
+      - if: "spec に「個人」「single」「solo」「topic 一つ」「Duration」"
+        → { Type: SingleAI }
+      - else: { Type: Multi, _note: "default" }
+
+  selection_examples:
+    - spec: "Live event thumbnail with 2 cast (Host + Guest)"
+      decision: { Type: Multi, Language: EN }
+    - spec: "Solo AI talk: Topic = 雑談・ゆるトーク, Duration 60 分"
+      decision: { Type: SingleAI, Language: JP }
+
+  used_inside: "ProfileThumbnail (schema 別) の Live 配信タブ内"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('4dc05805f63bd902765357b6808b1ba6549687ad');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.Type === 'Multi';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Multi の subtitle "はっきり言うけどたぶん優しい！" は JP/EN 両方とも
+      JP のまま (Library 内 EN localize 未実装の可能性)。EN viewer 用 spec
+      では override 推奨。
+  - severity: SHOULD
+    rule: |
+      exclusiveContentBadge の "限定" text は JP/EN 両方とも JP のまま。
+      EN viewer では "Exclusive" 等に override 必要。
+  - severity: NICE
+    rule: |
+      Multi では LiveStreaming Toggle (key 53179c56...) を使うが SingleAI
+      では LiveBadge (key 06e24...) を使う。Type で nested component が違う。
+      混同しない。

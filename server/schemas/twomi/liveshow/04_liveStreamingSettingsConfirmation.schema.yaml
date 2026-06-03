@@ -1,0 +1,266 @@
+# ============================================================
+# Schema PJ — LiveStreaming-Settings Confirmation (2 components: JP set + EN standalone)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 配信設定の確認画面。Hori が JP / EN を **構造的に別 component に分離**
+# しているため、本 schema は 2 component を独立して扱う:
+#   1. LiveStreaming-Settings Confirmation       (component_set, Language=JP のみ)
+#   2. LiveStreaming-Settings Confirmation/バリアント2 (single component, EN 版)
+# Library 注記「構造上分離しているが触らない」を尊重する。
+#
+# Runtime requirements: v0.5+ with variants.combinations
+# ============================================================
+
+meta:
+  name: LiveStreaming-Settings Confirmation
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "0151e208cd7eb3d55c3682c037e4d4ce48efdcd4"  # JP set
+    secondary_component_key: "66bf3df2693b42c3796a0eb3892b60a747cb6ec6"  # EN standalone
+  library_description_raw_main: |
+    【用途 / Usage】
+    Live配信設定の確認画面component。バリアント2がEN版（構造上分離しているが触らない）。
+    Live streaming settings confirmation. Variant 2 is EN version. Do not modify structure.
+    【使用画面 / Used in】
+    Live配信設定確認画面 / Live streaming settings confirmation screen
+    【State】
+    Language: JP / EN
+    【注意 / Notes】
+    インスタンス上での文言変更禁止。Do not edit text on instances.
+  library_description_raw_variant2: |
+    【用途 / Usage】
+    LiveStreaming-Settings ConfirmationのEN版。構造上分離しているが触らない。
+    EN version of LiveStreaming-Settings Confirmation. Do not modify structure.
+    【State】
+    Language: EN
+  description: |
+    Live 配信設定の確認 component。Live 配信開始前にユーザーが選択した
+    配信タイプ / Topic / 配信時間 / 公開範囲 を確認する Bottom Sheet。
+    JP / EN は **構造的に分離** された別 component（Hori の設計判断、変更しない）。
+    Settings confirmation screen for Live streaming. JP and EN are intentionally
+    structurally separated.
+  screen_usage:
+    - Live 配信設定確認画面 / Live streaming settings confirmation screen
+  dependencies:
+    - "Handle (Bottom Sheet drag bar)"
+    - "Outline / Essentional, UI / Close Circle (header close icon)"
+    - "image/Self-userSetVideo (avatar thumbnail render)"
+    - "Button (×2 — 戻る/Close + 配信を開始する/Start Streaming)"
+    - "Linear / Essentional, UI / Ghost Smile (decorative button icons)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveStreaming-Settings Confirmation (JP set)": 1
+      "LiveStreaming-Settings Confirmation/バリアント2 (EN standalone)": 1
+    implemented: full
+    notes: |
+      Library 注記: 「構造上分離しているが触らない」「インスタンス上での
+      文言変更禁止」。Schema もこの方針を尊重する。
+  review_status: ai-draft
+
+components:
+  # ─────────────────────────────────────────────────────────────
+  # Component 1: JP set (LiveStreaming-Settings Confirmation)
+  # ─────────────────────────────────────────────────────────────
+  - id: "LiveStreaming-Settings Confirmation"
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "0151e208cd7eb3d55c3682c037e4d4ce48efdcd4"
+    asset_type: component_set
+
+    variants:
+      combinations:
+        - { Language: JP }
+      # Note: set has Language property but EN variant is empty/missing.
+      # Use the separate バリアント2 component for EN.
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+      size:
+        value: { width: 402, height: 850 }
+
+    children:
+      - id: Handle
+        node_type: RECTANGLE
+        size: { width: 48, height: 6 }
+
+      - id: Header
+        node_type: FRAME
+        size: { width: 402, height: 24 }
+        children:
+          - id: Title
+            node_type: TEXT
+            font_size: 17
+            characters: "設定確認"
+          - id: CloseCircle
+            node_type: INSTANCE
+            ref: "Outline / Essentional, UI / Close Circle"
+            size: { width: 24, height: 24 }
+
+      - id: Contents
+        node_type: FRAME
+        size: { width: 402, height: 679 }
+        children:
+          - id: Avatar
+            node_type: FRAME
+            size: { width: 370, height: 357 }
+            children:
+              - id: AvatarLabel
+                node_type: TEXT
+                font_size: 13
+                characters: "配信アバター"
+              - id: AvatarFrame
+                node_type: FRAME
+                size: { width: 157, height: 341 }
+                child:
+                  id: avatar_image
+                  node_type: INSTANCE
+                  ref: "image/Self-userSetVideo"
+
+          - id: SettingsList
+            node_type: FRAME
+            size: { width: 370, height: 268 }
+            description: "5 件 List1 (Label + Contents pair)"
+            items:
+              - { label: "配信タイプ",   contents: "Live配信×AIアバター" }
+              - { label: "トピック",     contents: "ファンQ&A" }
+              - { label: "追加トピック", contents: "これはダミーテキストです。..." }
+              - { label: "配信時間",     contents: "60分" }
+              - { label: "公開範囲",     contents: "通常配信" }
+
+      - id: Button
+        node_type: FRAME
+        size: { width: 402, height: 99 }
+        children:
+          - id: button_back
+            node_type: INSTANCE
+            ref: "Button"
+            size: { width: 118, height: 51 }
+            text: "戻る"
+            font_size: 16
+          - id: button_start
+            node_type: INSTANCE
+            ref: "Button"
+            size: { width: 236, height: 51 }
+            text: "配信を開始する"
+            font_size: 16
+
+  # ─────────────────────────────────────────────────────────────
+  # Component 2: EN standalone (LiveStreaming-Settings Confirmation/バリアント2)
+  # ─────────────────────────────────────────────────────────────
+  - id: "LiveStreaming-Settings Confirmation/バリアント2"
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "66bf3df2693b42c3796a0eb3892b60a747cb6ec6"
+    asset_type: component
+    # NOTE: NOT inside a ComponentSet — use importComponentByKeyAsync (not Set)
+
+    variants:
+      combinations:
+        - { Language: EN }
+      # Single component — no variant selection needed; just createInstance().
+
+    container:
+      node_type: COMPONENT
+      size:
+        value: { width: 402, height: 850 }
+
+    children:
+      - id: Handle
+        node_type: RECTANGLE
+        size: { width: 48, height: 6 }
+
+      - id: Header
+        node_type: FRAME
+        children:
+          - id: Title
+            node_type: TEXT
+            font_size: 17
+            characters: "Settings Confirmation"
+          - id: CloseCircle
+            node_type: INSTANCE
+            ref: "Outline / Essentional, UI / Close Circle"
+
+      - id: Contents
+        node_type: FRAME
+        children:
+          - id: Avatar
+            node_type: FRAME
+            children:
+              - id: AvatarLabel
+                node_type: TEXT
+                font_size: 13
+                characters: "Streaming Avatar"
+              - id: AvatarFrame
+                child: { ref: "image/Self-userSetVideo" }
+
+          - id: SettingsList
+            node_type: FRAME
+            description: "5 件 List1 (Label + Contents pair, EN)"
+            items:
+              - { label: "Type",        contents: "Live Streaming × AI Avatar" }
+              - { label: "Topic",       contents: "Fan Q&A" }
+              - { label: "Description", contents: "This is dummy text. ..." }
+              - { label: "Duration",    contents: "60 min" }
+              - { label: "Visibility",  contents: "Free Streaming" }
+
+      - id: Button
+        node_type: FRAME
+        children:
+          - id: button_close
+            node_type: INSTANCE
+            text: "Close"
+            font_size: 16
+          - id: button_start
+            node_type: INSTANCE
+            text: "Start Streaming"
+            font_size: 16
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Both components fully render Handle + Header + Avatar + SettingsList + Button
+    internally. Importing as INSTANCE creates the whole panel.
+    Library 注記「インスタンス上での文言変更禁止」— do NOT modify text on instances.
+  elements_rendered_internally:
+    - "Handle (Bottom Sheet drag indicator)"
+    - "Header (Title + Close Circle)"
+    - "Avatar block (label + video thumbnail)"
+    - "SettingsList (5 List1 rows)"
+    - "Button row (Back/Close + Start Streaming)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_component:
+    "日本語" or default: "LiveStreaming-Settings Confirmation (JP set)"
+    "English": "LiveStreaming-Settings Confirmation/バリアント2 (EN standalone)"
+  default:
+    component: "LiveStreaming-Settings Confirmation"
+    Language: JP
+  safe_pattern_jp: |
+    const set = await figma.importComponentSetByKeyAsync('0151e208cd7eb3d55c3682c037e4d4ce48efdcd4');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;
+    const instance = variant.createInstance();
+  safe_pattern_en: |
+    // NOTE: EN is a standalone COMPONENT (not in ComponentSet)
+    const comp = await figma.importComponentByKeyAsync('66bf3df2693b42c3796a0eb3892b60a747cb6ec6');
+    const instance = comp.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      EN 版は ComponentSet にない単独 COMPONENT。
+      `importComponentSetByKeyAsync` ではなく `importComponentByKeyAsync` を使う。
+      混同すると import 失敗する。
+  - severity: MUST
+    rule: |
+      Library 注記「インスタンス上での文言変更禁止」— 文言は Library で管理。
+      Agent は instance text の characters を override しない。
+  - severity: SHOULD
+    rule: |
+      SettingsList の Contents (Live配信×AIアバター / Fan Q&A 等) は sample data。
+      実際の spec data で外部から override したい場合は、変更可能な field 設計を
+      Hori と相談する必要あり。

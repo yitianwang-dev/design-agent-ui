@@ -1,0 +1,233 @@
+# ============================================================
+# Schema PJ — ProfileThumbnail (single-component-set, complex carousel)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Profile タブ内のサムネイル群 carousel。3 tab (SelfUserTable / StreamingTable
+# / FavoriteTable) を含み、User × State で表示内容切替:
+#   Configured = 3 tab それぞれに 4 items × 2 rows
+#   Empty      = 3 tab それぞれに emptyState message + icon
+#   self vs Other で empty 表現が変化 (self は CTA button あり)
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: ProfileThumbnail
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "01de9711fbac938b286a31cafd62e7d2c2d8a93a"
+  library_description_raw: |
+    【用途 / Usage】
+    ProfileタブのLive配信タブで表示されるサムネイル群。UserとStateで表示内容を切り替える。
+    Thumbnail group displayed on Live streaming tab in Profile. Switch display by User and State.
+    【使用画面 / Used in】
+    Profile / Live配信タブ / Live streaming tab
+    【State】
+    User: self / Other｜State: Configured / Empty
+  description: |
+    Profile 画面 (Self / Other) の 3 タブ (SelfUser / Streaming / Favorite)
+    サムネイル群 container。User × State で表示切替:
+    - Configured: 各 tab に 4 items × 2 rows (profile/avatarThumbnail or Live Thumbnail)
+    - Empty: 各 tab に emoji icon + message frame (Self は CTA button、Other はメッセージのみ)
+  screen_usage:
+    - "Profile タブ (Self) — 自分の avatar / 配信 / favorite カルーセル"
+    - "Profile タブ (Other) — 他人の avatar / 配信 / favorite カルーセル"
+  dependencies:
+    - "profile/avatarThumbnail (key 3571bee8...) — SelfUserTable + FavoriteTable で 4 個ずつ nested"
+    - "Live Thumbnail (schema 23, key 4dc05805...) — StreamingTable で 4 個 nested (Multi/SingleAI mix)"
+    - "Emoji Funny Circle / Play Stream / Outline Star / Sleeping Circle (Empty state icons)"
+    - "Button (Self Empty 用 CTA)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "ProfileThumbnail": 4
+    implemented: full
+    notes: |
+      4 variants = User (self / Other) × State (Configured / Empty)。
+      全部 402×521 (高さ統一)。Configured は 8 thumbnail x 3 tab = 24 個の
+      nested instance を含む heavyweight component。
+  review_status: ai-draft
+
+components:
+  - id: ProfileThumbnail
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "01de9711fbac938b286a31cafd62e7d2c2d8a93a"
+
+    variants:
+      combinations:
+        - { User: self,  State: Configured }
+        - { User: self,  State: Empty }
+        - { User: Other, State: Configured }
+        - { User: Other, State: Empty }
+
+    container:
+      node_type: COMPONENT
+      name_template: "User=${User}, State=${State}"
+      size:
+        value: { width: 402, height: 521 }
+
+    # Structure varies by State
+    structure_by_state:
+      Configured:
+        description: "Carousel wrapper → 3 tables × 2 rows × 2 thumbnails"
+        children:
+          - id: Carousel
+            children:
+              - id: SelfUserTable
+                description: "Avatar thumbnails (profile/avatarThumbnail × 4)"
+                row_count: 2
+                items_per_row: 2
+                item_size: { width: 200, height: 260 }
+              - id: StreamingTable
+                description: "Live thumbnails mix (Multi & SingleAI × 4)"
+                row_count: 2
+                items_per_row: 2
+                item_size: { width: 200, height: 261 }
+                mix_pattern: "Multi / SingleAI / SingleAI / Multi (zigzag)"
+              - id: FavoriteTable
+                description: "Avatar thumbnails (profile/avatarThumbnail × 4)"
+                row_count: 2
+                items_per_row: 2
+                item_size: { width: 200, height: 260 }
+
+      Empty:
+        description: "Empty state — 3 tables それぞれに empty state placeholder"
+        wrapper_name_by_user:
+          self:  "Self / Carousel - Empty"
+          Other: "Other / Carousel - Empty"
+        children_by_user:
+          self:
+            - tab: SelfUserCreateEmpty
+              empty_block:
+                size: { width: 201, height: 128 }
+                children:
+                  - { name: "Emoji Funny Circle icon (48×48)" }
+                  - id: "Ready to create"
+                    children:
+                      - { name: Text }
+                      - { name: Button, _note: "Self only — CTA to create avatar" }
+            - tab: StreamingTable
+              empty_block:
+                children:
+                  - { name: "Play Stream icon (48×48)" }
+                  - { name: "favorites appear here. Text" }
+            - tab: FavoriteTable
+              empty_block:
+                children:
+                  - { name: "Outline / Like / Star icon (48×48)" }
+                  - { name: "favorites appear here. Text" }
+          Other:
+            - tab: SelfUserCreateEmpty
+              empty_block:
+                size: { width: 201, height: 80 }
+                children:
+                  - { name: "Emoji Funny Circle icon (48×48)" }
+                  - id: "Ready to create"
+                    children:
+                      - { name: Text, _note: "No CTA button (Other can't create avatar for someone else)" }
+            - tab: StreamingTable
+              empty_block:
+                children:
+                  - { name: "Play Stream icon (48×48)" }
+                  - { name: "favorites appear here. Text" }
+            - tab: FavoriteTable
+              empty_block:
+                children:
+                  - { name: "Sleeping Circle icon (48×48)" }
+                  - { name: "favorites appear here. Text" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    ProfileThumbnail は 3 tab × multiple thumbnails (Configured) または
+    emoji + message frames (Empty) を内包する complex carousel。
+    Variant 経由で全部切替、自前で thumbnail 並べたり empty UI 作ったりしない。
+  elements_rendered_internally:
+    configured:
+      - "Carousel → SelfUserTable (profile/avatarThumbnail × 4)"
+      - "Carousel → StreamingTable (Live Thumbnail × 4 mix)"
+      - "Carousel → FavoriteTable (profile/avatarThumbnail × 4)"
+    empty:
+      - "Self/Other Carousel - Empty wrapper"
+      - "SelfUserCreateEmpty: emoji + 'Ready to create' (Self に CTA button)"
+      - "StreamingTable empty: Play Stream icon + message"
+      - "FavoriteTable empty: Star (Self) / Sleeping Circle (Other) icon + message"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    User:
+      "「self profile」「自分の profile」「自分のサムネイル」 or default": self
+      "「other profile」「他人のサムネイル」": Other
+    State:
+      "「configured」「has avatars」「populated」 or default": Configured
+      "「empty」「no avatars yet」「unconfigured」": Empty
+  default_variant:
+    User: self
+    State: Configured
+
+  common_scenarios:
+    "self_profile_with_avatars":
+      description: "Self profile - 自分の作った avatars 表示"
+      variant: { User: self, State: Configured }
+    "self_profile_empty_first_time":
+      description: "新規 user の Self profile — Create CTA を表示"
+      variant: { User: self, State: Empty }
+    "other_profile_with_avatars":
+      description: "他人 profile - その人の avatars を見る"
+      variant: { User: Other, State: Configured }
+    "other_profile_empty":
+      description: "他人 profile が空 - 表示するものがないと message"
+      variant: { User: Other, State: Empty }
+
+  default_decision_logic:
+    rules:
+      - if: "spec の user が「自分」「self」"
+        → { User: self }
+      - if: "spec の user が「他人」「other」"
+        → { User: Other }
+      - if: "spec が「empty」「no avatars」"
+        → { State: Empty }
+      - else: { State: Configured }
+
+  selection_examples:
+    - spec: "Self profile tab (自分の avatar 4 個 + Live 4 個 + favorite 4 個)"
+      decision: { User: self, State: Configured }
+    - spec: "新規 user — Self profile, avatar 未作成"
+      decision: { User: self, State: Empty, _note: "Create CTA button 表示" }
+    - spec: "Other user profile — favorites is empty"
+      decision: { User: Other, State: Empty }
+
+  related_components:
+    - "profile/avatarThumbnail (key 3571bee8...) — Configured 内 nested 4×2=8 個"
+    - "Live Thumbnail (schema 23) — StreamingTable 内 nested 4 個"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('01de9711fbac938b286a31cafd62e7d2c2d8a93a');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.User === 'self' && p.State === 'Configured';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      State=Configured は 24 個の nested instance (Avatar Thumbnail × 16 +
+      Live Thumbnail × 4)。Heavy component、import + createInstance 後に
+      Figma の rendering が重い場合あり。
+  - severity: SHOULD
+    rule: |
+      Self+Empty と Other+Empty で SelfUserCreateEmpty の表示が異なる:
+      - Self: CTA Button あり (avatar 作成へ誘導)
+      - Other: Text only (他人だから CTA 不要)
+      Empty state を変える時、User variant も忘れず合わせる。
+  - severity: NICE
+    rule: |
+      FavoriteTable Empty の icon が User により異なる:
+      - Self: Outline / Like / Star
+      - Other: Sleeping Circle
+      Library 内 design 判断 (Self は star/favorite を強調、Other は 'まだ何も' 表現)

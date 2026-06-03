@@ -1,0 +1,249 @@
+# ============================================================
+# Schema PJ — SingleLive Tire Unlocked BottomSheet (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 視聴時の Tier アンロック完了 / unlock 案内 bottom sheet。
+# Tier 限定コンテンツを視聴するための unlock CTA。
+# ⚠️ Library name に "Tire" typo (Tier の誤記、変更不可)。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: SingleLive Tire Unlocked BottomSheet
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "f947cf2be3abeb08fb4151e4e10fe37b849d0778"
+  library_description_raw: |
+    【用途 / Usage】
+    Live視聴時のTierアンロック完了ボトムシート。
+    Tier unlock completion bottom sheet during live viewing.
+    【使用画面 / Used in】
+    Live視聴画面 / Live viewer screen
+    【State】
+    Language: JP / EN
+  description: |
+    Live 視聴中に Tier 限定コンテンツに到達した時、unlock のための bottom
+    sheet。Handle + Header + 残高表示 + Tier 情報 (price / day) +
+    ExclusiveContent-FAN 詳細 (avatar + benefits) + CTA (tier 解放 / cancel)。
+    JP/EN 両方 size 402×423。Library 内 typo "Tire" → 必ず exact spelling 使用。
+  screen_usage:
+    - "Live 視聴画面 (Viewer) — Tier 限定コンテンツ unlock prompt"
+  dependencies:
+    - "exclusiveContentBadge (key 84d12f1f...) - 限定 badge"
+    - "ticketDisplay (内部 instance - ticket 残高表示)"
+    - "Outline / Essentional, UI / Close Circle"
+    - "ExclusiveContent-FAN (内部 instance - Tier 詳細 panel)"
+    - "MembershipTierLabel (ティア1 / Tier 1)"
+    - "EntryAvatarIcon1 (avatar preview icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "SingleLive Tire Unlocked BottomSheet": 2
+    implemented: full
+    notes: |
+      2 variants = Language (JP / EN) のみ。両方 402×423 (size 統一)。
+      ⚠️ Library localize 未完成: Header Title "ギフトを送る" / 主 CTA
+      "tier 2 を解放して視聴する" 両方 JP variant でも EN variant でも
+      日本語表示。Description / Title / Day / Price のみ EN 化。
+  review_status: ai-draft
+
+components:
+  - id: SingleLive Tire Unlocked BottomSheet
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "f947cf2be3abeb08fb4151e4e10fe37b849d0778"
+
+    variants:
+      combinations:
+        - { Language: JP }
+        - { Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+      size:
+        value: { width: 402, height: 423 }
+
+    children:
+      - id: Handle
+        node_type: RECTANGLE
+        size: { width: 48, height: 6 }
+
+      - id: Header
+        node_type: FRAME
+        size: { width: 402, height: 24 }
+        children:
+          - id: Title
+            node_type: TEXT
+            font_size: 17
+            characters: "ギフトを送る"
+            _note: "両 variant 同じ (Library localize 未完了、JP のみ)"
+          - id: CloseCircle
+            node_type: INSTANCE
+            name: "Outline / Essentional, UI / Close Circle"
+
+      - id: Contents
+        node_type: FRAME
+        size: { width: 402, height: 303 }
+        children:
+          - id: TicketDisplay
+            node_type: FRAME
+            children:
+              - id: exclusiveContentBadge_inst
+                node_type: INSTANCE
+                ref: "exclusiveContentBadge (key 84d12f1f...)"
+                state: Lock
+                text_by_language:
+                  JP: "限定"
+                  EN: "Exclusive"
+              - id: ticketDisplay_inst
+                node_type: INSTANCE
+                description: "ticket 残高 (icon + Count='0' default) + Plus button"
+
+          - id: Information
+            node_type: FRAME
+            size: { width: 370, height: 45 }
+            children:
+              - id: Title
+                node_type: TEXT
+                font_size: 17
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "TireNを解放すると視聴できます" }
+                    - { when: { Language: EN }, value: "Unlock Tier N to watch" }
+              - id: DescriptionText
+                node_type: TEXT
+                font_size: 10
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "tier 1：5チケットで30日間解放" }
+                    - { when: { Language: EN }, value: "Tier 1 · Unlock for 5 tickets / 30 days" }
+
+          - id: Tire
+            node_type: FRAME
+            name: Tire
+            size: { width: 370, height: 186 }
+            description: "ExclusiveContent-FAN nested - Tier 詳細パネル"
+            children:
+              - id: ExclusiveContent_FAN
+                node_type: INSTANCE
+                size: { width: 370, height: 186 }
+                inner_sections:
+                  - id: header
+                    description: "MembershipTierLabel + information (Day + Price)"
+                    children:
+                      - { name: MembershipTierLabel, text_by_language: { JP: "ティア1", EN: "Tier 1" } }
+                      - id: information
+                        children:
+                          - id: Day
+                            characters:
+                              by_variant:
+                                - { when: { Language: JP }, value: "n月n日まで無料トライアル" }
+                                - { when: { Language: EN }, value: "Free trial until [date]" }
+                          - id: Price
+                            characters:
+                              by_variant:
+                                - { when: { Language: JP }, value: "チケット5枚 / 30日間有効" }
+                                - { when: { Language: EN }, value: "Unlock for 5 tickets / 30 days" }
+                  - id: Hero
+                    description: "Avatar preview - EntryAvatarIcon1 (64×64)"
+                  - id: Button_Description
+                    children:
+                      - id: description_text
+                        font_size: 14
+                        characters:
+                          by_variant:
+                            - { when: { Language: JP }, value: "限定のアバターを公開中です。ここでしか見せない姿を楽しんでもらえたら嬉しいです。" }
+                            - { when: { Language: EN }, value: "Exclusive avatars are now available. We hope you enjoy this side that you can only see here." }
+                      - { name: Button, type: INSTANCE, size: { width: 96, height: 42 } }
+                  - id: Benefit
+                    description: "2 行 Benefit list (Icon + Text)"
+
+      - id: ButtonSection
+        node_type: FRAME
+        size: { width: 402, height: 92 }
+        children:
+          - id: cta_unlock_button
+            node_type: INSTANCE
+            size: { width: 370, height: 40 }
+            font_size: 16
+            characters: "tier 2 を解放して視聴する"
+            _note: "両 variant 同じ JP 文 (Library localize 未完了)"
+          - id: cancel_button
+            node_type: INSTANCE
+            name: "Dialog/Button item"
+            font_size: 15
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "キャンセル" }
+                - { when: { Language: EN }, value: "Cancel" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Sheet 全体 (Handle + Header + Contents [TicketDisplay + Information + Tire/
+    ExclusiveContent-FAN] + ButtonSection) は instance 内部レンダリング。
+    DO NOT add external sections.
+  elements_rendered_internally:
+    - "Handle (drag bar)"
+    - "Header (Title='ギフトを送る' + Close Circle)"
+    - "TicketDisplay (exclusiveContentBadge 限定 + ticketDisplay 残高)"
+    - "Information (Title + DescriptionText for Tier price/day)"
+    - "Tire > ExclusiveContent-FAN (header + Hero avatar + Description + Benefits)"
+    - "ButtonSection (CTA unlock + Cancel)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+
+  common_scenarios:
+    "tier_unlock_prompt_for_jp_viewer":
+      description: "JP viewer が Tier 限定コンテンツ視聴を試みた直後の prompt"
+      variant: { Language: JP }
+    "tier_unlock_prompt_for_en_viewer":
+      description: "EN viewer 同 (Description / Tier info は EN、Header CTA は JP)"
+      variant: { Language: EN }
+
+  selection_examples:
+    - spec: "Tier 1 unlock prompt (JP)"
+      decision: { Language: JP }
+    - spec: "Tier 2 unlock prompt for EN viewer"
+      decision: { Language: EN }
+
+  related_components:
+    - "Live 視聴画面で Tier 限定 content にアクセスを試みた時 trigger"
+    - "AvatarCard Use Case=Locked Exclusive Content (Avatar Card schema 別) → 本 sheet を呼ぶ"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('f947cf2be3abeb08fb4151e4e10fe37b849d0778');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 内 name "Tire" は typo (Tier の誤記)。search や reference 時は
+      exact "Tire" spelling 使う ("Tier" だと undefined)。
+  - severity: MUST
+    rule: |
+      Library localize 未完了:
+      - Header Title "ギフトを送る" (両 variant JP)
+      - CTA Button "tier 2 を解放して視聴する" (両 variant JP)
+      EN viewer 用 spec で完全 EN 化したい場合、Hori に修正依頼するか
+      instance 経由で characters override。
+  - severity: SHOULD
+    rule: |
+      ExclusiveContent-FAN 内 Day text "n月n日まで無料トライアル" の "n" は
+      placeholder、実日付 (e.g. "12月31日") に override する必要あり。
+  - severity: NICE
+    rule: |
+      CTA text "tier 2 を解放して視聴する" は spec の actual tier 番号 (1/2/3)
+      に override するべき。Tier 名は dynamic content。

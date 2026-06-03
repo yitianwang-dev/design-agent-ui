@@ -1,0 +1,207 @@
+# ============================================================
+# Schema PJ — Rewind Button (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live アーカイブ再生の巻き戻し・早送りボタン。Type で Back / Forward、
+# State で Default / Pressed / Disabled を切替。Pressed は高さ縮小で
+# tactile feedback 表現。SingleLiveViewerBottom (Archive state) に組み込み。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Rewind Button
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "85ae01f9efe768bd248425256f90b0c9ef5ca05c"
+  library_description_raw: |
+    【用途 / Usage】
+    Liveアーカイブ再生の巻き戻し・早送りボタン。
+    Rewind/forward button for live archive playback.
+    【使用画面 / Used in】
+    Liveアーカイブ視聴画面 / Live archive viewer screen
+    【State】
+    Type: Back / Forward｜State: Default / Pressed / Disabled｜Language: JP / EN
+  description: |
+    Live アーカイブ再生 (Archive playback) 用の巻戻 (Back) / 早送り (Forward)
+    button (10 秒単位)。State で interaction state を表現:
+    - Default: 通常 (44×32)
+    - Pressed: タップ中 (44×30、高さ縮小で押下感)
+    - Disabled: 操作不可 (44×32)
+    Type で icon + text の左右配置が反転 (Back: icon-left / Forward: text-left)。
+  screen_usage:
+    - "Live アーカイブ視聴画面 (Viewer 録画再生)"
+    - "SingleLiveViewerBottom (schema 19) State=Archive 内 Playback Controls"
+  dependencies:
+    - "Rewind Back icon (Type=Back inner instance、Union vector 10×8)"
+    - "Rewind Forward icon (Type=Forward inner instance、同 Union)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Rewind Button": 12
+    implemented: full
+    notes: |
+      12 variants = Type (Back / Forward) × State (Default / Pressed / Disabled)
+      × Language (JP / EN)。JP / EN 共に text "10秒" (Library 内で localize 未済)。
+      State=Pressed のみ height 30 (他は 32)。
+  review_status: ai-draft
+
+components:
+  - id: Rewind Button
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "85ae01f9efe768bd248425256f90b0c9ef5ca05c"
+
+    variants:
+      combinations:
+        - { Language: JP, Type: Back,    State: Default }
+        - { Language: JP, Type: Back,    State: Pressed }
+        - { Language: JP, Type: Back,    State: Disabled }
+        - { Language: JP, Type: Forward, State: Default }
+        - { Language: JP, Type: Forward, State: Pressed }
+        - { Language: JP, Type: Forward, State: Disabled }
+        - { Language: EN, Type: Back,    State: Default }
+        - { Language: EN, Type: Back,    State: Pressed }
+        - { Language: EN, Type: Back,    State: Disabled }
+        - { Language: EN, Type: Forward, State: Default }
+        - { Language: EN, Type: Forward, State: Pressed }
+        - { Language: EN, Type: Forward, State: Disabled }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Type=${Type}, State=${State}"
+      size:
+        by_variant:
+          - { when: { State: Default },  value: { width: 44, height: 32 } }
+          - { when: { State: Pressed },  value: { width: 44, height: 30 } }
+          - { when: { State: Disabled }, value: { width: 44, height: 32 } }
+
+    children:
+      - id: wrapper
+        node_type: FRAME
+        name_by_type:
+          - { when: { Type: Back },    value: "Rewind Back" }
+          - { when: { Type: Forward }, value: "Forward" }
+        description: |
+          Wrapper frame。Type で内部 children 配置反転:
+          - Back: icon (left) + BackText (right)
+          - Forward: ForwardText (left) + icon (right)
+        size:
+          by_variant:
+            - { when: { State: Default },  value: { width: 44, height: 12 } }
+            - { when: { State: Pressed },  value: { width: 44, height: 10 } }
+            - { when: { State: Disabled }, value: { width: 44, height: 12 } }
+        children:
+          - id: icon
+            node_type: INSTANCE
+            name_by_type:
+              - { when: { Type: Back },    value: "Rewind Back" }
+              - { when: { Type: Forward }, value: "Rewind Forward" }
+            size:
+              by_variant:
+                - { when: { State: Default },  value: { width: 12, height: 12 } }
+                - { when: { State: Pressed },  value: { width: 10, height: 10 } }
+                - { when: { State: Disabled }, value: { width: 12, height: 12 } }
+            description: "Union vector (10×8 内部)。Type で arrow direction 切替"
+
+          - id: text_label
+            node_type: TEXT
+            name_by_type:
+              - { when: { Type: Back },    value: "BackText" }
+              - { when: { Type: Forward }, value: "ForwardText" }
+            characters: "10秒"
+            characters_note: "JP / EN 共に '10秒' (Library 内 localize 未実装、Hori 修正待ち)"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Wrapper + icon + "10秒" text。Type で配置反転、State で size scaling。
+    DO NOT add external icon / text.
+  elements_rendered_internally:
+    - "Wrapper frame (Rewind Back or Forward)"
+    - "Rewind Back/Forward icon (12×12 or 10×10 for Pressed)"
+    - "Text '10秒' (font 9-11)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Type:
+      "「back」「巻き戻し」「rewind」 or default": Back
+      "「forward」「早送り」「skip ahead」": Forward
+    State:
+      "「default」「normal」 or default": Default
+      "「pressed」「being tapped」「active touch」": Pressed
+      "「disabled」「unavailable」「greyed out」": Disabled
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    Type: Back
+    State: Default
+
+  common_scenarios:
+    "default_back_button":
+      description: "通常の巻戻 button (Archive 視聴 default)"
+      variant: { Type: Back, State: Default, Language: JP }
+    "default_forward_button":
+      description: "通常の早送り button"
+      variant: { Type: Forward, State: Default, Language: JP }
+    "pressed_back":
+      description: "tap interaction frame (高さ縮小)"
+      variant: { Type: Back, State: Pressed, Language: JP }
+    "disabled_back":
+      description: "再生開始位置 (これ以上戻れない) → Back disabled"
+      variant: { Type: Back, State: Disabled, Language: JP }
+    "disabled_forward":
+      description: "再生終了位置 → Forward disabled"
+      variant: { Type: Forward, State: Disabled, Language: JP }
+
+  default_decision_logic:
+    rules:
+      - if: "spec が「rewind」「back」"
+        → { Type: Back }
+      - if: "spec が「forward」「skip ahead」"
+        → { Type: Forward }
+      - if: "spec が「pressed」「being tapped」"
+        → { State: Pressed }
+      - if: "spec が「disabled」「can't rewind」「at start/end」"
+        → { State: Disabled }
+      - else: { State: Default }
+
+  selection_examples:
+    - spec: "Archive playback default controls (back + forward)"
+      decision: "2 instances: Type=Back, State=Default + Type=Forward, State=Default"
+    - spec: "Pressed back button (animation frame)"
+      decision: { Type: Back, State: Pressed, Language: JP }
+    - spec: "Disabled forward (end of archive)"
+      decision: { Type: Forward, State: Disabled, Language: EN }
+
+  used_inside: "SingleLiveViewerBottom (schema 19) State=Archive 内 Playback Controls frame に組み込み"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('85ae01f9efe768bd248425256f90b0c9ef5ca05c');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.Type === 'Back' && p.State === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      JP / EN variant 共に text "10秒" (日本語のまま、Library 内 EN localize
+      未済)。EN viewer 用 spec で「10 sec」期待する場合、Hori に確認 or
+      instance 経由で characters override。
+  - severity: SHOULD
+    rule: |
+      State=Pressed のみ height 30 (Default/Disabled は 32)。layout に固定
+      高さ 32 で配置すると Pressed 時に 2px の空きが出る。Auto-layout の
+      HUG にすれば適切に追従。
+  - severity: NICE
+    rule: |
+      Type=Back と Forward は wrapper name が異なる ("Rewind Back" vs "Forward")。
+      内部 icon name も "Rewind Back" / "Rewind Forward" で対応。findOne で
+      探す時は Type 別に分岐する。

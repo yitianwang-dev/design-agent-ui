@@ -1,0 +1,226 @@
+# ============================================================
+# Schema PJ — LiveUserCommentTicketTipping (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 視聴画面の comment feed に挿入される「チケット投げ銭通知」専用
+# comment item。tipping tier (5/10/20) に応じて State 切替、Max20 は
+# 大きめ表示で目立たせる。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveUserCommentTicketTipping
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "95d992a5c36338d1265ecc86d68c4a1463826102"
+  library_description_raw: |
+    (Library description が空。Hori が作成中、説明文未追加の可能性あり。)
+    Inferred: Tipping notification comment item for Live viewer comment feed.
+    State (Light5 / Medium10 / Max20) corresponds to ticket tier.
+  description: |
+    Live 視聴中の comment feed に表示される「チケット投げ銭通知」用 comment
+    item。State で 5 / 10 / 20 ticket tier を切替、Max20 は背景 highlight +
+    大型 user icon で premium 表現。Send TicketTipping Bottom Sheet と
+    対応するコンポーネント。
+  screen_usage:
+    - "Live 視聴画面 (Viewer) — コメント feed 内 tip 通知行"
+  dependencies:
+    - "User icon (inner instance — Max20: 32×32, others: 24×24)"
+    - "Ticker Bold (Ticket icon — Max20: TicketIcon20 wrapper / others: direct)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveUserCommentTicketTipping": 3
+    implemented: full
+    notes: |
+      3 variants = State (Light5 / Medium10 / Max20) × Language (JP のみ)。
+      EN variant は Library に存在しない (2026-06-03 時点)。
+      Library 更新日 2026-06-02、Hori が作成中の component。
+  review_status: ai-draft
+
+components:
+  - id: LiveUserCommentTicketTipping
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "95d992a5c36338d1265ecc86d68c4a1463826102"
+
+    # 3 variants (JP only)
+    variants:
+      combinations:
+        - { State: "Light5",   Language: JP }
+        - { State: "Medium10", Language: JP }
+        - { State: "Max20",    Language: JP }
+
+    container:
+      node_type: COMPONENT
+      name_template: "State=${State}, Language=${Language}"
+      size:
+        by_variant:
+          - { when: { State: "Light5",   Language: JP }, value: { width: 300, height: 28 } }
+          - { when: { State: "Medium10", Language: JP }, value: { width: 300, height: 28 } }
+          - { when: { State: "Max20",    Language: JP }, value: { width: 300, height: 40 } }
+
+    children:
+      - id: Background
+        node_type: FRAME
+        name: Background
+        description: |
+          Background rect + BackgroundHighlight (half-height accent strip).
+          State により高さ変化 (28 / 40)。
+        children:
+          - id: bg_rect
+            node_type: RECTANGLE
+            name: Background
+            size_by_variant:
+              - { when: { State: "Light5" },   value: { width: 300, height: 28 } }
+              - { when: { State: "Medium10" }, value: { width: 300, height: 28 } }
+              - { when: { State: "Max20" },    value: { width: 300, height: 40 } }
+          - id: highlight_rect
+            node_type: RECTANGLE
+            name: BackgroundHighlight
+            description: "Half-height accent (drawing layer below text)"
+            size_by_variant:
+              - { when: { State: "Light5" },   value: { width: 300, height: 14 } }
+              - { when: { State: "Medium10" }, value: { width: 300, height: 14 } }
+              - { when: { State: "Max20" },    value: { width: 300, height: 20 } }
+
+      - id: InnerSection
+        node_type: FRAME
+        name: InnerSection
+        auto_layout:
+          direction: HORIZONTAL
+          counter_axis_align_items: CENTER
+        children:
+          - id: user_icon
+            node_type: INSTANCE
+            name: "User icon"
+            size_by_variant:
+              - { when: { State: "Light5" },   value: { width: 24, height: 24 } }
+              - { when: { State: "Medium10" }, value: { width: 24, height: 24 } }
+              - { when: { State: "Max20" },    value: { width: 32, height: 32 } }
+            description: "Tipper avatar icon (Max20 で大きい)"
+
+          - id: TippingInformation
+            node_type: FRAME
+            name: TippingInformation
+            children:
+              - id: UserName
+                node_type: TEXT
+                name: UserName
+                font_size: 10
+                default_text: "UserName"
+                description: "Tipper name (spec で実 user 名に override)"
+              - id: tipping_text
+                node_type: TEXT
+                name: Text
+                font_size: 10
+                characters: "さんからの投げ銭です"
+
+          - id: Ticket
+            node_type: FRAME
+            name: Ticket
+            description: "Ticket icon + count display"
+            children:
+              - id: ticket_icon
+                node_type: INSTANCE
+                ref: "Ticker Bold"
+                size_by_variant:
+                  - { when: { State: "Light5" },   value: { width: 18, height: 18 } }
+                  - { when: { State: "Medium10" }, value: { width: 18, height: 18 } }
+                  - { when: { State: "Max20" },    value: { width: 24, height: 24 }, wrapper: "TicketIcon20 frame" }
+              - id: count_text
+                node_type: TEXT
+                font_size: 10
+                characters_by_variant:
+                  - { when: { State: "Light5" },   value: "✕ 5" }
+                  - { when: { State: "Medium10" }, value: "✕ 10" }
+                  - { when: { State: "Max20" },    value: "✕ 20" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Tipping comment item は user icon + tipping text + ticket icon/count を
+    全部内部レンダリング。外側に別 user icon / ticket icon を作らない。
+  elements_rendered_internally:
+    - "Background rect + BackgroundHighlight (accent)"
+    - "User icon (24/32px)"
+    - "TippingInformation: UserName + 'さんからの投げ銭です' text"
+    - "Ticket icon + count text (✕ 5/10/20)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「5 tickets」「small tip」 or default low-tier": "Light5"
+      "「10 tickets」「medium tip」 or highlighted": "Medium10"
+      "「20 tickets」「max tip」「special」「premium」": "Max20"
+  default_variant:
+    State: "Light5"
+    Language: JP
+  common_scenarios:
+    "5_ticket_tip_notification":
+      description: "5 chip 投げ銭 → Light tier 通知"
+      variant: { State: "Light5", Language: JP }
+    "10_ticket_tip_notification":
+      description: "10 chip 投げ銭 → Medium tier 通知"
+      variant: { State: "Medium10", Language: JP }
+    "20_ticket_tip_max_notification":
+      description: "20 chip MAX 投げ銭 → 大型 highlight 通知"
+      variant: { State: "Max20", Language: JP }
+    "mixed_tip_feed_demo":
+      description: "demo 用：3 tier 全部見せる"
+      composition:
+        - { State: "Light5", count: 2 }
+        - { State: "Medium10", count: 1 }
+        - { State: "Max20", count: 1 }
+
+  default_decision_logic:
+    description: "Send TicketTipping Bottom Sheet で選んだ tier に対応"
+    rules:
+      - if: "tip 額 = 5 tickets (¥500)"
+        → { State: "Light5" }
+      - if: "tip 額 = 10 tickets (¥1,000)"
+        → { State: "Medium10" }
+      - if: "tip 額 = 20 tickets (¥2,000)"
+        → { State: "Max20" }
+
+  selection_examples:
+    - spec: "「Tanaka が 5 枚のチケットを送りました」"
+      decision: { State: "Light5", Language: JP, override_username: "Tanaka" }
+    - spec: "「特別 tip: 20 枚！」(Premium)"
+      decision: { State: "Max20", Language: JP }
+
+  use_in_comment_feed: |
+    Live 視聴 commentFeed の中に通常 comment と並べて配置する。
+    Tip 通知のみこの component を使う、通常 comment は LiveUserComment
+    (schema 別、key 9bfdd...) を使う。
+  override_username: |
+    UserName text の characters を spec の tipper 名に override:
+      const nameNode = inst.findOne(n => n.type === 'TEXT' && n.name === 'UserName');
+      await figma.loadFontAsync(nameNode.fontName);
+      nameNode.characters = 'Tanaka';
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('95d992a5c36338d1265ecc86d68c4a1463826102');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.State === 'Max20' && p.Language === 'JP';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library description 空 (Hori 作成中の可能性大、2026-06-02 更新)。
+      schema 推測ベース、最新 Library を再確認推奨。
+  - severity: MUST
+    rule: |
+      EN variant は存在しない (2026-06-03 時点)。Live viewer 画面が EN 化
+      した場合に追加される可能性あり。
+  - severity: SHOULD
+    rule: |
+      Send TicketTipping Bottom Sheet (key 7d63d8a4...) と対応する tier
+      設計：sheet 内 5/10/20 button → comment feed に Light5/Medium10/Max20
+      が挿入される想定。

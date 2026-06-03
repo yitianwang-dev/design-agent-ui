@@ -1,0 +1,193 @@
+# ============================================================
+# Schema PJ — Creator Control Notification Banner (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Creator 側 Live 配信コントロール画面の通知バナー。State (Gift / Closing /
+# Ended) で内部 element が変化:
+#   Gift     → Ticker Bold icon + GiftDetail (UserName + GiftInformation)
+#   Closing  → Clock Circle icon + Closing Message + X close circle button
+#   Ended    → Clock Circle icon + UserName text のみ (シンプル)
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Creator Control Notification Banner
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "8d82991f3955d434cce10285d230f55cd5b09097"
+  library_description_raw: |
+    【用途 / Usage】
+    Creator Live配信コントロール画面の通知バナー。Stateで通知種別を切り替える。
+    Notification banner on Creator live control screen.
+    【State】
+    State: Gift / Closing / Ended｜Language: JP / EN
+  description: |
+    Creator が自分の Live 配信コントロール画面で見る通知バナー (横長 26px)。
+    Gift = 視聴者からのギフト受領通知、Closing = 配信時間残り少ない警告、
+    Ended = 配信終了通知。CreatorLiveControlHeader (schema 18) の最下部
+    Control Notification Banner エリアに nested instance として配置される。
+  screen_usage:
+    - "Live 配信コントロール画面 (Creator) — 下部 notification 領域"
+  dependencies:
+    - "Ticker Bold (Gift state icon)"
+    - "Clock Circle (Closing / Ended state icon)"
+    - "X close circle (Closing state dismiss button)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Creator Control Notification Banner": 6
+    implemented: full
+    notes: |
+      6 variants = State (Gift / Closing / Ended) × Language (JP / EN)。
+      全 variant 402×26 (高さ統一)。内部 element は State で大きく変化。
+  review_status: ai-draft
+
+components:
+  - id: Creator Control Notification Banner
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "8d82991f3955d434cce10285d230f55cd5b09097"
+
+    variants:
+      combinations:
+        - { Language: JP, State: Gift }
+        - { Language: EN, State: Gift }
+        - { Language: JP, State: Closing }
+        - { Language: EN, State: Closing }
+        - { Language: JP, State: Ended }
+        - { Language: EN, State: Ended }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        value: { width: 402, height: 26 }
+
+    # Structure varies by State (Library-rendered)
+    children:
+      - id: Comment
+        node_type: FRAME
+        name: Comment
+        size: { width: 402, height: 26 }
+        description: "外側 wrapper、全 State 共通"
+        children:
+          - id: CommentTextArea
+            node_type: FRAME
+            name: CommentTextArea
+            size: { width: 402, height: 26 }
+            children:
+              - id: GiftTitle
+                node_type: FRAME
+                name: GiftTitle
+                size: { width: 394, height: 18 }
+                description: |
+                  Inner container。State で構成変化:
+                  - Gift: Image(Ticker Bold) + GiftDetail (UserName + GiftInformation)
+                  - Closing: Image(Clock Circle) + Closing Message + X close circle
+                  - Ended: Image(Clock Circle) + GiftDetail (UserName only)
+                children_by_state:
+                  - state: Gift
+                    structure:
+                      - { name: "Image (Ticker Bold icon 18×18)", description: "tip 受領 indicator" }
+                      - id: GiftDetail
+                        children:
+                          - { name: "UserName frame", text: "UserName + 'さん 等' separator" }
+                          - { name: "GiftInformation", contains: "GiftText + GiftPrice" }
+                  - state: Closing
+                    structure:
+                      - { name: "Image (Clock Circle 18×18)" }
+                      - id: Closing
+                        children:
+                          - id: Closing_Message
+                            type: TEXT
+                            font_size: 10
+                            characters_by_language:
+                              JP: "配信時間が残り10分です。クロージングを始めてください"
+                              EN: "(EN equivalent)"
+                      - { name: "X close circle (12×12, dismiss button)" }
+                  - state: Ended
+                    structure:
+                      - { name: "Image (Clock Circle 18×18)" }
+                      - id: GiftDetail
+                        children:
+                          - { name: "UserName frame (text only)" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Banner は State で 3 mode の内部構成を持つ。外側に icon/text 再現禁止。
+  elements_rendered_internally:
+    - "Comment > CommentTextArea > GiftTitle wrapper"
+    - "Image icon (Ticker Bold for Gift / Clock Circle for Closing+Ended)"
+    - "Inner content (GiftDetail / Closing Message + X / UserName)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「gift received」「投げ銭通知」「視聴者からのギフト」": Gift
+      "「closing」「残り 10 分」「終了間近」「クロージング始めて」": Closing
+      "「ended」「終了通知」「配信終了」": Ended
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    State: Gift
+    Language: JP
+
+  common_scenarios:
+    "viewer_just_gifted":
+      description: "視聴者が gift / tip を送った直後 (Creator 側通知)"
+      variant: { State: Gift, Language: JP }
+    "closing_warning_10min_left":
+      description: "60 分上限まで残り 10 分、closing 促す"
+      variant: { State: Closing, Language: JP }
+    "stream_ended_notification":
+      description: "配信終了通知"
+      variant: { State: Ended, Language: JP }
+
+  default_decision_logic:
+    rules:
+      - if: "spec が「gift」「投げ銭 received」"
+        → { State: Gift }
+      - if: "spec が「残り 10 分」「closing warning」"
+        → { State: Closing }
+      - if: "spec が「終了」「ended」"
+        → { State: Ended }
+      - else: { State: Gift, _note: "default = most common" }
+
+  selection_examples:
+    - spec: "Creator: Gift 通知 (視聴者から)"
+      decision: { State: Gift, Language: JP }
+    - spec: "Closing warning at 50 min mark"
+      decision: { State: Closing, Language: EN }
+
+  used_inside: |
+    本 banner は CreatorLiveControlHeader (schema 18) の Control Notification
+    Banner エリア内に Closing/Gift 2 つが縦並びで nested instance として配置
+    される。単独配置よりも親 component 経由が typical。
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('8d82991f3955d434cce10285d230f55cd5b09097');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'Gift';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Closing state のみ X close circle dismiss button を持つ。
+      Creator が「もう警告いらない」と非表示にできる UX。
+      Gift / Ended には X close なし。
+  - severity: NICE
+    rule: |
+      Image inner icon が State で異なる (Ticker Bold vs Clock Circle)。
+      variant 経由で自動切替、自前で icon swap しない。
+  - severity: NICE
+    rule: |
+      Ended state の GiftDetail は UserName text のみ (GiftInformation 削除済)。

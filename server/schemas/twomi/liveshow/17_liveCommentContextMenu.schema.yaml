@@ -1,0 +1,227 @@
+# ============================================================
+# Schema PJ — LiveCommentContextMenu (parent menu container)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live コメントの長押しコンテキストメニュー（親 container）。
+# 内部に MenuPin (schema 15) + CommentBlock (schema 16) を nested instance
+# として含む + 上部 menu (UserName + comment text) + Report menu item。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveCommentContextMenu
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "fe6c71a3cd36c41530988436a72cd4b80e1197a8"
+  library_description_raw: |
+    【用途 / Usage】
+    Liveコメントの長押しコンテキストメニュー。Pin・BlockCommentの状態で表示を切り替える。
+    Long-press context menu for live comments.
+    【使用画面 / Used in】
+    Live配信画面（Creator） / Live streaming screen (Creator)
+    【State】
+    Pin: Default / Set｜BlockComment: Default / Set｜Language: JP / EN
+  description: |
+    Live コメント長押し menu (Creator 側)。最上部に該当 comment preview
+    (UserName + Pin marker + comment text)、その下に 3 menu items:
+    Pin / CommentBlock / Report (報告) を縦並びで表示。Pin と BlockComment
+    の現状を Variant で表現 (Default = 未 set / Set = 現在 set 中)。
+  screen_usage:
+    - "Live 配信画面 (Creator) — 個別 comment 長押し時に表示"
+  dependencies:
+    - "LiveCommentContext / MenuPin (schema 15, key f8bebfda...) — nested instance"
+    - "LiveCommentContextMenu / CommentBlock (schema 16, key e85594...) — nested instance"
+    - "Pin icon (small 12×12, in UserName-Pin row)"
+    - "Security Shield Warning icon (Report menu icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveCommentContextMenu": 8
+    implemented: full
+    notes: |
+      8 variants = Pin (Default/Set) × BlockComment (Default/Set) × Language (JP/EN)。
+      JP は 188×231、EN は 190×231 (text 幅差で +2px)。
+  review_status: ai-draft
+
+components:
+  - id: LiveCommentContextMenu
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "fe6c71a3cd36c41530988436a72cd4b80e1197a8"
+
+    variants:
+      combinations:
+        - { Language: JP, Pin: Default, BlockComment: Default }
+        - { Language: JP, Pin: Default, BlockComment: Set }
+        - { Language: JP, Pin: Set,     BlockComment: Default }
+        - { Language: JP, Pin: Set,     BlockComment: Set }
+        - { Language: EN, Pin: Default, BlockComment: Default }
+        - { Language: EN, Pin: Default, BlockComment: Set }
+        - { Language: EN, Pin: Set,     BlockComment: Default }
+        - { Language: EN, Pin: Set,     BlockComment: Set }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Pin=${Pin}, BlockComment=${BlockComment}"
+      size:
+        by_variant:
+          - { when: { Language: JP }, value: { width: 188, height: 231 } }
+          - { when: { Language: EN }, value: { width: 190, height: 231 } }
+      auto_layout:
+        direction: VERTICAL
+
+    children:
+      - id: menu_comment_preview
+        node_type: FRAME
+        name: menu
+        size: { width: 188, height: 75 }
+        description: "上部 comment preview (UserName + Pin marker + comment text 13px)"
+        children:
+          - id: UserName_Pin
+            node_type: FRAME
+            children:
+              - { id: Pin, type: INSTANCE, size: { width: 12, height: 12 } }
+              - { id: UserName, type: TEXT, font_size: 10, default: "UserName" }
+          - id: text
+            node_type: TEXT
+            font_size: 13
+            sample: "スパムコメントです！！！"
+            description: "Preview text — spec で実 comment 内容に override"
+
+      - id: pin_menu_item
+        node_type: INSTANCE
+        name: "LiveCommentContext / MenuPin"
+        ref:
+          key: "f8bebfda76d570ef6f70f5e74595fefd207c6835"
+          schema: 15
+        size: { width: 188, height: 50 }
+        variant_props_by_parent:
+          - { when: { Pin: Default }, props: { State: Off } }
+          - { when: { Pin: Set },     props: { State: On } }
+          # Language follows parent
+
+      - id: block_menu_item
+        node_type: INSTANCE
+        name: "LiveCommentContextMenu / CommentBlock"
+        ref:
+          key: "e85594733029daa43f5bad1377b608e1733b79bf"
+          schema: 16
+        size: { width: 188, height: 50 }
+        variant_props_by_parent:
+          - { when: { BlockComment: Default }, props: { State: Off } }
+          - { when: { BlockComment: Set },     props: { State: On } }
+          # Language follows parent
+
+      - id: report_menu_item
+        node_type: FRAME
+        name: menu
+        size: { width: 188, height: 56 }
+        description: "Report menu item (last row, primitive frame inside parent — not its own component)"
+        children:
+          - id: report_icon
+            node_type: INSTANCE
+            name: "Security Shield Warning"
+            size: { width: 18, height: 18 }
+          - id: Reporttext
+            node_type: TEXT
+            font_size: 14
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "報告" }
+                - { when: { Language: EN }, value: "Report" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Parent menu container — instance import で comment preview + Pin + Block
+    + Report の 4 セクション全部レンダリングされる。外側に menu items 再作成禁止。
+    Pin / BlockComment variant は内部 MenuPin / CommentBlock の State に自動連動。
+  elements_rendered_internally:
+    - "Comment preview (UserName + Pin marker + comment text)"
+    - "MenuPin nested instance (Pin variant 連動)"
+    - "CommentBlock nested instance (BlockComment variant 連動)"
+    - "Report menu (Shield Warning icon + Report text)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Pin:
+      "「現在 pin 中」「already pinned」": Set
+      "「未 pin」「default」 or default": Default
+    BlockComment:
+      "「現在 block 中」「already blocked」": Set
+      "「未 block」「default」 or default": Default
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Pin: Default
+    BlockComment: Default
+    Language: JP
+
+  common_scenarios:
+    "default_menu_neither_pinned_nor_blocked":
+      description: "通常 comment 長押し (両方未操作)"
+      variant: { Pin: Default, BlockComment: Default, Language: JP }
+    "already_pinned_comment":
+      description: "ピン留め済み comment → menu で unpin 可能"
+      variant: { Pin: Set, BlockComment: Default, Language: JP }
+    "already_blocked_comment":
+      description: "ブロック済み user の comment → menu で unblock 可能"
+      variant: { Pin: Default, BlockComment: Set, Language: JP }
+    "both_pinned_and_blocked":
+      description: "両方 set (rare edge case)"
+      variant: { Pin: Set, BlockComment: Set, Language: JP }
+
+  default_decision_logic:
+    description: "spec の comment 状態に応じて Pin / BlockComment 判定"
+    rules:
+      - if: "spec の comment が「pinned」状態"
+        → { Pin: Set }
+      - if: "spec の comment が「unpinned」(default)"
+        → { Pin: Default }
+      - if: "spec の comment が「blocked」状態"
+        → { BlockComment: Set }
+      - if: "spec の comment が「unblocked」(default)"
+        → { BlockComment: Default }
+
+  selection_examples:
+    - spec: "Long-press menu (通常 comment、まだ操作なし)"
+      decision: { Pin: Default, BlockComment: Default, Language: JP }
+    - spec: "Pinned comment context menu"
+      decision: { Pin: Set, BlockComment: Default, Language: EN }
+    - spec: "Blocked user の comment menu"
+      decision: { Pin: Default, BlockComment: Set, Language: JP }
+
+  related_components:
+    - "LiveCommentContext / MenuPin (schema 15) — Pin menu 子要素"
+    - "LiveCommentContextMenu / CommentBlock (schema 16) — Block menu 子要素"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('fe6c71a3cd36c41530988436a72cd4b80e1197a8');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.Pin === 'Default' && p.BlockComment === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Variant 名は "Pin"・"BlockComment" (spelling 重要)。
+      "Pinned"・"Blocked" 等違う spelling で find() すると undefined。
+  - severity: SHOULD
+    rule: |
+      MenuPin (schema 15) State=Off ↔ 親 Pin=Default、State=On ↔ Pin=Set。
+      CommentBlock (schema 16) 同様。混同しないよう注意。
+  - severity: SHOULD
+    rule: |
+      Comment preview の text (default "スパムコメントです！！！") は sample。
+      実 comment 内容に override する場合、内部 TEXT node を findOne で取って
+      characters を上書き (font load 必須)。
+  - severity: NICE
+    rule: |
+      Report menu item は親 component 内に直接 frame として組み込まれている
+      (独立した component ではない)。アイコン + "報告"/"Report" text のみ。

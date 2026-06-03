@@ -1,0 +1,151 @@
+# ============================================================
+# Schema PJ — Live/Spinner-Pulse (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 配信中の AI アバター発話・思考状態を示すスピナーアニメーション。
+# Property 1 (1/2/3) を Prototype で順番切替してアニメ表現。
+# State (Talking / Thinking) で見た目を切替。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Live/Spinner-Pulse
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "07cbdcb8b8397879fe52bd5eae26e9a0bd79d6f2"
+  library_description_raw: |
+    【用途 / Usage】
+    Live配信中のAIアバターの発話・思考状態を示すスピナーアニメーション。
+    Spinner animation showing AI avatar talking/thinking state.
+    【State】
+    Property 1: 1 / 2 / 3（プロトタイプで順番に切り替えて使用 / Switch sequentially in Prototype）｜State: Talking / Thinking
+  description: |
+    AI avatar の発話 (Talking) / 思考 (Thinking) 状態を表すスピナー pulse。
+    Property 1 (1/2/3) は Prototype で sequential 切替してアニメ化する想定。
+    Library/AvatarStatus と併用される事が多い (両者で talking/thinking 表現)。
+  screen_usage:
+    - "Live 視聴画面 — avatar 発話中 indicator"
+    - "Live 配信画面 (Creator) — 同上"
+  dependencies: []
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Live/Spinner-Pulse": 6
+    implemented: full
+    notes: |
+      6 variants = Property 1 (1 / 2 / 3) × State (Talking / Thinking)。
+      24×24 (small pulse icon)。Prototype Property 1 切替で animation 化。
+  review_status: ai-draft
+
+components:
+  - id: Live/Spinner-Pulse
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "07cbdcb8b8397879fe52bd5eae26e9a0bd79d6f2"
+
+    variants:
+      combinations:
+        - { "Property 1": "1", State: Talking }
+        - { "Property 1": "2", State: Talking }
+        - { "Property 1": "3", State: Talking }
+        - { "Property 1": "1", State: Thinking }
+        - { "Property 1": "2", State: Thinking }
+        - { "Property 1": "3", State: Thinking }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Property 1=${Property 1}, State=${State}"
+      size:
+        value: { width: 24, height: 24 }
+
+    children:
+      - id: outer_pulse
+        node_type: ELLIPSE
+        name: Ellipse 30
+        description: "外側 pulse ring (Property 1 で大きさ変化、animation frame)"
+        size: { width: 27, height: 27 }
+      - id: inner_dot
+        node_type: ELLIPSE
+        name: Ellipse 31
+        description: "中心 dot (Property 1 で大きさ変化)"
+        size: { width: 6, height: 6 }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    24×24 spinner icon. Internal 2 ellipse rings render the pulse.
+    DO NOT add external pulse / glow / wrapper layers.
+  elements_rendered_internally:
+    - "Ellipse 30 (outer pulse ring)"
+    - "Ellipse 31 (inner dot)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「talking」「発話」「speaking」 or default": Talking
+      "「thinking」「思考」「processing」": Thinking
+    "Property 1":
+      "(static 表示 / 単一 frame)": "1"
+      "(Prototype animation の途中 frame)": "2"
+      "(Prototype animation の最終 frame)": "3"
+  default_variant:
+    "Property 1": "1"
+    State: Talking
+  use_as_static_when: "spec が単一 frame icon 用途 (e.g. status indicator badge inline)"
+  use_with_prototype_animation_when: "Live 視聴画面で本物の脉動 animation。3 frame を sequential 切替"
+
+  common_scenarios:
+    "static_talking_indicator":
+      description: "静的 mock — avatar 発話中"
+      variant: { "Property 1": "1", State: "Talking" }
+    "static_thinking_indicator":
+      description: "静的 mock — avatar 思考中"
+      variant: { "Property 1": "1", State: "Thinking" }
+    "prototype_animation_sequence":
+      description: "Prototype で animation 実装"
+      sequence:
+        - { "Property 1": "1", State: "Talking", duration: "0.3s" }
+        - { "Property 1": "2", State: "Talking", duration: "0.3s" }
+        - { "Property 1": "3", State: "Talking", duration: "0.3s" }
+        - { "Property 1": "1", State: "Talking", _note: "loop back" }
+
+  default_decision_logic:
+    description: "Property 1 はアニメ frame、static mock では常に 1"
+    rules:
+      - if: "spec が「静的 mock」「single frame」「screenshot」 or default"
+        → { "Property 1": "1" }
+      - if: "spec が「animation」「prototype」「sequential」"
+        → { "Property 1": "1 → 2 → 3 sequence", _need_prototype: true }
+      - if: "spec が「発話中」「talking」 or default"
+        → { State: "Talking" }
+      - if: "spec が「思考中」「thinking」「processing」"
+        → { State: "Thinking" }
+
+  selection_examples:
+    - spec: "Live 視聴画面の avatar 発話 indicator"
+      decision: { "Property 1": "1", State: "Talking" }
+    - spec: "(Prototype) Talking pulse animation"
+      decision: "シーケンス: P1=1 → P1=2 → P1=3 → P1=1 (Prototype で接続)"
+  related_component: "Live/AvatarStatus (4495d649d6e149bb2d21bbfe15d1ef4da28a5694) — Talking/Thinking ラベル表示。Spinner-Pulse と併用するパターンが多い"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('07cbdcb8b8397879fe52bd5eae26e9a0bd79d6f2');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p['Property 1'] === '1' && p.State === 'Talking';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: NICE
+    rule: |
+      Property 1 名前にスペースあり。`v.variantProperties['Property 1']` で
+      アクセス (dot 記法 v.variantProperties.Property 1 は構文エラー)。
+  - severity: SHOULD
+    rule: |
+      Prototype Property 1 切替でアニメ化する想定。静的 mock 画面で配置する
+      場合は Property 1=1 で OK。本物の動的表現が欲しい場合は Figma Prototype
+      で 1→2→3 の自動 transition を別途設定する必要あり。

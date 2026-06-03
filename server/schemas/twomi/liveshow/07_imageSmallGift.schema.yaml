@@ -1,0 +1,101 @@
+# ============================================================
+# Schema PJ — Image Small Gift (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Small ギフト画像。Size variant で Origin / H52 を切替。
+# Gift シリーズ最小 tier (Small / Medium / Big)。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Image Small Gift
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "bc40c95f5a01a5fc7bfd301ba12856303f679ebc"
+  library_description_raw: |
+    【用途 / Usage】
+    Smallギフト画像。
+    Small gift image.
+    【State】
+    Size: Origin / H52
+  description: |
+    Small ギフト画像 component。Live tipping (low-tier) で使用。
+    Gift tier シリーズの最小サイズ。Size で Origin / H52 を切替。
+    Small gift image — low-tier tipping showcase.
+  screen_usage:
+    - "Live 視聴画面 — small tipping animation (5 tickets 等の low-tier)"
+    - "Send TicketTipping Bottom Sheet — small option preview"
+  dependencies: []
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Image Small Gift": 2
+    implemented: full
+    notes: |
+      2 variants = Size (Origin 300×342 / H52 46×52)。
+      Medium / Big Gift と同構造、寸法が最小。
+  review_status: ai-draft
+
+components:
+  - id: Image Small Gift
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "bc40c95f5a01a5fc7bfd301ba12856303f679ebc"
+
+    variants:
+      combinations:
+        - { Size: Origin }
+        - { Size: H52 }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Size=${Size}"
+      size:
+        by_variant:
+          - { when: { Size: Origin }, value: { width: 300, height: 342 } }
+          - { when: { Size: H52 },    value: { width: 46,  height: 52 } }
+
+    children:
+      - id: Image
+        node_type: RECTANGLE
+        name: Image
+        description: "Image fill (raster gift artwork)"
+        size:
+          by_variant:
+            - { when: { Size: Origin }, value: { width: 300, height: 342 } }
+            - { when: { Size: H52 },    value: { width: 46,  height: 52 } }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Image Small Gift is a single raster image. The instance renders the
+    gift image internally per Size variant. DO NOT add external image
+    / wrapper layers.
+  elements_rendered_internally:
+    - "Image rectangle (raster fill)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Size:
+      "「Origin」「small tier showcase」 or default": Origin
+      "「H52」「inline」「list small」": H52
+  default_variant:
+    Size: Origin
+  use_origin_when: "5-ticket tipping アニメーション、low-tier gift showcase"
+  use_h52_when: "List / comment feed inline (small gift mini 表示)"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('bc40c95f5a01a5fc7bfd301ba12856303f679ebc');
+    const variant = set.children.find(v => v.variantProperties?.Size === 'Origin') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: NICE
+    rule: |
+      Gift tier シリーズ: Image Small (Origin 300×342) / Image Medium
+      (Origin 279×369) / Image Big (Origin 482×422) の 3 段階。
+      tipping 額に応じて Small (5 tix) / Medium (10 tix) / Big (20 tix)
+      の使い分けが推測される（spec で確定要）。

@@ -1,0 +1,266 @@
+# ============================================================
+# Schema PJ — LiveStreamingSingleSettings (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# シングル Live 配信の設定エリア全体。子 variant の設定までは
+# component に持たせていない（spec で override する）。
+# Library 既存 component をそのまま import + variant 選択する。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveStreamingSingleSettings
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "a195f7b89af974b148e5acdec817b5f3578114b0"
+  library_description_raw: |
+    【用途 / Usage】
+    シングルLive配信の設定エリア全体。子variantの設定まではcomponentに持たせていない。
+    Full settings area for single live streaming. Child variant settings are not included in this component.
+    【使用画面 / Used in】
+    Live配信設定画面 / Live streaming settings screen
+    【State】
+    Language: JP / EN
+  description: |
+    シングル Live 配信の設定エリア全体（avatar 選択 + type 表示 + topic
+    radio + free input + duration）を 1 つの component にまとめたもの。
+    内部 children は固定構造、Language=JP/EN で文言切替。
+    Full settings area for single live streaming. Child variant settings
+    are not embedded in this component (overridden at usage site).
+  screen_usage:
+    - Live 配信設定画面 / Live streaming settings screen
+  dependencies:
+    - "LiveSettingsSlots (avatar carousel slot wrapper)"
+    - "Avatar Pickup Button × N (selectable avatar tiles)"
+    - "LiveStreamingTypeSection (Standard/Exclusive Content indicator)"
+    - "Button Character Settings (radio button for Topik selection)"
+    - "Input field (free input box for additional topic)"
+    - "Error / InlineErrorBanner (NG word warning)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveStreamingSingleSettings": 2
+    implemented: full
+    notes: |
+      2 variants = Language (JP / EN)。内部構造は固定（6 section）、
+      文言のみ Language で切替。
+  review_status: ai-draft
+
+components:
+  - id: LiveStreamingSingleSettings
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "a195f7b89af974b148e5acdec817b5f3578114b0"
+
+    variants:
+      combinations:
+        - { Language: JP }
+        - { Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+      size:
+        value: { width: 402, height: 611 }
+      clips_content: false
+      auto_layout:
+        direction: VERTICAL
+        item_spacing: 0
+
+    # Internal structure (6 sections, Library-rendered)
+    children:
+      # ─ Section 1: SelectAvatar carousel ─
+      - id: SelectAvatar
+        node_type: FRAME
+        name: SelectAvatar
+        size: { width: 402, height: 84 }
+        children:
+          - id: LiveSettingsSlots
+            node_type: INSTANCE
+            name: LiveSettingsSlots
+            description: |
+              Avatar Pickup Button が複数横並びの carousel slot。
+              spec で具体 avatar 数 / Tier 表示を override。
+            sample_items:
+              - { type: "Avatar Pickup Button", with: "Avatar icon + Label Text" }
+              - { type: "Avatar Pickup Button + ExclusiveContentLabel + Check" }
+
+      # ─ Section 2: Standard / Exclusive Content 表示 ─
+      - id: LiveStreamingTypeSection
+        node_type: INSTANCE
+        name: LiveStreamingTypeSection
+        size: { width: 402, height: 20 }
+        component_ref:
+          name: LiveStreamingTypeSection
+          key: "7726785b8efb4426f42cb054e200bf3da4e29bae"
+        # By variant in parent
+        variant_props_by_parent:
+          - { when: { Language: JP }, props: { Type: Standard, Language: JP } }
+          - { when: { Language: EN }, props: { Type: Standard, Language: EN } }
+
+      # ─ Section 3: Topic radio selection ─
+      - id: Topik
+        node_type: FRAME
+        name: Topik
+        size: { width: 402, height: 215 }
+        children:
+          - id: FreeInputTitle
+            node_type: FRAME
+            name: FreeInputTitle
+            children:
+              - id: FreeInputTitleText
+                node_type: TEXT
+                font_size: 13
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "トピック" }
+                    - { when: { Language: EN }, value: "Topic" }
+              - id: SubNote
+                node_type: TEXT
+                font_size: 10
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "※必須" }
+                    - { when: { Language: EN }, value: " (Required)" }
+          - id: CharacterList
+            node_type: FRAME
+            name: CharacterList
+            size: { width: 370, height: 190 }
+            description: |
+              10 個の Button Character Settings (radio button + text)。
+              文言は Language=JP/EN で切替（下表参照）。
+            radio_options:
+              - { jp: "雑談・ゆるトーク",       en: "Casual Chat" }
+              - { jp: "ファンQ&A",             en: "Fan Q&A" }
+              - { jp: "恋愛相談",              en: "Love Advice" }
+              - { jp: "人生相談",              en: "Life Advice" }
+              - { jp: "推し活トーク",           en: "Fandom Talk" }
+              - { jp: "寝落ち配信",            en: "Sleep Stream" }
+              - { jp: "朝活・モーニング配信",    en: "Morning Stream" }
+              - { jp: "美容・ライフスタイル",    en: "Beauty & Lifestyle" }
+              - { jp: "占い・タロット",         en: "Fortune Telling & Tarot" }
+              - { jp: "自由トーク",            en: "Free Talk (default)" }
+
+      # ─ Section 4: Free Input ─
+      - id: FreeInput
+        node_type: FRAME
+        name: FreeInput
+        size: { width: 402, height: 115 }
+        children:
+          - id: FreeInputTitle
+            children:
+              - id: FreeInputTitleText
+                font_size: 13
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "追加トピック" }
+                    - { when: { Language: EN }, value: "Additional Topic" }
+              - id: SubNote
+                font_size: 10
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "※任意" }
+                    - { when: { Language: EN }, value: " (Optional)" }
+          - id: Input_field
+            node_type: INSTANCE
+            name: "Input field"
+            size: { width: 370, height: 90 }
+            placeholder_by_variant:
+              - { when: { Language: JP }, value: "例：今日は好きなアニメについて語ります！" }
+              - { when: { Language: EN }, value: "Example: I'll talk about my favorite anime today!" }
+            character_limit: "0/150"
+
+      # ─ Section 5: Error banner (inline NG word warning) ─
+      - id: ErrorBanner
+        node_type: INSTANCE
+        name: "Error / InlineErrorBanner"
+        size: { width: 402, height: 54 }
+        warning_messages:
+          by_variant:
+            - when: { Language: JP }
+              title: "送信できないワードが含まれています"
+              description: "コメントの内容を確認して、再度お試しください"
+            - when: { Language: EN }
+              title: "(EN equivalent)"
+              description: "(EN equivalent)"
+
+      # ─ Section 6: StreamDurationSection ─
+      - id: StreamDurationSection
+        node_type: FRAME
+        name: StreamDurationSection
+        size: { width: 402, height: 81 }
+        children:
+          - id: StreamDurationTitle
+            children:
+              - id: FreeInputTitleText
+                font_size: 13
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "配信時間必須" }
+                    - { when: { Language: EN }, value: "Stream Duration Required" }
+              - id: SubNote
+                font_size: 10
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "※必須" }
+                    - { when: { Language: EN }, value: " (Required)" }
+          - id: DurationTime
+            node_type: FRAME
+            description: "上限 60 分 / Up to 60 min"
+            children:
+              - id: Description
+                font_size: 16
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "上限60分" }
+                    - { when: { Language: EN }, value: "Up to 60 min" }
+              - id: StreamingDuration
+                children:
+                  - { id: HoursValue,   font_size: 16, default_text: "--" }
+                  - { id: HoursLabel,   font_size: 10, jp: "時間", en: "h" }
+                  - { id: MinutesValue, font_size: 16, default_text: "--" }
+                  - { id: MinutesLabel, font_size: 10, jp: "分",   en: "m" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    LiveStreamingSingleSettings is a fully-rendered settings panel.
+    Importing as INSTANCE auto-renders all 6 sections per Language.
+    DO NOT recreate sections (SelectAvatar / Topik / FreeInput / etc.)
+    externally — that causes double display.
+  elements_rendered_internally:
+    - "SelectAvatar carousel (LiveSettingsSlots with multiple Avatar Pickup Buttons)"
+    - "LiveStreamingTypeSection (Standard label by default)"
+    - "Topik (title + 10 radio options)"
+    - "FreeInput (title + Input field 0/150 chars)"
+    - "Error / InlineErrorBanner"
+    - "StreamDurationSection"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('a195f7b89af974b148e5acdec817b5f3578114b0');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;
+    const instance = variant.createInstance();
+    // To override specific sections (e.g. select an Avatar, fill input):
+    // 1) set property values on inner instances
+    // 2) do NOT recreate sections externally
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Tier 名 ("Tier1" / "Tier2") は sample データ。実際の Tier 表示は
+      spec / 選択 avatar に従って override する。
+  - severity: SHOULD
+    rule: |
+      Topic radio の 10 options + duration "--" placeholder も sample。
+      ユーザーが選択 / 入力する内容で override。

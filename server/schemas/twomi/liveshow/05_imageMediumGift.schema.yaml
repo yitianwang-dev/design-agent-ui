@@ -1,0 +1,99 @@
+# ============================================================
+# Schema PJ — Image Medium Gift (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Medium ギフト画像。Size variant で Origin / H52 を切替。
+# Library 既存 component をそのまま import + variant 選択する。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Image Medium Gift
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "06e320157501a8cb268105a9478fc3e6a6e14102"
+  library_description_raw: |
+    【用途 / Usage】
+    Mediumギフト画像。
+    Medium gift image.
+    【State】
+    Size: Origin / H52
+  description: |
+    Medium ギフト画像 component。Live tipping / gift 表示などで使用。
+    Size で Origin (フル) と H52 (小サイズ) を切替。
+    Medium gift image component used in live tipping / gift displays.
+  screen_usage:
+    - "Live 視聴画面 (Viewer) — tipping animation / message"
+    - "Send TicketTipping Bottom Sheet — option preview"
+  dependencies: []
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Image Medium Gift": 2
+    implemented: full
+    notes: |
+      2 variants = Size (Origin 279×369 / H52 39×52)。
+      内部は単一 Image RECTANGLE のみ（ラスター画像 fill）。
+  review_status: ai-draft
+
+components:
+  - id: Image Medium Gift
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "06e320157501a8cb268105a9478fc3e6a6e14102"
+
+    variants:
+      combinations:
+        - { Size: Origin }
+        - { Size: H52 }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Size=${Size}"
+      size:
+        by_variant:
+          - { when: { Size: Origin }, value: { width: 279, height: 369 } }
+          - { when: { Size: H52 },    value: { width: 39,  height: 52 } }
+
+    children:
+      - id: Image
+        node_type: RECTANGLE
+        name: Image
+        description: "Image fill (raster gift artwork)"
+        size:
+          by_variant:
+            - { when: { Size: Origin }, value: { width: 279, height: 369 } }
+            - { when: { Size: H52 },    value: { width: 39,  height: 52 } }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Image Medium Gift is a single raster image. The instance renders
+    the gift image internally per Size variant. DO NOT add external
+    image / wrapper layers.
+  elements_rendered_internally:
+    - "Image rectangle (raster fill)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Size:
+      "「Origin」「full size」「showcase」 or default": Origin
+      "「H52」「small」「inline」「list item icon」": H52
+  default_variant:
+    Size: Origin
+  use_origin_when: "Tipping animation、gift showcase、preview frame"
+  use_h52_when: "List/inline icon、comment feed inline gift display"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('06e320157501a8cb268105a9478fc3e6a6e14102');
+    const variant = set.children.find(v => v.variantProperties?.Size === 'Origin') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Origin は 279×369 と縦長。Live 視聴画面の中央配置だと avatar を
+      隠す可能性あり。tipping animation 用には適切配置を検討。

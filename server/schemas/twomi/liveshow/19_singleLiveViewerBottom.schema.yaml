@@ -1,0 +1,262 @@
+# ============================================================
+# Schema PJ — SingleLiveViewerBottom (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 視聴画面 (Viewer) の下部コントロールエリア。State で 4 mode 切替:
+#   Default     — 通常 (EmojiList + Action [comment field + 参加 button + tip button])
+#   Reaction    — Reaction overlay 表示 (EmojiList 縦並び pulse)
+#   Archive     — 録画再生 mode (Playback controls + SeekBar)
+#   Comment     — Comment 入力 mode (Keyboard 展開、tip button 非表示)
+# 全 variant に Keyboard instance 含む (Default/Reaction では非表示)。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: SingleLiveViewerBottom
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "d75ef2ffd3c2497a6bc5af0f6af2420513ff9b17"
+  library_description_raw: |
+    【用途 / Usage】
+    Live視聴画面の下部コントロールエリア。Stateで表示モードを切り替える。
+    Bottom control area on Live viewer screen.
+    【使用画面 / Used in】
+    Live視聴画面（Viewer） / Live viewer screen
+    【State】
+    State: Default / Comment / Reaction / Archive
+  description: |
+    Live 視聴 (Viewer 側) 画面の下部 fixed control。Comment field +
+    Like/Join button + TicketTipping button が中心、State で表示モード切替。
+    Default + Reaction には右側に EmojiList (反応 emoji stack)、Archive
+    では Playback controls (rewind / forward + SeekBar)、Comment は keyboard
+    展開で全部隠れる。
+  screen_usage:
+    - "Live 視聴画面 (Viewer)"
+  dependencies:
+    - "LIveCommentField (key a4135..., schema 別) — comment input"
+    - "TicketTippingButton (inner instance — schema 別、tip button)"
+    - "Button (Join / 参加する button)"
+    - "Linear / Essentional, UI / Ghost Smile (decorative button icon)"
+    - "iOS Keyboard (Accessories + Keys + Emoji and Mic) — Comment state"
+    - "Rewind / Forward Buttons (Archive state)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "SingleLiveViewerBottom": 4
+    implemented: full
+    notes: |
+      4 variants by State only (no Language variant)。
+      Default: 402×262 / Reaction: 402×185 / Archive: 402×105 /
+      Comment: 402×409 (keyboard 展開で最大)。
+  review_status: ai-draft
+
+components:
+  - id: SingleLiveViewerBottom
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "d75ef2ffd3c2497a6bc5af0f6af2420513ff9b17"
+
+    variants:
+      combinations:
+        - { State: Default }
+        - { State: Reaction }
+        - { State: Archive }
+        - { State: Comment }
+
+    container:
+      node_type: COMPONENT
+      name_template: "State=${State}"
+      size:
+        by_variant:
+          - { when: { State: Default },  value: { width: 402, height: 262 } }
+          - { when: { State: Reaction }, value: { width: 402, height: 185 } }
+          - { when: { State: Archive },  value: { width: 402, height: 105 } }
+          - { when: { State: Comment },  value: { width: 402, height: 409 } }
+
+    children:
+      - id: Background
+        node_type: RECTANGLE
+        name: Background
+        size: { width: 402, height: 105 }
+        present_in_states: [Default, Reaction, Archive]
+        description: "下部背景 (Comment では keyboard が代わりに占める)"
+
+      - id: EmojiList
+        node_type: FRAME
+        name: EmojiList
+        present_in_states: [Default]
+        size: { width: 103, height: 147 }
+        description: |
+          縦並び reaction emoji stack (右側 floating)。Live 視聴中の quick
+          reaction として常時表示。State=Reaction では同位置に ReactionImage
+          (アニメ pulse) が代替表示される。
+        children:
+          - { name: reaction, type: FRAME, contains: "4 emoji nodes (default + pulse animations)" }
+
+      - id: ReactionImage
+        node_type: FRAME
+        name: ReactionImage
+        present_in_states: [Reaction]
+        size: { width: 109, height: 70 }
+        description: "Reaction state 時に表示される pulse 出る emoji 表現"
+        children:
+          - { name: Reaction, type: FRAME, contains: "4 emoji nodes sizes 16/18/19/25 (animation frames)" }
+
+      - id: ButtonSection
+        node_type: FRAME
+        name: ButtonSection
+        present_in_states: [Default, Reaction, Comment]
+        size: { width: 402, height: 57 }
+        description: "Comment field + Join / TicketTipping button row"
+        children:
+          - id: Action
+            node_type: FRAME
+            children:
+              - id: LIveCommentField_nested
+                node_type: INSTANCE
+                name: "LIveCommentField"
+                ref:
+                  key: "a413564765846dd2e331ae152b8b8779eb86bab5"
+                size_by_state:
+                  - { when: { State: Default },  value: { width: 266, height: 40 } }
+                  - { when: { State: Reaction }, value: { width: 266, height: 40 } }
+                  - { when: { State: Comment },  value: { width: 366, height: 40 } }
+              - id: Frame_1321322324
+                node_type: FRAME
+                description: "Decorative button (Ghost Smile, in Default/Reaction)"
+                present_in_states: [Default, Reaction]
+              - id: TicketTippingButton
+                node_type: INSTANCE
+                name: TicketTippingButton
+                size: { width: 40, height: 40 }
+                description: "Tip button — Default/Reaction で表示、Comment で削除"
+                present_in_states: [Default, Reaction]
+                inner:
+                  - { name: "Ghost Smile (deco)" }
+                  - { name: "Button text '参加する'", font_size: 16 }
+                  - { name: "Ticket tipping icon (24×24)" }
+
+      - id: PanelSection
+        node_type: FRAME
+        name: PanelSection
+        present_in_states: [Archive]
+        size: { width: 402, height: 57 }
+        description: "Archive playback controls"
+        children:
+          - id: ControlPanel
+            node_type: FRAME
+            children:
+              - id: Playback_Controls
+                node_type: FRAME
+                children:
+                  - { name: "Rewind Back Button" }
+                  - { id: PlaybackTime, type: TEXT, font_size: 11, default: "1:22:57 / 9:50:00" }
+                  - { name: "Rewind Button (Forward)" }
+              - id: SeekBarArea
+                node_type: FRAME
+                children:
+                  - { name: SeekBar, type: FRAME, contains: "Highlight RECT 350×2" }
+                  - { name: "Ellipse 2854 (seek handle 6×6)" }
+
+      - id: Keyboard
+        node_type: INSTANCE
+        name: Keyboard
+        size: { width: 402, height: 342 }
+        present_in_all_variants: true
+        visible_in_states: [Comment]
+        description: |
+          iOS keyboard instance — 全 variant に含まれるが Comment state のみ
+          実際に展開表示。Default/Reaction/Archive では非表示 (visibility false
+          or pushed out of layout)。
+        children:
+          - { name: "Accessories (48pt Toolbar)" }
+          - { name: "Keyboard (Background + Autocorrection + Keys + Emoji and Mic)" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    各 State で内部 element 構成大きく変化。Variant 経由で切替、
+    自前で element 作成禁止。
+  elements_rendered_internally:
+    - "Background rect (Default/Reaction/Archive)"
+    - "EmojiList (Default only) / ReactionImage (Reaction only)"
+    - "ButtonSection (Default/Reaction/Comment): Action with LIveCommentField + TicketTippingButton"
+    - "PanelSection (Archive only): Playback controls + SeekBar"
+    - "Keyboard (always present, only Comment 展開)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「default」「通常 viewer 画面」 or default": Default
+      "「reaction」「反応中」「emoji pulse animation」": Reaction
+      "「archive」「録画再生」「playback」": Archive
+      "「comment 入力中」「keyboard expanded」「typing」": Comment
+  default_variant:
+    State: Default
+
+  common_scenarios:
+    "default_viewer_bottom":
+      description: "通常視聴 (静的 mock の標準)"
+      variant: { State: Default }
+    "reaction_active":
+      description: "Viewer が reaction 送った直後 (pulse animation 中)"
+      variant: { State: Reaction }
+    "archive_playback":
+      description: "録画 archive を再生中 (playback controls + seekbar)"
+      variant: { State: Archive }
+    "comment_typing":
+      description: "Comment 入力中 (keyboard 展開、tip button 非表示)"
+      variant: { State: Comment }
+
+  default_decision_logic:
+    description: "spec の Live 視聴シーン → State 判定"
+    rules:
+      - if: "spec が「typing」「コメント入力中」「keyboard」"
+        → { State: Comment }
+      - if: "spec が「録画」「archive」「playback」"
+        → { State: Archive }
+      - if: "spec が「reaction sent」「emoji pulse」"
+        → { State: Reaction }
+      - else: { State: Default }
+
+  selection_examples:
+    - spec: "Live 視聴画面 (静的 mock、tipping demo 用)"
+      decision: { State: Default }
+    - spec: "Viewer が🎉 reaction を送った直後"
+      decision: { State: Reaction }
+    - spec: "Comment input expanded with keyboard"
+      decision: { State: Comment }
+    - spec: "アーカイブ再生 (1:22:57 経過)"
+      decision: { State: Archive }
+
+  related_components:
+    - "LIveCommentField (schema 別) — Comment 入力 field、内部 nested"
+    - "TicketTippingButton (Send TicketTipping Bottom Sheet を開く button)"
+    - "Send TicketTipping Bottom Sheet (key 7d63d8a4...) — Tip button が開く sheet"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('d75ef2ffd3c2497a6bc5af0f6af2420513ff9b17');
+    const variant = set.children.find(v => v.variantProperties?.State === 'Default') || set.defaultVariant;
+    const instance = variant.createInstance();
+    // To hide built-in EmojiList (per 2026-06-02 testLiveTippingFix):
+    // const emojiList = instance.findOne(n => n.name === 'EmojiList');
+    // if (emojiList) emojiList.visible = false;
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Default state には EmojiList (4 個 reaction emoji 縦並び) が常時表示。
+      不要な場合は instance import 後に EmojiList / reaction を visible=false で
+      非表示化 (2026-06-02 testLiveTippingFix で実装した pattern)。
+  - severity: SHOULD
+    rule: |
+      Comment state では tip button (TicketTippingButton) が ButtonSection から
+      自動削除される。「comment 入力中に tip button 同時表示」は不可。
+  - severity: NICE
+    rule: |
+      Archive state は live ではなく録画再生 mode 用。Live tipping spec とは
+      無関係に独立した UI mode。

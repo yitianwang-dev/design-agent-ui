@@ -1,0 +1,251 @@
+# ============================================================
+# Schema PJ — CreatorLiveControlHeader (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Creator 側 Live 配信コントロール画面のヘッダー。State で配信状態
+# (Default / Time Warning / Ended) を切替。LiveBadge + MembershipTier +
+# elapsed time + End Button + AvatarStatus + Notification Banner を統合。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: CreatorLiveControlHeader
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "8bc789a9c5f9bf896d433f8db7ef339060da0e5a"
+  library_description_raw: |
+    【用途 / Usage】
+    Creator側Live配信コントロール画面のヘッダー。Stateで配信状態を切り替える。
+    Header on Creator live control screen.
+    【使用画面 / Used in】
+    Live配信コントロール画面（Creator） / Creator live control screen
+    【State】
+    State: Default / Time Warning / Ended｜Language: JP / EN
+  description: |
+    Creator が自分の Live 配信を control する画面の最上部 fixed header。
+    LiveBadge (視聴者数) + MembershipTierLabel + 経過時間 + End Streaming
+    button + AvatarStatus (発話/思考) + Notification banner を内包。
+    Default / Time Warning / Ended の 3 State で表示構成変化:
+    - Default: 22:57 経過、AvatarStatus 「話し中」、Banner 2 つ
+    - Time Warning: 50:00 経過 (60 分上限が近い)、AvatarStatus 「考え中」
+    - Ended: 配信終了表示、AvatarStatus 非表示、144 → 114 height
+  screen_usage:
+    - "Live 配信コントロール画面 (Creator)"
+  dependencies:
+    - "LiveBadge (schema 11, key 06e24...) — nested instance, State=LIve default"
+    - "MembershipTierLabel (Membership_unlock_outline + 'ティア1' text)"
+    - "Live/AvatarStatus (schema 9, key 4495d...) — nested, Default/Time Warning のみ表示"
+    - "Live/Spinner-Pulse (schema 8, via AvatarStatus)"
+    - "Clock Circle icon (elapsed time)"
+    - "Video, Audio, Sound Stop icon (End Streaming button)"
+    - "Closing / Creator Control Notification Banner"
+    - "Gift / Creator Control Notification Banner"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "CreatorLiveControlHeader": 6
+    implemented: full
+    notes: |
+      6 variants = State (Default / Time Warning / Ended) × Language (JP / EN)。
+      Default / Time Warning は 402×144、Ended は 402×114 (AvatarStatus 削除)。
+  review_status: ai-draft
+
+components:
+  - id: CreatorLiveControlHeader
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "8bc789a9c5f9bf896d433f8db7ef339060da0e5a"
+
+    variants:
+      combinations:
+        - { Language: JP, State: Default }
+        - { Language: JP, State: "Time Warning" }
+        - { Language: JP, State: Ended }
+        - { Language: EN, State: Default }
+        - { Language: EN, State: "Time Warning" }
+        - { Language: EN, State: Ended }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        by_variant:
+          - { when: { State: Default },        value: { width: 402, height: 144 } }
+          - { when: { State: "Time Warning" }, value: { width: 402, height: 144 } }
+          - { when: { State: Ended },          value: { width: 402, height: 114 } }
+
+    children:
+      - id: CreatorLiveHeader
+        node_type: FRAME
+        name: CreatorLiveHeader
+        size: { width: 370, height: 50 }
+        description: "上段: Information + elapsed timeSection + End Button Section"
+        children:
+          - id: Information
+            node_type: FRAME
+            size: { width: 97, height: 50 }
+            children:
+              - id: LiveBadge_nested
+                node_type: INSTANCE
+                name: LiveBadge
+                ref:
+                  key: "06e24908301644775e2c93cd4cb8e333cc0ac3a9"
+                  schema: 11
+                default_variant: { State: "LIve", Language: JP }
+                size: { width: 97, height: 22 }
+              - id: MembershipTierLabel
+                node_type: INSTANCE
+                name: MembershipTierLabel
+                size: { width: 62, height: 18 }
+                description: "Membership_unlock_outline icon + 'ティア1' text (font 10)"
+
+          - id: elapsed_timeSection
+            node_type: FRAME
+            name: elapsed timeSection
+            children:
+              - { id: Clock_Circle, type: INSTANCE, size: { width: 12, height: 12 } }
+              - id: elapsed_time
+                node_type: TEXT
+                font_size: 11
+                characters_by_state:
+                  - { when: { State: Default },        value: "22:57" }
+                  - { when: { State: "Time Warning" }, value: "50:00" }
+                  - { when: { State: Ended },          value: "配信終了" }
+
+          - id: End_Button_Section
+            node_type: FRAME
+            name: End Button Section
+            children:
+              - id: End_Streaming_Button
+                node_type: FRAME
+                name: End Streaming Button
+                children:
+                  - { id: stop_icon, type: INSTANCE, name: "Video, Audio, Sound Stop", size: { width: 12, height: 12 } }
+                  - id: button_text
+                    node_type: TEXT
+                    name: "elapsed time"   # naming inconsistency in Library
+                    font_size: 11
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "配信終了" }
+                        - { when: { Language: EN }, value: "End Stream" }
+
+      - id: AvatarStatus
+        node_type: FRAME
+        name: AvatarStatus
+        size: { width: 370, height: 24 }
+        present_in_states: [Default, "Time Warning"]   # NOT in Ended
+        children:
+          - id: avatar_status_inst
+            node_type: INSTANCE
+            ref:
+              key: "4495d649d6e149bb2d21bbfe15d1ef4da28a5694"
+              schema: 9
+            size: { width: 131, height: 24 }
+            variant_props_by_parent:
+              - { when: { State: Default,        Language: JP }, props: { State: Talking,  Language: JP } }
+              - { when: { State: "Time Warning", Language: JP }, props: { State: Thinking, Language: JP } }
+              - { when: { State: Default,        Language: EN }, props: { State: Talking,  Language: EN } }
+              - { when: { State: "Time Warning", Language: EN }, props: { State: Thinking, Language: EN } }
+
+      - id: Control_Notification_Banner
+        node_type: FRAME
+        name: Control Notification Banner
+        size: { width: 370, height: 58 }
+        description: "Closing + Gift の 2 つの Creator Control Notification Banner を縦並び"
+        children:
+          - id: closing_banner
+            node_type: INSTANCE
+            name: "Closing / Creator Control Notification Banner"
+            size: { width: 370, height: 26 }
+          - id: gift_banner
+            node_type: INSTANCE
+            name: "Gift / Creator Control Notification Banner"
+            size: { width: 370, height: 26 }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Creator header は LiveBadge + MembershipTier + elapsed time + End Button
+    + AvatarStatus + 2 Banners を全部内包。外側に複製禁止。
+    Ended state では AvatarStatus 非表示 (component が自動非表示)。
+  elements_rendered_internally:
+    - "LiveBadge (nested, LIve state, viewer count)"
+    - "MembershipTierLabel (Tier 表示)"
+    - "elapsed timeSection (Clock + 時間 / '配信終了')"
+    - "End Streaming Button"
+    - "AvatarStatus (Default/TimeWarning のみ、Ended は非表示)"
+    - "Closing / Gift Notification Banner (2 つ)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「default」「配信中」「normal」 or default": Default
+      "「time warning」「60分残り少ない」「終了間近」「50分経過」": "Time Warning"
+      "「ended」「配信終了」「終了済み」": Ended
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    State: Default
+    Language: JP
+
+  common_scenarios:
+    "creator_default_streaming":
+      description: "Creator 通常配信中 (経過 22:57、avatar 発話中)"
+      variant: { State: Default, Language: JP }
+    "creator_time_warning":
+      description: "60 分上限近づく (50:00 経過、avatar 思考中)"
+      variant: { State: "Time Warning", Language: JP }
+    "creator_stream_ended":
+      description: "配信終了直後 (AvatarStatus 非表示、End text に切替)"
+      variant: { State: Ended, Language: JP }
+
+  default_decision_logic:
+    description: "spec の経過時間で自動 State 判定"
+    rules:
+      - if: "spec の elapsed time が 60 分上限 ÷ 0.8 を超える (e.g. 48 分+)"
+        → { State: "Time Warning" }
+      - if: "spec が「配信終了」「end」"
+        → { State: Ended }
+      - else: { State: Default }
+
+  selection_examples:
+    - spec: "Creator 配信画面、22:57 経過、avatar 発話中"
+      decision: { State: Default, Language: JP }
+    - spec: "(Creator) Stream ended view"
+      decision: { State: Ended, Language: EN }
+
+  related_components:
+    - "LiveBadge (schema 11) — 内部 nested"
+    - "Live/AvatarStatus (schema 9) — 内部 nested (Default/TimeWarning)"
+    - "Live/Spinner-Pulse (schema 8) — AvatarStatus 内部 nested"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('8bc789a9c5f9bf896d433f8db7ef339060da0e5a');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      State 値 "Time Warning" にスペース含む。`v.variantProperties.State === 'Time Warning'`
+      で match (スペース無し "TimeWarning" だと undefined)。
+  - severity: MUST
+    rule: |
+      Ended state は AvatarStatus 自動削除 (height 144 → 114)。
+      自前で AvatarStatus 表示 / 非表示を制御しない、variant 経由のみ。
+  - severity: SHOULD
+    rule: |
+      End Streaming Button 内の text node name が "elapsed time" になっている
+      (Library 内 naming 不整合)。actual characters は「配信終了」「End Stream」。
+  - severity: NICE
+    rule: |
+      elapsed time text の characters も Default/TimeWarning と Ended で異なる
+      (時間表示 vs "配信終了" text)。variant でカバー済み、自前で書き換え不要。

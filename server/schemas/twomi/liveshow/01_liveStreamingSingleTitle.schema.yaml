@@ -1,0 +1,108 @@
+# ============================================================
+# Schema PJ — LiveStreaming SingleTitle (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# シングル Live 配信視聴画面のタイトル。Library 既存 component を
+# そのまま import + variant 選択するシンプルな case。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveStreaming SingleTitle
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "72d0b719ec2737e4965c0b5cf622d74cc8e3a20e"
+  library_description_raw: |
+    【用途 / Usage】
+    シングルLive配信画面のタイトル用component。名称未確定のためcomponent化。
+    Title component for single live streaming screen. Componentized due to undecided naming.
+    【State】
+    Language: JP / EN
+  description: |
+    シングル Live 配信視聴画面のタイトル component。名称未確定のため
+    component 化されている。Library がタイトルテキストを内部で
+    レンダリングする。
+    Title component for single live viewer screen.
+  screen_usage:
+    - Live 視聴画面 (Viewer)
+  dependencies: []
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveStreaming SingleTitle": 2
+    implemented: full
+    notes: |
+      Library にある既存 component をそのまま使用。primitive で再構築する
+      必要なし（headMenu のような複雑な multi-component と異なる）。
+  review_status: ai-draft
+
+components:
+  - id: LiveStreaming SingleTitle
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "72d0b719ec2737e4965c0b5cf622d74cc8e3a20e"
+
+    # 2 variants (sparse matrix — Library 既存)
+    variants:
+      combinations:
+        - { Language: JP }
+        - { Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+
+      size:
+        by_variant:
+          - { when: { Language: JP }, value: { width: 147, height: 15 } }
+          - { when: { Language: EN }, value: { width: 194, height: 15 } }
+
+      clips_content: false
+
+    # Internal structure (Library-rendered, agent はこれを外側に複製しない)
+    children:
+      - id: Title
+        node_type: FRAME
+        name: Title
+        children:
+          - id: TitleText
+            node_type: TEXT
+            name: TitleText
+            font_size: 15
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "Live配信✕AIアバター" }
+                - { when: { Language: EN }, value: "Live Streaming × AI Avatar" }
+
+  # ─── End components ────────────────────────────────────────
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    SingleTitle is a single-text container. Instance renders TitleText
+    internally per Language variant. DO NOT add external title sibling.
+  elements_rendered_internally:
+    - "Title frame"
+    - "TitleText (Noto Sans JP 15px)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」「日文」 or default": JP
+      "「English」「EN」「英文」": EN
+  default_variant:
+    Language: JP
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('72d0b719ec2737e4965c0b5cf622d74cc8e3a20e');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: NICE
+    rule: |
+      Library description 注記「名称未確定のため component 化」— 将来
+      component 名や構造が変わる可能性。最新 Library を要確認。

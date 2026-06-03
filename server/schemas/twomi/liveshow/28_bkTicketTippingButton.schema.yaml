@@ -1,0 +1,188 @@
+# ============================================================
+# Schema PJ — BK_TicketTippingButton (backup/legacy version)
+# ============================================================
+# Generated: 2026-06-03
+#
+# ⚠️ BK_ prefix = backup (旧版または非推奨)。本 component と
+# main TicketTippingButton (schema 25, key 66b1593f...) は
+# 別 component で異なる内部構造を持つ:
+#   - BK:   全 variants 118×112、Image Gift 風 (1/5/20 枚)
+#   - main: JP compact 53 ✕count / EN 112 Image (5/10/20 枚)
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: BK_TicketTippingButton
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "27c26ecbcb9662a310cb5a7f68e4c8efaf0042c9"
+  library_description_raw: |
+    【用途 / Usage】
+    ギフト選択ボタン。TypeでギフトサイズをStateで選択・残高不足を切り替える。
+    Gift selection button.
+    【State】
+    Type: Small / Medium / Large｜State: Default / Selected / Insufficient｜Language: JP / EN
+  description: |
+    Gift 選択 button。BK_ prefix は backup または legacy 版を示す。
+    現役 TicketTippingButton (schema 25) と異なり、全 variant が同じ
+    Image Gift 風 layout (118×112) で統一されている。価格は 1枚 / 5枚 /
+    20枚 (main は 5/10/20)。**Library 内で使い分け基準が不明確、Hori 確認推奨**。
+  screen_usage:
+    - "(現状未使用の可能性。Send TicketTipping Bottom Sheet は schema 25 を使用)"
+  dependencies:
+    - "Image Small Gift (schema 07) - Type=Small で 46×52"
+    - "Image Medium Gift (schema 05) - Type=Medium で 39×52"
+    - "Image Big Gift (schema 06) - Type=Large で 59×52"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "BK_TicketTippingButton": 18
+    implemented: full
+    notes: |
+      18 variants = Type (Small/Medium/Large) × State (Default/Selected/
+      Insufficient) × Language (JP/EN)。全部 118×112 (size 統一)。
+      内部構造 main TicketTippingButton と異なる:
+      - Image frame に Image Gift instance (Small/Medium/Big)
+      - GiftInformation: GiftText (ギフト / スペシャルギフト / プレミアムギフト)
+        + GiftPrice (1枚 / 5枚 / 20枚)
+  review_status: ai-draft
+
+components:
+  - id: BK_TicketTippingButton
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "27c26ecbcb9662a310cb5a7f68e4c8efaf0042c9"
+
+    variants:
+      combinations:
+        - { Language: JP, Type: Small,  State: Default }
+        - { Language: JP, Type: Small,  State: Selected }
+        - { Language: JP, Type: Small,  State: Insufficient }
+        - { Language: JP, Type: Medium, State: Default }
+        - { Language: JP, Type: Medium, State: Selected }
+        - { Language: JP, Type: Medium, State: Insufficient }
+        - { Language: JP, Type: Large,  State: Default }
+        - { Language: JP, Type: Large,  State: Selected }
+        - { Language: JP, Type: Large,  State: Insufficient }
+        - { Language: EN, Type: Small,  State: Default }
+        - { Language: EN, Type: Small,  State: Selected }
+        - { Language: EN, Type: Small,  State: Insufficient }
+        - { Language: EN, Type: Medium, State: Default }
+        - { Language: EN, Type: Medium, State: Selected }
+        - { Language: EN, Type: Medium, State: Insufficient }
+        - { Language: EN, Type: Large,  State: Default }
+        - { Language: EN, Type: Large,  State: Selected }
+        - { Language: EN, Type: Large,  State: Insufficient }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Type=${Type}, State=${State}"
+      size:
+        value: { width: 118, height: 112 }
+
+    children:
+      - id: Image
+        node_type: FRAME
+        name: Image
+        size: { width: 102, height: 68 }
+        children:
+          - id: gift_image_inst
+            node_type: INSTANCE
+            name_by_type:
+              - { when: { Type: Small },  value: "Image Small Gift" }
+              - { when: { Type: Medium }, value: "Image Medium Gift" }
+              - { when: { Type: Large },  value: "Image Big Gift" }
+            ref_by_type:
+              - { when: { Type: Small },  key: "bc40c95f5a01a5fc7bfd301ba12856303f679ebc", schema: 07, size: { width: 46, height: 52 } }
+              - { when: { Type: Medium }, key: "06e320157501a8cb268105a9478fc3e6a6e14102", schema: 05, size: { width: 39, height: 52 } }
+              - { when: { Type: Large },  key: "82ccfdf971bfee2aa7226df9897c08626b673931", schema: 06, size: { width: 59, height: 52 } }
+
+      - id: GiftInformation
+        node_type: FRAME
+        size: { width: 102, height: 28 }
+        children:
+          - id: GiftText
+            node_type: TEXT
+            font_size: 11
+            characters_by_type_language:
+              - { when: { Type: Small,  Language: JP }, value: "ギフト" }
+              - { when: { Type: Medium, Language: JP }, value: "スペシャルギフト" }
+              - { when: { Type: Large,  Language: JP }, value: "プレミアムギフト" }
+              - { when: { Type: Small,  Language: EN }, value: "Gift (推定)" }
+              - { when: { Type: Medium, Language: EN }, value: "Special Gift (推定)" }
+              - { when: { Type: Large,  Language: EN }, value: "Premium Gift (推定)" }
+          - id: GiftPrice
+            node_type: TEXT
+            font_size: 13
+            characters_by_type_language:
+              - { when: { Type: Small,  Language: JP }, value: "1枚" }
+              - { when: { Type: Medium, Language: JP }, value: "5枚" }
+              - { when: { Type: Large,  Language: JP }, value: "20枚" }
+              - { when: { Type: Small,  Language: EN }, value: "1 ticket (推定)" }
+              - { when: { Type: Medium, Language: EN }, value: "5 tickets (推定)" }
+              - { when: { Type: Large,  Language: EN }, value: "20 tickets (推定)" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Image Gift + GiftText + GiftPrice は instance 内部レンダリング。
+    DO NOT add external image / gift label。
+  elements_rendered_internally:
+    - "Image frame > Image Gift instance (Small/Medium/Big 自動切替)"
+    - "GiftInformation > GiftText (ギフト/スペシャル/プレミアム)"
+    - "GiftInformation > GiftPrice (1枚/5枚/20枚)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Type:
+      "「Small」「low tier」「1 ticket」": Small
+      "「Medium」「mid tier」「5 tickets」「special」": Medium
+      "「Large」「high tier」「20 tickets」「premium」": Large
+    State:
+      "「default」 or default": Default
+      "「selected」「highlighted」": Selected
+      "「insufficient」「greyed out」「not enough」": Insufficient
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    Type: Medium
+    State: Default
+
+  ⚠️_use_main_instead: |
+    本 BK_ component は legacy / backup。新規 spec では schema 25
+    (TicketTippingButton, key 66b1593f...) を優先使用。
+    本 BK は historical reference / Hori が削除するまで残す。
+
+  common_scenarios:
+    "legacy_compatibility":
+      description: "古い Figma frame で BK_ 使用中のもの維持用"
+      variant: { Language: JP, Type: Medium, State: Default }
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('27c26ecbcb9662a310cb5a7f68e4c8efaf0042c9');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.Type === 'Medium' && p.State === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      "BK_" prefix = backup / legacy / 削除候補。新規 spec では使わず
+      schema 25 (TicketTippingButton 本体) を使う。Hori が削除した時に
+      壊れない実装にすること。
+  - severity: SHOULD
+    rule: |
+      BK は価格 1枚 / 5枚 / 20枚 (main は 5/10/20)。spec の tier 数と
+      mismatch する可能性が高い、よく確認。
+  - severity: NICE
+    rule: |
+      main TicketTippingButton は JP compact (53) + EN 大型 (112) と
+      design 分岐するが、BK は全 variant 統一 (112)。BK の方が初期設計、
+      main は後から JP compact 追加した可能性。

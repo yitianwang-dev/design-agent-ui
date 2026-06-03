@@ -1,0 +1,149 @@
+# ============================================================
+# Schema PJ — LiveBadge for Home AvatarCard (single component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Home feed の AvatarCard 上に表示する Live 中バッジ。
+# 単一 COMPONENT（variant なし）。LIVE icon + ラベル + 視聴者数。
+#
+# Runtime requirements: v0.5+
+# ============================================================
+
+meta:
+  name: LiveBadge for Home AvatarCard
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "15b1802cc66a70254ae383f03a1bde8794962441"
+  library_description_raw: |
+    【用途 / Usage】
+    Home feedのAvatarCard上に表示するLive中バッジ。
+    Live badge on Avatar Card in Home feed.
+  description: |
+    Home feed の AvatarCard 右上に重ねる Live 配信中バッジ。LiveIcon
+    ("LIVE" pulse + テキスト) + Watcher (視聴者数 icon + 数値) を内包。
+    単一 COMPONENT (variant なし、importComponentByKeyAsync で取得)。
+  screen_usage:
+    - "Home Feed の Avatar Card 上 overlay"
+    - "Live Stream Watch View 左上 (流用可)"
+  dependencies:
+    - "Play Stream MicroAnimation (inner instance, LIVE pulse icon)"
+    - "Users Group Rounded (inner instance, viewer count icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveBadge for Home AvatarCard": 1
+    implemented: full
+    notes: |
+      単一 COMPONENT (no variants)。視聴者数は default "1.0K"、spec で
+      override する。
+  review_status: ai-draft
+
+components:
+  - id: LiveBadge for Home AvatarCard
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "15b1802cc66a70254ae383f03a1bde8794962441"
+    asset_type: component
+    # NOTE: single COMPONENT — use importComponentByKeyAsync (not Set)
+
+    variants:
+      combinations: []   # no variants
+
+    container:
+      node_type: COMPONENT
+      size:
+        value: { width: 137, height: 40 }
+      auto_layout:
+        direction: HORIZONTAL
+        item_spacing: 0
+        counter_axis_align_items: CENTER
+
+    children:
+      - id: LiveIcon
+        node_type: FRAME
+        name: LiveIcon
+        size: { width: 83, height: 40 }
+        auto_layout:
+          direction: HORIZONTAL
+          counter_axis_align_items: CENTER
+        children:
+          - id: Play_Stream_MicroAnimation
+            node_type: INSTANCE
+            name: "Play Stream MicroAnimation"
+            size: { width: 33, height: 33 }
+            description: "LIVE pulse micro-animation icon (3 Union vectors stacked)"
+          - id: Live_label
+            node_type: FRAME
+            name: Live
+            children:
+              - id: Title
+                node_type: TEXT
+                name: Title
+                font_size: 18
+                characters: "LIVE"
+
+      - id: Watcher
+        node_type: FRAME
+        name: Watcher
+        size: { width: 55, height: 40 }
+        auto_layout:
+          direction: HORIZONTAL
+          counter_axis_align_items: CENTER
+        children:
+          - id: viewer_icon
+            node_type: INSTANCE
+            name: "Users Group Rounded"
+            size: { width: 22, height: 22 }
+            description: "Viewer count icon (small Users group)"
+          - id: Count
+            node_type: FRAME
+            name: Count
+            children:
+              - id: count_text
+                node_type: TEXT
+                name: "1.0K"
+                font_size: 18
+                default_text: "1.0K"
+                description: "Viewer count number — spec で実数値に override"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    LiveBadge は単一 component で LiveIcon (pulse + "LIVE") + Watcher
+    (icon + count) を内部レンダリング。外側に sibling として LIVE label
+    / viewer count / dot を作成禁止 (2026-06-02 testLiveTippingWatch で
+    二重表示 bug 発生済み)。
+  elements_rendered_internally:
+    - "LiveIcon (Play Stream MicroAnimation + 'LIVE' text)"
+    - "Watcher (Users Group Rounded icon + count text)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  no_variants_note: |
+    variant 不要。importComponentByKeyAsync + createInstance() のみ。
+  default_count_text: "1.0K"
+  override_count: |
+    視聴者数を実数値に override する場合、内部 'Count' frame の text node
+    "1.0K" を見つけて characters を上書き:
+      const inst = comp.createInstance();
+      const countNode = inst.findOne(n => n.type === 'TEXT' && n.name === '1.0K');
+      await figma.loadFontAsync(countNode.fontName);
+      countNode.characters = '1,247';   // 実 viewer 数
+  safe_pattern: |
+    const comp = await figma.importComponentByKeyAsync('15b1802cc66a70254ae383f03a1bde8794962441');
+    const instance = comp.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      単一 COMPONENT (not ComponentSet)。importComponentSetByKeyAsync で
+      取得すると undefined。必ず importComponentByKeyAsync。
+  - severity: MUST
+    rule: |
+      LiveBadge instance を import 後、外側に viewerCountLabel / liveDot
+      / LIVE label 等の sibling を作成しない (§1.9 G、二重表示防止)。
+  - severity: SHOULD
+    rule: |
+      Library に同名で **LiveBadge** (component_set, 5 State) も存在する。
+      こちらは Live配信画面用、Home AvatarCard 用と区別する。

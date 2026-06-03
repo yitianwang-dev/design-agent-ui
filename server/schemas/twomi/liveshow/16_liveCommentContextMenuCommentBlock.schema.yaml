@@ -1,0 +1,153 @@
+# ============================================================
+# Schema PJ — LiveCommentContextMenu / CommentBlock (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# LiveCommentContextMenu 内の「コメントブロック」メニュー item。
+# State で block (Filled vector) / unblock (Union 2 vectors) を切替。
+# Long-press menu 内の単一行 (nosign icon + text)。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveCommentContextMenu / CommentBlock
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "e85594733029daa43f5bad1377b608e1733b79bf"
+  library_description_raw: |
+    (Library description は空 — Hori が記入未完成の可能性。
+     親 LiveCommentContextMenu の説明から推測: BlockComment menu 子要素)
+    Inferred: Comment block menu inside LiveCommentContextMenu.
+    Switch between block-on/off state.
+  description: |
+    Live コメント長押しメニューの「コメントブロック」単一行 item。
+    State でブロック状態 (Filled) / 解除状態 (Union with cut) を切替。
+    親 LiveCommentContextMenu の子要素として組み込まれる (MenuPin と並列)。
+  screen_usage:
+    - "Live 配信画面 (Creator) — comment 長押しメニュー内"
+  dependencies:
+    - "nosign icon (inner instance — On: Vector / Off: Union(BOOLEAN) で 2 vectors)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveCommentContextMenu / CommentBlock": 4
+    implemented: full
+    notes: |
+      4 variants = State (On / Off) × Language (JP / EN)。全部 188×50。
+      MenuPin (schema 15) と同一構造の pattern。
+  review_status: ai-draft
+
+components:
+  - id: LiveCommentContextMenu / CommentBlock
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "e85594733029daa43f5bad1377b608e1733b79bf"
+
+    variants:
+      combinations:
+        - { Language: JP, State: On }
+        - { Language: JP, State: Off }
+        - { Language: EN, State: On }
+        - { Language: EN, State: Off }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        value: { width: 188, height: 50 }
+      auto_layout:
+        direction: HORIZONTAL
+        item_spacing: 8
+        counter_axis_align_items: CENTER
+
+    children:
+      - id: nosign
+        node_type: INSTANCE
+        name: nosign
+        size: { width: 18, height: 18 }
+        description: "Block icon — On: Vector (Filled) / Off: Union (BOOLEAN, 2 vectors with cut)"
+        icon_by_state:
+          - { when: { State: On },  value: "Vector (Filled, 14×13)" }
+          - { when: { State: Off }, value: "Union(BOOLEAN_OPERATION) 14×13 + inner Vectors" }
+
+      - id: Blocktext
+        node_type: TEXT
+        name: Blocktext
+        font_size: 14
+        characters:
+          by_variant:
+            - { when: { Language: JP }, value: "コメントブロック" }
+            - { when: { Language: EN }, value: "Block Comment" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Single menu item with nosign icon + label. DO NOT add external icon
+    / text sibling.
+  elements_rendered_internally:
+    - "nosign icon (18×18)"
+    - "Blocktext (font 14)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「現在 block 中」「already blocked」「Filled」": On
+      "「未 block」「unblocked」「default」 or default": Off
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    State: Off
+    Language: JP
+
+  common_scenarios:
+    "unblocked_comment_can_block":
+      description: "通常コメント — long-press menu で block 可能 (default)"
+      variant: { State: Off, Language: JP }
+    "currently_blocked_comment_can_unblock":
+      description: "既に blocked されたコメント — long-press menu で unblock 可能"
+      variant: { State: On, Language: JP }
+
+  default_decision_logic:
+    description: "spec の comment 状態に応じて State 判定"
+    rules:
+      - if: "spec の comment が既に「blocked」状態"
+        → { State: On }
+      - if: "spec の comment が「unblocked」(default)"
+        → { State: Off }
+
+  selection_examples:
+    - spec: "Long-press menu で block button (まだ block されてない)"
+      decision: { State: Off, Language: JP }
+    - spec: "Already blocked comment menu - show 'Unblock'"
+      decision: { State: On, Language: EN, _note: "On = currently blocked" }
+
+  related_components:
+    - "LiveCommentContextMenu (parent, key fe6c71a3...) — menu container"
+    - "LiveCommentContext / MenuPin (schema 15, key f8bebfda...) — sibling menu item"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('e85594733029daa43f5bad1377b608e1733b79bf');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'Off';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      State=On / Off で内部 nosign icon が異なる:
+      - On: 単一 Vector (Filled)
+      - Off: Union BOOLEAN_OPERATION + 2 Vectors (cut line で「未 block」表現)
+      自前で icon swap せず必ず variant 経由。
+  - severity: NICE
+    rule: |
+      JP "コメントブロック" (8 字、112px width) と EN "Block Comment"
+      (13 字、107px width) で Blocktext 幅変動。container 188px 固定。
+  - severity: NICE
+    rule: |
+      MenuPin (schema 15) と完全に対称構造 (Pin + Block の 2 menu items
+      が親 LiveCommentContextMenu 内に並列配置される)。

@@ -1,0 +1,266 @@
+# ============================================================
+# Schema PJ — Send TicketTipping Bottom Sheet (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 視聴画面の「投げ銭を送る」bottom sheet。State でチケット十分
+# (Default) / 不足 (NotEnoughTickets) を切替、Alert + CTA 文言が変化。
+# 3 個の TicketTippingButton (schema 25) を nested。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Send TicketTipping Bottom Sheet
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "7d63d8a4ab426183b0a69f024f76ae8e3c2fe780"
+  library_description_raw: |
+    【用途 / Usage】
+    ギフト送信ボトムシート。チケット不足時はNotEnoughTicketsに切り替える。
+    Gift send bottom sheet.
+    【使用画面 / Used in】
+    Live視聴画面 / Live viewer screen
+    【State】
+    State: Default / NotEnoughTickets｜Language: JP / EN
+  description: |
+    Live 視聴画面で TicketTippingButton (右下 🎫) tap 時に下から slide-up
+    で表示される投げ銭 sheet。Handle + Header (Title + Close) +
+    TicketDisplay (現在 ticket 残高) + 3 個 TicketTippingButton (Small/
+    Medium/Large) + ButtonSection (CTA)。NotEnoughTickets state では
+    Alert frame 追加 + CTA text 切替 (送る → 購入する)。
+  screen_usage:
+    - "Live 視聴画面 (Viewer) - 🎫 button tap 時の bottom sheet overlay"
+  dependencies:
+    - "Outline / Essentional, UI / Close Circle (header close icon)"
+    - "ticketDisplay (TicketDisplay frame inner instance - ticket count + plus button)"
+    - "Ticker Bold (ticket icon)"
+    - "Liner Plus (ticket 追加 icon)"
+    - "TicketTippingButton × 3 (schema 25, key 66b1593f...) — Small / Medium / Large"
+    - "Image Small/Medium/Big Gift (EN variant 用 visual icons)"
+    - "Button (CTA - 投げ銭を送る / Send Gift / チケットを購入する / Buy Tickets)"
+    - "Membership_unlock_outline (NotEnoughTickets Alert icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Send TicketTipping Bottom Sheet": 4
+    implemented: full
+    notes: |
+      4 variants = State (Default / NotEnoughTickets) × Language (JP / EN)。
+      高さ大幅変動:
+      - JP+Default: 253 / JP+NotEnoughTickets: 288 (Alert +35)
+      - EN+Default: 312 / EN+NotEnoughTickets: 347 (EN TicketTippingButton
+        h112 で内側 frame 高くなる、+ Alert)
+      JP は ✕数表示の compact button、EN は Image Gift 入りの大型 button。
+  review_status: ai-draft
+
+components:
+  - id: Send TicketTipping Bottom Sheet
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "7d63d8a4ab426183b0a69f024f76ae8e3c2fe780"
+
+    variants:
+      combinations:
+        - { Language: JP, State: Default }
+        - { Language: EN, State: Default }
+        - { Language: JP, State: NotEnoughTickets }
+        - { Language: EN, State: NotEnoughTickets }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        by_variant:
+          - { when: { Language: JP, State: Default },          value: { width: 402, height: 253 } }
+          - { when: { Language: EN, State: Default },          value: { width: 402, height: 312 } }
+          - { when: { Language: JP, State: NotEnoughTickets }, value: { width: 402, height: 288 } }
+          - { when: { Language: EN, State: NotEnoughTickets }, value: { width: 402, height: 347 } }
+
+    children:
+      - id: Handle
+        node_type: RECTANGLE
+        size: { width: 48, height: 6 }
+        description: "Bottom sheet drag handle"
+
+      - id: Header
+        node_type: FRAME
+        size: { width: 402, height: 24 }
+        children:
+          - id: Title
+            node_type: TEXT
+            font_size: 17
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "投げ銭" }
+                - { when: { Language: EN }, value: "Ticket tipping" }
+          - id: CloseCircle
+            node_type: INSTANCE
+            name: "Outline / Essentional, UI / Close Circle"
+            size: { width: 24, height: 24 }
+
+      - id: Contents
+        node_type: FRAME
+        size_by_variant:
+          - { when: { Language: JP, State: Default },          value: { width: 402, height: 109 } }
+          - { when: { Language: EN, State: Default },          value: { width: 402, height: 168 } }
+          - { when: { Language: JP, State: NotEnoughTickets }, value: { width: 402, height: 144 } }
+          - { when: { Language: EN, State: NotEnoughTickets }, value: { width: 402, height: 203 } }
+        children:
+          - id: TicketDisplay
+            node_type: FRAME
+            size: { width: 370, height: 24 }
+            children:
+              - id: ticketDisplay_inst
+                node_type: INSTANCE
+                name: ticketDisplay
+                description: "ticket count (icon + 数値) + ticketPlus button"
+                inner_count:
+                  by_variant:
+                    - { when: { State: Default },          value: "11111 (sample 大量残)" }
+                    - { when: { State: NotEnoughTickets }, value: "8 (不足を強調)" }
+
+          - id: Select
+            node_type: FRAME
+            size_by_language:
+              - { when: { Language: JP }, value: { width: 370, height: 53 } }
+              - { when: { Language: EN }, value: { width: 370, height: 112 } }
+            description: "3 個 TicketTippingButton 横並び (Small/Medium/Large)"
+            children:
+              - id: tipping_button_small
+                node_type: INSTANCE
+                ref:
+                  key: "66b1593ffbc45c8c4db6d12220f9b758642f9785"
+                  schema: 25
+                variant_props_by_parent:
+                  - { when: { Language: JP }, props: { Type: Small, State: Default, Language: JP } }
+                  - { when: { Language: EN }, props: { Type: Small, State: Default, Language: EN } }
+              - id: tipping_button_medium
+                node_type: INSTANCE
+                variant_props_by_parent:
+                  - { when: { Language: JP }, props: { Type: Medium, State: Default, Language: JP } }
+                  - { when: { Language: EN }, props: { Type: Medium, State: Default, Language: EN } }
+              - id: tipping_button_large
+                node_type: INSTANCE
+                variant_props_by_parent:
+                  # NotEnoughTickets では Large は Image wrapper で表示 (insufficient mark)
+                  - { when: { Language: JP, State: Default },          props: { Type: Large, State: Default, Language: JP } }
+                  - { when: { Language: JP, State: NotEnoughTickets }, props: { Type: Large, State: Insufficient, Language: JP } }
+                  - { when: { Language: EN, State: Default },          props: { Type: Large, State: Default, Language: EN } }
+                  - { when: { Language: EN, State: NotEnoughTickets }, props: { Type: Large, State: Insufficient, Language: EN } }
+
+          - id: Alert
+            node_type: FRAME
+            present_in_states: [NotEnoughTickets]
+            size: { width: 402, height: 19 }
+            description: "残高不足 alert (NotEnoughTickets state のみ)"
+            children:
+              - id: TypeSection
+                node_type: FRAME
+                children:
+                  - { id: alert_icon, type: INSTANCE, name: "Membership_unlock_outline", size: { width: 12, height: 12 } }
+                  - id: TypeText
+                    node_type: TEXT
+                    font_size: 11
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "チケットが不足しています" }
+                        - { when: { Language: EN }, value: "Not enough tickets" }
+
+      - id: ButtonSection
+        node_type: FRAME
+        size: { width: 402, height: 88 }
+        children:
+          - id: Button
+            node_type: INSTANCE
+            size: { width: 370, height: 40 }
+            description: "CTA button (Ghost Smile icon ×2 deco + text)"
+            text_by_variant:
+              - { when: { Language: JP, State: Default },          value: "投げ銭を送る" }
+              - { when: { Language: EN, State: Default },          value: "Send Gift" }
+              - { when: { Language: JP, State: NotEnoughTickets }, value: "チケットを購入する" }
+              - { when: { Language: EN, State: NotEnoughTickets }, value: "Buy Tickets" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Bottom sheet は Handle + Header (Title + Close) + Contents (TicketDisplay +
+    3 TicketTippingButtons + 条件付き Alert) + ButtonSection (CTA) を全部
+    内部レンダリング。外側に複製禁止。CTA text は State で自動切替、
+    自前で text override 不要。
+  elements_rendered_internally:
+    - "Handle (drag indicator)"
+    - "Header (Title + Close Circle)"
+    - "TicketDisplay (current balance + add button)"
+    - "Select (3 TicketTippingButtons)"
+    - "Alert (NotEnoughTickets state のみ)"
+    - "ButtonSection (CTA Send Gift / Buy Tickets)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「default」「sufficient balance」「enough tickets」 or default": Default
+      "「insufficient」「not enough」「low balance」「buy more」": NotEnoughTickets
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    State: Default
+
+  common_scenarios:
+    "tip_sheet_default_open":
+      description: "Viewer が 🎫 button tap、sheet 開いた default 状態"
+      variant: { Language: JP, State: Default }
+    "tip_sheet_insufficient_balance":
+      description: "残高 < 必要 ticket、CTA が「購入する」に変化"
+      variant: { Language: JP, State: NotEnoughTickets }
+    "en_viewer_default":
+      description: "EN viewer 用 default (h312 = JP の 1.2 倍)"
+      variant: { Language: EN, State: Default }
+
+  default_decision_logic:
+    rules:
+      - if: "spec が「残高不足」「insufficient」「low balance」"
+        → { State: NotEnoughTickets }
+      - else: { State: Default }
+
+  selection_examples:
+    - spec: "Tip sheet open (viewer has 11111 tickets - plenty)"
+      decision: { Language: JP, State: Default }
+    - spec: "Tip sheet with only 8 tickets — 'Buy Tickets' CTA"
+      decision: { Language: JP, State: NotEnoughTickets }
+    - spec: "EN tip sheet showing Special Gift / Premium Gift previews"
+      decision: { Language: EN, State: Default }
+
+  related_components:
+    - "TicketTippingButton (schema 25) — 内部 3 個 nested"
+    - "TicketTippingButton (Bottom button) — Live 視聴画面の SingleLiveViewerBottom 内の小型 button、これを tap して本 sheet を開く"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('7d63d8a4ab426183b0a69f024f76ae8e3c2fe780');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      EN variant は 大きい (Default h312、NotEnoughTickets h347)。
+      JP (253/288) より +60 高い。spec で「sheet h280」想定すると EN で
+      hijack される。auto-layout HUG で対応。
+  - severity: SHOULD
+    rule: |
+      State=NotEnoughTickets で Large TicketTippingButton も自動的に
+      Insufficient state (greyed out) に切替。整合性は parent variant で
+      自動制御、個別 button の State を別途指定不要。
+  - severity: SHOULD
+    rule: |
+      EN variant は TicketTippingButton 内に Image Small/Medium/Big Gift
+      (schemas 05/06/07) が表示される (JP は ✕数のみ)。EN 用に Gift image
+      の display name (Gift / Special Gift / Premium Gift) を override する
+      場合は Hori 確認。

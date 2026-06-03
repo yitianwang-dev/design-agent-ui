@@ -1,0 +1,147 @@
+# ============================================================
+# Schema PJ — LiveStreamingTypeSection (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# シングル Live 配信設定で「通常配信」か「限定配信」かを、選択 Avatar の
+# Status に応じて出し分けるエリア。アイコン + テキストの組み合わせ。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveStreamingTypeSection
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "7726785b8efb4426f42cb054e200bf3da4e29bae"
+  library_description_raw: |
+    【用途 / Usage】
+    シングルLive配信設定時に通常配信か限定配信かを、選択AvatarのStatusによって出し分けるエリア。
+    Area switching between standard and exclusive live streaming based on selected Avatar status.
+    【State】
+    Type: Standard / Exclusive Content｜Language: JP / EN
+  description: |
+    シングル Live 配信設定時に通常配信か限定配信かを表示するエリア。
+    Avatar の Status により Type を切り替える。アイコン + テキスト。
+    Area switching between standard and exclusive live streaming based on
+    selected Avatar status.
+  screen_usage:
+    - Live 配信設定画面
+    - Live 視聴画面 header（タイトル下のサブ情報として）
+  dependencies:
+    - "Play Stream icon (inner instance, used for Type=Standard)"
+    - "Membership_unlock_outline icon (inner instance, used for Type=Exclusive Content)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveStreamingTypeSection": 4
+    implemented: full
+    notes: |
+      4 variants = Type (Standard / Exclusive Content) × Language (JP / EN)。
+      Library 既存 component をそのまま import + variant 選択。
+      Type=Exclusive Content では「TireN 限定配信します」「Tier N Exclusive
+      Streaming」と表示（Tier 名は spec 由来）。
+  review_status: ai-draft
+
+components:
+  - id: LiveStreamingTypeSection
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "7726785b8efb4426f42cb054e200bf3da4e29bae"
+
+    # 4 variants (2 × 2 dense matrix)
+    variants:
+      combinations:
+        - { Type: Standard,           Language: JP }
+        - { Type: Standard,           Language: EN }
+        - { Type: "Exclusive Content", Language: JP }
+        - { Type: "Exclusive Content", Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Type=${Type}, Language=${Language}"
+
+      size:
+        # All 4 variants are 402 × 20
+        value: { width: 402, height: 20 }
+
+      clips_content: false
+
+      auto_layout:
+        direction: HORIZONTAL
+        primary_axis_align_items: CENTER
+        counter_axis_align_items: CENTER
+
+    # Internal structure (Library-rendered)
+    children:
+      - id: TypeSection
+        node_type: FRAME
+        name: TypeSection
+        size: { width: 370, height: 20 }
+        auto_layout:
+          direction: HORIZONTAL
+          item_spacing: 4
+          counter_axis_align_items: CENTER
+
+        children:
+          - id: type_icon
+            node_type: INSTANCE
+            size: { width: 12, height: 12 }
+            instance_swap_by_variant:
+              - { when: { Type: Standard },           name: "Play Stream" }
+              - { when: { Type: "Exclusive Content" }, name: "Membership_unlock_outline" }
+
+          - id: TypeText
+            node_type: TEXT
+            name: TypeText
+            font_size: 11
+            characters:
+              by_variant:
+                - { when: { Type: Standard,           Language: JP }, value: "通常配信します" }
+                - { when: { Type: Standard,           Language: EN }, value: "Start Free Streaming" }
+                - { when: { Type: "Exclusive Content", Language: JP }, value: "TireN 限定配信します" }
+                - { when: { Type: "Exclusive Content", Language: EN }, value: "Tier N Exclusive Streaming" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Inner icon + label are rendered by the instance per variant.
+    DO NOT add external sibling icon/label.
+  elements_rendered_internally:
+    - "TypeSection wrapper frame"
+    - "type_icon (Play Stream or Membership_unlock_outline)"
+    - "TypeText (font 11px)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Type:
+      "「通常配信」「standard」「free streaming」 or default": "Standard"
+      "「限定配信」「exclusive」「tier」「members only」": "Exclusive Content"
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Type: Standard
+    Language: JP
+  common_combinations:
+    - scenario: "Standard 配信開始時 / general live"
+      Type: Standard
+      Language: JP
+    - scenario: "Tier 限定 (paid members) 配信"
+      Type: "Exclusive Content"
+      Language: JP
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('7726785b8efb4426f42cb054e200bf3da4e29bae');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Type === 'Standard' && p.Language === 'JP';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Type=Exclusive Content のテキストには「TireN」プレースホルダーが含まれる
+      （JP）。実装時には spec 由来の実 Tier 名（例: "Tier 1"）に override する。

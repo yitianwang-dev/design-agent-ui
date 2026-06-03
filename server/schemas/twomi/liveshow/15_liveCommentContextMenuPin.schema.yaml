@@ -1,0 +1,146 @@
+# ============================================================
+# Schema PJ — LiveCommentContext / MenuPin (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# LiveCommentContextMenu 内のピン留めメニュー item。State でピン
+# (Filled icon) / 非ピン (Stroke icon) を切替。Long-press menu 内の
+# 単一行 (icon + text)。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveCommentContext / MenuPin
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "f8bebfda76d570ef6f70f5e74595fefd207c6835"
+  library_description_raw: |
+    【用途 / Usage】
+    LiveCommentContextMenu内のピン留めメニュー。
+    Pin menu inside LiveCommentContextMenu.
+    【State】
+    State: On / Off｜Language: JP / EN
+  description: |
+    Live コメントの長押しメニュー内のピン留め (Pin) 単一行 item。
+    State で「現在 pin 中 (Filled icon)」/「未 pin (Stroke icon)」を切替。
+    親 LiveCommentContextMenu 内の構成要素。
+  screen_usage:
+    - "Live 配信画面 (Creator) — comment 長押しコンテキストメニュー内"
+  dependencies:
+    - "Pin icon (inner instance — Filled (State=On) or Stroke (State=Off))"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveCommentContext / MenuPin": 4
+    implemented: full
+    notes: |
+      4 variants = State (On / Off) × Language (JP / EN)。全部 188×50。
+      State 差は Pin icon の filled vs stroke。
+  review_status: ai-draft
+
+components:
+  - id: LiveCommentContext / MenuPin
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "f8bebfda76d570ef6f70f5e74595fefd207c6835"
+
+    variants:
+      combinations:
+        - { Language: JP, State: On }
+        - { Language: JP, State: Off }
+        - { Language: EN, State: On }
+        - { Language: EN, State: Off }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        value: { width: 188, height: 50 }
+      auto_layout:
+        direction: HORIZONTAL
+        item_spacing: 8
+        counter_axis_align_items: CENTER
+
+    children:
+      - id: Pin
+        node_type: INSTANCE
+        name: Pin
+        size: { width: 18, height: 18 }
+        description: "Pin icon — State=On: Filled / State=Off: Vector(Stroke)"
+        icon_by_state:
+          - { when: { State: On }, value: "Pin (Filled, Union vector 15×15)" }
+          - { when: { State: Off }, value: "Pin (Stroke, Vector(Stroke) 15×15)" }
+
+      - id: Pintext
+        node_type: TEXT
+        name: Pintext
+        font_size: 14
+        characters:
+          by_variant:
+            - { when: { Language: JP }, value: "ピン留め" }
+            - { when: { Language: EN }, value: "Pin" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Single menu item with Pin icon + label. DO NOT add external pin icon
+    / text sibling.
+  elements_rendered_internally:
+    - "Pin icon (18×18, Filled or Stroke per State)"
+    - "Pintext (font 14)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「現在 pin 中」「already pinned」「Filled」": On
+      "「未 pin」「unpinned」「Stroke」 or default": Off
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    State: Off
+    Language: JP
+
+  common_scenarios:
+    "unpinned_comment_can_pin":
+      description: "通常コメント — long-press menu で pin 可能 (default)"
+      variant: { State: Off, Language: JP }
+    "currently_pinned_comment_can_unpin":
+      description: "既に pinned されたコメント — long-press menu で unpin 可能"
+      variant: { State: On, Language: JP }
+
+  default_decision_logic:
+    description: "spec の comment 状態に応じて State 判定"
+    rules:
+      - if: "spec の comment が既に「pinned」状態"
+        → { State: On }
+      - if: "spec の comment が「unpinned」(default)"
+        → { State: Off }
+
+  selection_examples:
+    - spec: "Long-press menu で pin button (まだ pin されてない)"
+      decision: { State: Off, Language: JP }
+    - spec: "Already pinned comment context menu - show 'Unpin'"
+      decision: { State: On, Language: EN, _note: "On = currently pinned" }
+
+  related_component: "LiveCommentContextMenu (parent, key fe6c71a3...) — menu container, this Pin item は子要素"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('f8bebfda76d570ef6f70f5e74595fefd207c6835');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'Off';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      State=On / Off で内部 Pin icon の vector が異なる (Filled vs Stroke)。
+      自前で icon swap せず、必ず variant 経由で切替。
+  - severity: NICE
+    rule: |
+      JP "ピン留め" (4 字、56px width) と EN "Pin" (3 字、22px width) で
+      Pintext 幅が変動。container 188px 固定なので余白で吸収される。

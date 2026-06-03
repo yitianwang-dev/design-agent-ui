@@ -1,0 +1,153 @@
+# ============================================================
+# Schema PJ — Live/AvatarStatus (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 配信中の AI アバターの発話・思考状態表示。
+# Live/Spinner-Pulse (schema 08) を nested instance として内包し、
+# 隣に Avatar 名 + 状態テキストを表示。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Live/AvatarStatus
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "4495d649d6e149bb2d21bbfe15d1ef4da28a5694"
+  library_description_raw: |
+    【用途 / Usage】
+    Live配信中のAIアバターの発話・思考状態表示。
+    AI avatar talking/thinking status during live.
+    【使用画面 / Used in】
+    Live配信画面 / Live streaming screen
+    【State】
+    State: Talking / Thinking｜Language: JP / EN
+  description: |
+    Live 視聴 / 配信画面に表示する AI avatar の状態表示。Spinner-Pulse
+    icon + Avatar 名 + 「話し中 / 考え中」「Talking / Thinking」テキスト。
+  screen_usage:
+    - "Live 視聴画面 (Viewer)"
+    - "Live 配信画面 (Creator)"
+  dependencies:
+    - "Live/Spinner-Pulse (schema 08, key 07cbdcb8...)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Live/AvatarStatus": 4
+    implemented: full
+    notes: |
+      4 variants = State (Talking / Thinking) × Language (JP / EN)。
+      width は variant により 131/136/144 (テキスト幅で変化)、height は 24 固定。
+  review_status: ai-draft
+
+components:
+  - id: Live/AvatarStatus
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "4495d649d6e149bb2d21bbfe15d1ef4da28a5694"
+
+    variants:
+      combinations:
+        - { Language: JP, State: Talking }
+        - { Language: JP, State: Thinking }
+        - { Language: EN, State: Talking }
+        - { Language: EN, State: Thinking }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        by_variant:
+          - { when: { Language: JP, State: Talking },  value: { width: 131, height: 24 } }
+          - { when: { Language: JP, State: Thinking }, value: { width: 131, height: 24 } }
+          - { when: { Language: EN, State: Talking },  value: { width: 136, height: 24 } }
+          - { when: { Language: EN, State: Thinking }, value: { width: 144, height: 24 } }
+      auto_layout:
+        direction: HORIZONTAL
+        item_spacing: 4
+        counter_axis_align_items: CENTER
+
+    children:
+      - id: spinner
+        node_type: INSTANCE
+        name: Live/Spinner-Pulse
+        ref:
+          key: "07cbdcb8b8397879fe52bd5eae26e9a0bd79d6f2"
+          schema: 08
+        size: { width: 24, height: 24 }
+        variant_props_by_parent:
+          # Spinner の State variant を親 State に追従させる
+          - { when: { State: Talking },  props: { State: Talking,  "Property 1": "1" } }
+          - { when: { State: Thinking }, props: { State: Thinking, "Property 1": "1" } }
+
+      - id: AvatarName
+        node_type: TEXT
+        name: AvatarName
+        font_size: 11
+        characters: "AvatarName"  # placeholder, spec で override
+
+      - id: StatusText
+        node_type: TEXT
+        name: StatusText
+        font_size: 10
+        characters:
+          by_variant:
+            - { when: { Language: JP, State: Talking },  value: "話し中" }
+            - { when: { Language: JP, State: Thinking }, value: "考え中" }
+            - { when: { Language: EN, State: Talking },  value: "Talking" }
+            - { when: { Language: EN, State: Thinking }, value: "Thinking" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Internal: Spinner-Pulse (nested instance) + AvatarName (TEXT) +
+    StatusText (TEXT). DO NOT add external spinner / status sibling.
+  elements_rendered_internally:
+    - "Live/Spinner-Pulse (24×24 inner instance)"
+    - "AvatarName (TEXT, font 11px, default 'AvatarName')"
+    - "StatusText (TEXT, font 10px, switched by Language × State)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「talking」「発話」「speaking」 or default": Talking
+      "「thinking」「思考」「processing」": Thinking
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    State: Talking
+  common_combinations:
+    - { scenario: "AI avatar 発話中 (JP)",  Language: JP, State: Talking }
+    - { scenario: "AI avatar 思考中 (JP)",  Language: JP, State: Thinking }
+    - { scenario: "EN viewer 発話中表示",   Language: EN, State: Talking }
+  related_component: "Live/Spinner-Pulse (schema 08) — 内部 nested、別途独立で使う必要なし"
+  override_avatar_name: |
+    AvatarName text node の characters を spec の実 avatar 名に override:
+    instance.componentProperties / setProperties / または findOne by name で
+    text node を見つけて characters を上書き。
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('4495d649d6e149bb2d21bbfe15d1ef4da28a5694');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'Talking';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+    // To override avatar name:
+    // const nameNode = instance.findOne(n => n.name === 'AvatarName' && n.type === 'TEXT');
+    // await figma.loadFontAsync(nameNode.fontName);
+    // nameNode.characters = '実 avatar 名';
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      AvatarName は default "AvatarName" (placeholder)。実 spec の avatar
+      名 (e.g. "Hikari") に override する必要あり。font load 必須。
+  - severity: NICE
+    rule: |
+      width は Language × State で 131-144 まで変動 (StatusText 幅依存)。
+      Auto Layout HUG が効いてるので親 frame で固定幅にしない。

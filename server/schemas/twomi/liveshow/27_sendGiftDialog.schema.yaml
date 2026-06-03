@@ -1,0 +1,207 @@
+# ============================================================
+# Schema PJ — Send Gift Dialog (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# プレミアムギフト送信確認 dialog (他ギフトでは使用しない)。
+# 「20 チケット消費します」確認 + Send/Cancel 2 button。
+# Image Big Gift (schema 06) を icon として表示。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Send Gift Dialog
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "fe0ddaa02baa077b4459d807b0ef2ffb09f40108"
+  library_description_raw: |
+    【用途 / Usage】
+    プレミアムギフト専用の送信確認ダイアログ（他ギフトでは使用しない）。
+    Send confirmation dialog for premium gifts only.
+    【使用画面 / Used in】
+    Live視聴画面 / Live viewer screen
+    【State】
+    Language: JP / EN
+    【注意 / Notes】
+    インスタンス上での文言変更禁止。Do not edit text on instances.
+  description: |
+    Premium tier (20 ticket) gift 送信前の最終確認 dialog。Small / Medium
+    gift 送信時は不要 (Master §4.3 dialog の使い分け原則: 重大な意思決定
+    のみ dialog、軽い操作は bottom sheet)。20 tickets 一気消費 = 重大
+    decision なので dialog で stop。
+  screen_usage:
+    - "Live 視聴画面 (Viewer) — Premium gift (Large/20) tap 後の確認"
+  dependencies:
+    - "Image Big Gift (schema 06, key 82ccfdf9...) — premium gift icon"
+    - "Dialog/Button item (Send / Cancel buttons)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Send Gift Dialog": 2
+    implemented: full
+    notes: |
+      2 variants = Language (JP / EN) のみ。両方 270×272 (size 統一)。
+      ※ Library 注記「文言変更禁止」— instance 上で text override しない。
+  review_status: ai-draft
+
+components:
+  - id: Send Gift Dialog
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "fe0ddaa02baa077b4459d807b0ef2ffb09f40108"
+
+    variants:
+      combinations:
+        - { Language: JP }
+        - { Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+      size:
+        value: { width: 270, height: 272 }
+
+    children:
+      - id: Container
+        node_type: FRAME
+        name: Container
+        size: { width: 270, height: 272 }
+        children:
+          - id: Text_section
+            node_type: FRAME
+            name: Text
+            size: { width: 238, height: 136 }
+            description: "上部: Big Gift icon + Title + Description"
+            children:
+              - id: gift_icon
+                node_type: INSTANCE
+                name: "Image Big Gift"
+                ref:
+                  key: "82ccfdf971bfee2aa7226df9897c08626b673931"
+                  schema: 06
+                default_variant: { Size: H52 }
+                size: { width: 59, height: 52 }
+              - id: Title
+                node_type: TEXT
+                font_size: 17
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "プレミアムギフトを送ります" }
+                    - { when: { Language: EN }, value: "Sending a Premium Gift" }
+              - id: Description
+                node_type: FRAME
+                children:
+                  - id: desc_text
+                    node_type: TEXT
+                    font_size: 10
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "20チケット消費します。 アバターがあなたの名前を呼んで感謝します！" }
+                        - { when: { Language: EN }, value: "20 tickets will be used. \nThe avatar will call out your name as a thank you!" }
+
+          - id: Action
+            node_type: FRAME
+            name: Action
+            size: { width: 238, height: 96 }
+            description: "縦並び 2 button (Send + Cancel)"
+            children:
+              - id: button_send
+                node_type: INSTANCE
+                name: "Dialog/Button item"
+                size: { width: 238, height: 44 }
+                text:
+                  by_variant:
+                    - { when: { Language: JP }, value: "送る" }
+                    - { when: { Language: EN }, value: "Send" }
+                font_size: 16
+              - id: button_cancel
+                node_type: INSTANCE
+                name: "Dialog/Button item"
+                size: { width: 238, height: 44 }
+                text:
+                  by_variant:
+                    - { when: { Language: JP }, value: "キャンセル" }
+                    - { when: { Language: EN }, value: "Cancel" }
+                font_size: 15
+
+          - id: empty_footer_text
+            node_type: TEXT
+            characters: ""
+            font_size: 14
+            description: "空 text node — layout spacer? Hori 確認推奨"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Dialog は Big Gift icon + Title + Description + 2 button を全部
+    内部レンダリング。「文言変更禁止」(Library 注記) — 外側に複製 OR
+    instance text 上書き禁止。
+  elements_rendered_internally:
+    - "Container wrapper"
+    - "Text section: Image Big Gift (59×52 H52 variant) + Title + Description"
+    - "Action: Send + Cancel buttons (44px each)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+  show_dialog_when:
+    description: "Premium tier (20 ticket / Large) gift 送信前のみ表示"
+    rules:
+      - "Small (5 ticket) tipping → 直接送信 (dialog なし)"
+      - "Medium (10 ticket) tipping → 直接送信 (dialog なし)"
+      - "Large/Premium (20 ticket) tipping → 本 dialog で確認 → 送信 or キャンセル"
+
+  common_scenarios:
+    "premium_gift_send_confirmation":
+      description: "Premium gift (20 ticket) 選択直後の確認 dialog 表示"
+      variant: { Language: JP }
+    "en_premium_confirmation":
+      description: "EN viewer の同 dialog"
+      variant: { Language: EN }
+
+  default_decision_logic:
+    rules:
+      - if: "spec の Language が EN"
+        → { Language: EN }
+      - else: { Language: JP }
+
+  selection_examples:
+    - spec: "Premium gift 20ticket 送信前 confirmation"
+      decision: { Language: JP }
+    - spec: "EN viewer confirming premium gift send"
+      decision: { Language: EN }
+
+  related_components:
+    - "Send TicketTipping Bottom Sheet (schema 26) — Premium 選択後に本 dialog を呼ぶ"
+    - "Image Big Gift (schema 06) — 内部 nested premium gift icon"
+    - "TicketTippingButton (schema 25) Type=Large — 本 dialog を trigger する button"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('fe0ddaa02baa077b4459d807b0ef2ffb09f40108');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 注記「インスタンス上での文言変更禁止」— Title / Description /
+      Button text を override しない。文言は Hori 管理。
+  - severity: MUST
+    rule: |
+      Premium gift (Large/20) 専用 — Small/Medium tipping では本 dialog を
+      使わない (Master §4.3 dialog 使い分け: 重大な意思決定のみ dialog)。
+  - severity: SHOULD
+    rule: |
+      Container 下部に空 text node (characters: "", h17) が存在する。
+      layout spacer の可能性、削除しない。
+  - severity: NICE
+    rule: |
+      Send button font 16 / Cancel button font 15 (1px 差) — 視覚的優先度を
+      微妙に強調する Library design 判断。

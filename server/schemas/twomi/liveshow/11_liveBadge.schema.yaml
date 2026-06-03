@@ -1,0 +1,236 @@
+# ============================================================
+# Schema PJ — LiveBadge (component_set, multi-state)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 配信状態を示すバッジ。State で Live/Archive 準備中/Archive/
+# Retry/Ended を切替。Home feed + Live 配信画面で使用。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveBadge
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "06e24908301644775e2c93cd4cb8e333cc0ac3a9"
+  library_description_raw: |
+    【用途 / Usage】
+    Live配信状態を示すバッジ。StateでLive中・アーカイブ準備中・終了等を切り替える。
+    Badge showing live streaming state.
+    【使用画面 / Used in】
+    Live配信画面 / Home feed / Live streaming and Home feed screens
+    【State】
+    State: Live / Preparing Archive / Archive / Retry / Ended｜Language: JP / EN
+  description: |
+    Live 配信状態 5 段階 + 言語 2 種の状態 badge。Home feed (AvatarCard
+    上 overlay) と Live 視聴画面の両方で使用。State により内部 icon /
+    text / Watcher セクション有無が変化。
+  screen_usage:
+    - "Live 配信画面 / Live streaming screen"
+    - "Home feed (Avatar Card 上 overlay として)"
+    - "Live 視聴画面 (Viewer)"
+  dependencies:
+    - "Play Stream MicroAnimation (Live / Ended 用 inner instance)"
+    - "DotsWeve (Preparing Archive 用 3-dot loading)"
+    - "Video Clapperboard Open Play (Archive 用 icon)"
+    - "Users Group Rounded (Watcher icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveBadge": 9
+    implemented: full
+    notes: |
+      9 variants (5 State × 2 Language - 1 欠 = EN+Archive)。
+      State は "LIve" / "Ended" / "Preparing Archive" / "Archive" / "Retry"
+      ※ "LIve" は Library 内タイポ (Live ではなく LIve)、変更不可。
+  review_status: ai-draft
+
+components:
+  - id: LiveBadge
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "06e24908301644775e2c93cd4cb8e333cc0ac3a9"
+
+    # 9 variants (sparse — EN+Archive が欠落)
+    variants:
+      combinations:
+        - { Language: JP, State: "LIve" }
+        - { Language: EN, State: "LIve" }
+        - { Language: JP, State: "Preparing Archive" }
+        - { Language: EN, State: "Preparing Archive" }
+        - { Language: JP, State: "Archive" }
+        # NOTE: { Language: EN, State: "Archive" } は Library に存在しない
+        - { Language: JP, State: "Retry" }
+        - { Language: EN, State: "Retry" }
+        - { Language: JP, State: "Ended" }
+        - { Language: EN, State: "Ended" }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        by_variant:
+          - { when: { Language: JP, State: "LIve" },              value: { width: 76, height: 22 } }
+          - { when: { Language: EN, State: "LIve" },              value: { width: 76, height: 22 } }
+          - { when: { Language: JP, State: "Preparing Archive" }, value: { width: 97, height: 22 } }
+          - { when: { Language: EN, State: "Preparing Archive" }, value: { width: 76, height: 22 } }
+          - { when: { Language: JP, State: "Archive" },           value: { width: 55, height: 22 } }
+          - { when: { Language: JP, State: "Retry" },             value: { width: 65, height: 22 } }
+          - { when: { Language: EN, State: "Retry" },             value: { width: 78, height: 22 } }
+          - { when: { Language: JP, State: "Ended" },             value: { width: 76, height: 22 } }
+          - { when: { Language: EN, State: "Ended" },             value: { width: 76, height: 22 } }
+
+    # Internal structure varies by State (Library-rendered)
+    children:
+      - id: LiveIcon
+        node_type: FRAME
+        name: LiveIcon
+        description: |
+          State により内部 element 構成が変化:
+          - LIve / Ended → Play Stream MicroAnimation (18×18) + "LIVE" text
+          - Preparing Archive → DotsWeve (20×4 loading 3 dots) + state text
+          - Archive → Video Clapperboard Open Play (12×12) + "Archive" text
+          - Retry → no icon + state text
+        children_by_state:
+          - state: "LIve"
+            structure: "Play Stream MicroAnimation (18×18) + Live text 'LIVE'"
+            text_by_language: { JP: "LIVE", EN: "LIVE" }
+          - state: "Ended"
+            structure: "Play Stream MicroAnimation (18×18) + Live text 'LIVE'"
+            text_by_language: { JP: "LIVE", EN: "LIVE" }
+          - state: "Preparing Archive"
+            structure: "DotsWeve 3-dots animation + state text"
+            text_by_language: { JP: "Archive準備中", EN: "Preparing Archive" }
+          - state: "Archive"
+            structure: "Video Clapperboard icon + Archive text"
+            text_by_language: { JP: "Archive", EN: "Archive" }
+          - state: "Retry"
+            structure: "No icon, just text"
+            text_by_language: { JP: "Archive作成", EN: "Retry" }
+
+      - id: Watcher
+        node_type: FRAME
+        name: Watcher
+        description: |
+          Watcher (Users Group Rounded icon + count text) は LIve / Ended
+          variant のみ表示 (他は無し)。
+        present_in_states: ["LIve", "Ended"]
+        children:
+          - id: viewer_icon
+            node_type: INSTANCE
+            name: "Users Group Rounded"
+            size: { width: 12, height: 12 }
+          - id: Count
+            node_type: FRAME
+            children:
+              - id: count_text
+                node_type: TEXT
+                font_size: 10
+                default_text: "1.0K"
+                description: "視聴者数 — spec で実数値に override"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    LiveBadge は State により内部構造変化（icon 切替 + Watcher 有無）。
+    DO NOT add external sibling LIVE label / dots / archive icon /
+    viewer count.
+  elements_rendered_internally:
+    - "LiveIcon frame (icon + state label, varies by State)"
+    - "Watcher frame (icon + count, ONLY for State=LIve | Ended)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「live」「配信中」「on air」 or default": "LIve"
+      "「archive 準備中」「processing archive」": "Preparing Archive"
+      "「archive」「archived」": "Archive"
+      "「retry」「archive 作成」「再作成」": "Retry"
+      "「ended」「終了」 + viewer count 残す": "Ended"
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    State: "LIve"
+  common_combinations:
+    - { scenario: "配信中 (default Live 表示)", State: "LIve", Language: JP }
+    - { scenario: "配信終了直後 (viewer count 残す)", State: "Ended", Language: JP }
+    - { scenario: "Archive 化処理中 (loading dots)", State: "Preparing Archive", Language: JP }
+  common_scenarios:
+    "active_live_streaming":
+      description: "配信中の正常状態 (default mock)"
+      variant: { State: "LIve", Language: JP }
+      _note: "「LIve」spelling exact (Library typo)"
+    "stream_just_ended_show_viewer_count":
+      description: "配信終了直後、視聴者数残す"
+      variant: { State: "Ended", Language: JP }
+    "archive_processing":
+      description: "Archive 化処理中 (loading dots animation)"
+      variant: { State: "Preparing Archive", Language: JP }
+    "viewable_archive":
+      description: "Archive 視聴可能 (録画再生 mode)"
+      variant: { State: "Archive", Language: JP }
+      _note: "EN+Archive variant 存在しない、JP のみ"
+    "archive_creation_failed_retry":
+      description: "Archive 作成失敗、再試行 button"
+      variant: { State: "Retry", Language: JP }
+
+  default_decision_logic:
+    description: "spec が曖昧な時の State 判定"
+    rules:
+      - if: "spec が「配信中」「live now」 or default"
+        → { State: "LIve" }
+      - if: "spec が「終了」「ended」「配信終了」"
+        → { State: "Ended" }
+      - if: "spec が「Archive 化中」「processing archive」"
+        → { State: "Preparing Archive" }
+      - if: "spec が「録画」「archive」「過去配信」"
+        → { State: "Archive" }
+      - if: "spec が「再作成」「retry」「failed archive」"
+        → { State: "Retry" }
+
+  selection_examples:
+    - spec: "Live 配信視聴画面"
+      decision: { State: "LIve", Language: JP }
+    - spec: "「配信終了 — 視聴者数 1.5K」"
+      decision: { State: "Ended", Language: JP, override_count: "1.5K" }
+    - spec: "「Archive を準備しています...」"
+      decision: { State: "Preparing Archive", Language: JP }
+
+  override_count_for_live_and_ended: |
+    State=LIve / Ended のみ Watcher (viewer count) 表示。default "1.0K"。
+    実数値に override する場合:
+      const countNode = inst.findOne(n => n.type === 'TEXT' && n.name === '1.0K');
+      await figma.loadFontAsync(countNode.fontName);
+      countNode.characters = '1,247';
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('06e24908301644775e2c93cd4cb8e333cc0ac3a9');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.State === 'LIve';   // ← "LIve" は Library typo そのまま
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      State 値 "LIve" は Library のタイポ (Live ではなく LIve)。
+      `v.variantProperties.State === 'Live'` だと undefined になる。
+      必ず "LIve" (大文字 L, I, 小文字 v, e) で照合する。
+  - severity: MUST
+    rule: |
+      EN + Archive variant は Library に存在しない (9 / 10 only)。
+      Archive state を選ぶ場合は JP のみ可能。
+  - severity: SHOULD
+    rule: |
+      width は State により 55 / 65 / 76 / 78 / 97 と変化 (内部 text 幅に依存)。
+      Auto Layout で HUG されているので親 frame で固定幅にしない。
+  - severity: NICE
+    rule: |
+      Library に同名で **LiveBadge for Home AvatarCard** (single component,
+      key 15b1802cc...) も存在する。こちらは Home feed の AvatarCard 上専用、
+      LiveBadge (本 component_set) と区別する。

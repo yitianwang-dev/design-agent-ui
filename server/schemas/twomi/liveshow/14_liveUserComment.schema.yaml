@@ -1,0 +1,302 @@
+# ============================================================
+# Schema PJ — LiveUserComment (single-component-set, complex)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 配信中のユーザーコメントパターン。Style × State × Language で
+# 27 variant の comment item を切替。Live 視聴 / 配信画面の comment feed
+# に並べる主要 building block。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LiveUserComment
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "9bfdd016f553fee5ceacc20db3a0d56aca3473a9"
+  library_description_raw: |
+    【用途 / Usage】
+    Live配信中のユーザーコメントパターン。StyleとStateで表示内容・インタラクションを切り替える。
+    User comment patterns during live streaming.
+    【使用画面 / Used in】
+    Live配信画面 / Live視聴画面 / Live streaming and viewer screens
+    【State】
+    Style: SingleLine / MultiLine / placeholder / Small Gift / Special Gift / Premium Gift / NG / Failed｜State: Default / LongPress｜Language: JP / EN
+  description: |
+    Live 配信中の comment feed に並べる comment item。9 Style (テキスト /
+    Gift / Join / NG / Failed / placeholder) × 2 State (Default / LongPress)
+    × 2 Language を sparse matrix で 27 variant 定義。
+    Description 注記の Style は 8 個と書かれているが実 Library に "Join"
+    が追加され 9 個ある (2026-06 時点)。
+  screen_usage:
+    - "Live 視聴画面 (Viewer) — comment feed"
+    - "Live 配信画面 (Creator)"
+  dependencies:
+    - "User icon (inner instance, 20×20)"
+    - "Pin (inner instance, pin marker 12×12)"
+    - "Small Gift / Big Gift image (Gift styles で表示)"
+    - "Linear / Hands / Hand Shake (Join style icon)"
+    - "Eye off Liner (NG style icon)"
+    - "Arrows Restart (Failed style retry icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LiveUserComment": 27
+    implemented: full
+    notes: |
+      27 variants = sparse matrix。Style 9 × State 2 × Language 2 = max 36
+      だが実際は 27 (一部 combo は Library に未作成)。
+  review_status: ai-draft
+
+components:
+  - id: LiveUserComment
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "9bfdd016f553fee5ceacc20db3a0d56aca3473a9"
+
+    variants:
+      combinations:
+        # SingleLine
+        - { Language: JP, Style: "SingleLine", State: "Default" }
+        - { Language: JP, Style: "SingleLine", State: "LongPress" }
+        - { Language: EN, Style: "SingleLine", State: "Default" }
+        # MultiLine
+        - { Language: JP, Style: "MultiLine", State: "Default" }
+        - { Language: JP, Style: "MultiLine", State: "LongPress" }
+        - { Language: EN, Style: "MultiLine", State: "Default" }
+        # Join
+        - { Language: JP, Style: "Join", State: "Default" }
+        - { Language: EN, Style: "Join", State: "Default" }
+        # placeholder
+        - { Language: JP, Style: "placeholder", State: "Default" }
+        - { Language: JP, Style: "placeholder", State: "LongPress" }
+        - { Language: EN, Style: "placeholder", State: "Default" }
+        # NG
+        - { Language: JP, Style: "NG", State: "Default" }
+        - { Language: JP, Style: "NG", State: "LongPress" }
+        - { Language: EN, Style: "NG", State: "Default" }
+        # Failed
+        - { Language: JP, Style: "Failed", State: "Default" }
+        - { Language: JP, Style: "Failed", State: "LongPress" }
+        - { Language: EN, Style: "Failed", State: "Default" }
+        - { Language: EN, Style: "Failed", State: "LongPress" }
+        # Small Gift
+        - { Language: JP, Style: "Small Gift", State: "Default" }
+        - { Language: JP, Style: "Small Gift", State: "LongPress" }
+        - { Language: EN, Style: "Small Gift", State: "Default" }
+        # Special Gift
+        - { Language: JP, Style: "Special Gift", State: "Default" }
+        - { Language: JP, Style: "Special Gift", State: "LongPress" }
+        - { Language: EN, Style: "Special Gift", State: "Default" }
+        # Premium Gift
+        - { Language: JP, Style: "Premium Gift", State: "Default" }
+        - { Language: JP, Style: "Premium Gift", State: "LongPress" }
+        - { Language: EN, Style: "Premium Gift", State: "Default" }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Style=${Style}, State=${State}"
+      # Size は Style ごとに大きく変化、JP/EN で微妙に変化
+      size_by_style:
+        SingleLine:    { width: 110, height: 35 }
+        MultiLine:     { width: 300, height: 55 }
+        Join:          { JP: { width: 222, height: 20 }, EN: { width: 238, height: 20 } }
+        placeholder:   { JP: { width: 198, height: 40 }, EN: { width: 196, height: 40 } }
+        NG:            { width: 300, height: 91 }
+        Failed:        { JP: { width: 187, height: 68 }, EN: { width: 171, height: 68 } }
+        Small Gift:    { width: 300, height: 67 }
+        Special Gift:  { width: 300, height: 67 }
+        Premium Gift:  { width: 300, height: 67 }
+
+    # 内部構造は Style によって大きく異なる
+    structure_by_style:
+      SingleLine:
+        description: "User icon + CommentTextArea (UserName-Pin + CommentText '1 行')"
+        sample_text: "いいですね！"
+      MultiLine:
+        description: "SingleLine と同構造、CommentText が 2 行以上"
+        sample_text: "いいですね！いいですね！いいですね！いいですね！♥"
+      Join:
+        description: "Hand Shake icon (12×12) + '$UserNameさんが入室しました' (font 13)"
+        sample_text:
+          JP: "$UserNameさんが入室しました"
+          EN: "$UserName joined the stream"
+      placeholder:
+        description: "CommentPlaceHolder frame only — 'まだコメントがありません' message"
+        sample_text:
+          JP: "まだコメントがありません。\n最初のコメントを送りましょう"
+          EN: "(EN equivalent)"
+      NG:
+        description: "NG Comment (Eye off Liner icon でブラー強調) + NG Alert (コンテンツポリシー説明 9px)"
+        sample_text: "コンテンツポリシーまたは利用規約に基づき、このコメントは表示できませんでした。"
+      Failed:
+        description: "Failed Comment (Arrows Restart 再送 icon) + Failed Alert '送信できませんでした。タップして再送信'"
+      "Small Gift":
+        description: "User icon + GiftTitle (Small Gift image 24×21 + GiftDetail) + CommentText"
+        gift_image_size: { width: 24, height: 21 }
+      "Special Gift":
+        description: "Small Gift と同構造、Gift image が異なる (Special Gift artwork)"
+      "Premium Gift":
+        description: "Premium Gift artwork (Big Gift 1 image 40×28)"
+        gift_image_size: { width: 40, height: 28 }
+
+    # Common children (most styles share)
+    children_common:
+      - id: User_icon
+        node_type: INSTANCE
+        size: { width: 20, height: 20 }
+        present_in: ["SingleLine", "MultiLine", "Small Gift", "Special Gift", "Premium Gift", "NG", "Failed"]
+      - id: UserName_Pin
+        node_type: FRAME
+        children:
+          - { name: Pin, type: INSTANCE, size: { width: 12, height: 12 } }
+          - { name: UserName, type: TEXT, font_size: 10, default: "UserName" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Style により内部構造が大きく変化。User icon + UserName + Pin + Comment
+    text + (Style 特有 icon / Gift image / Alert) 全て instance 内部レンダリング。
+    外側に複製禁止。
+  elements_rendered_internally:
+    - "User icon (20×20)"
+    - "UserName + Pin marker"
+    - "CommentText (font 13, Style により改行 / Gift / Alert に変化)"
+    - "Style-specific elements (Hand Shake / Gift image / Eye off / Restart 等)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Style:
+      "「短いコメント」「single line」 or default": "SingleLine"
+      "「長文」「multi line」「複数行」": "MultiLine"
+      "「入室」「join」「参加」": "Join"
+      "「空 / no comment yet」「placeholder」": "placeholder"
+      "「NG word」「ブロック」「policy violation」": "NG"
+      "「送信失敗」「failed」「retry」": "Failed"
+      "「Small Gift」「low-tier gift」": "Small Gift"
+      "「Special Gift」「mid-tier gift」": "Special Gift"
+      "「Premium Gift」「high-tier gift」": "Premium Gift"
+    State:
+      "「Default」 or 表示中": "Default"
+      "「Long press」「タップ長押し」「context menu trigger」": "LongPress"
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    Style: "SingleLine"
+    State: "Default"
+  common_combinations:
+    - { scenario: "通常のコメント表示", Language: JP, Style: "SingleLine", State: "Default" }
+    - { scenario: "Comment feed 空状態", Language: JP, Style: "placeholder", State: "Default" }
+    - { scenario: "Gift 通知 (low tier)", Language: JP, Style: "Small Gift", State: "Default" }
+    - { scenario: "Comment NG block 表示", Language: JP, Style: "NG", State: "Default" }
+  related_components:
+    - "LiveUserCommentTicketTipping (schema 13) — ticket tip 専用通知"
+    - "LIveCommentField (schema 別) — comment input field"
+
+  # ─── 複雑な spec 用 agent decision helpers ───────────────
+  common_scenarios:
+    # 典型的な comment feed mix (実 Live 視聴画面の比率)
+    "typical_viewer_feed_5items":
+      description: "通常の Live 視聴 feed (5 行)"
+      composition:
+        - { Style: SingleLine, count: 3 }
+        - { Style: MultiLine, count: 1 }
+        - { Style: Small Gift, count: 1 }
+    "demo_with_all_styles_8items":
+      description: "全 Style 一望デモ (Hori review 用)"
+      composition:
+        - { Style: SingleLine, count: 1 }
+        - { Style: MultiLine, count: 1 }
+        - { Style: Join, count: 1 }
+        - { Style: Small Gift, count: 1 }
+        - { Style: Special Gift, count: 1 }
+        - { Style: Premium Gift, count: 1 }
+        - { Style: NG, count: 1 }
+        - { Style: Failed, count: 1 }
+    "empty_feed":
+      description: "comment 0 件 (Live 開始直後)"
+      composition:
+        - { Style: placeholder, count: 1 }
+    "gift_event_feed":
+      description: "tipping event 直後 (gift 集中)"
+      composition:
+        - { Style: SingleLine, count: 2 }
+        - { Style: Small Gift, count: 2 }
+        - { Style: Premium Gift, count: 1 }
+
+  default_decision_logic:
+    description: "spec が曖昧な時、以下の logic で Style 自動判定"
+    rules:
+      - if: "spec text に「入室」「joined」「entered」がある"
+        → { Style: Join }
+      - if: "spec text に「ギフト」「🎁」「gift」「ticket」「投げ銭」がある"
+        → { Style: Small Gift, fallback_check: "額大なら Premium Gift" }
+      - if: "spec text に「ブロック」「NG」「policy」「block」がある"
+        → { Style: NG }
+      - if: "spec text に「失敗」「failed」「retry」「再送」がある"
+        → { Style: Failed }
+      - if: "spec が「コメント 0」「empty」「no comments」"
+        → { Style: placeholder }
+      - if: "spec text 文字数 < 15"
+        → { Style: SingleLine }
+      - if: "spec text 文字数 >= 15"
+        → { Style: MultiLine }
+      - else: { Style: SingleLine, _note: "default fallback" }
+
+  selection_examples:
+    description: "spec 1 行 → variant 1 つ、agent few-shot 用"
+    examples:
+      - spec: "ユーザーA: かわいい！"
+        decision: { Language: JP, Style: SingleLine, State: Default }
+        reason: "短い (8 字) + 通常表示"
+      - spec: "Hikari: 見てくれてありがとう。今日も配信ありがとう！またね♥"
+        decision: { Language: JP, Style: MultiLine, State: Default }
+        reason: "長文 (30+ 字) → MultiLine"
+      - spec: "Tanaka がギフトを送りました 🎁"
+        decision: { Language: JP, Style: Small Gift, State: Default }
+        reason: "「ギフト」keyword + 通常 tier"
+      - spec: "User said the wrong thing — NG"
+        decision: { Language: EN, Style: NG, State: Default }
+        reason: "「NG」keyword + EN context"
+      - spec: "Sato joined the stream"
+        decision: { Language: EN, Style: Join, State: Default }
+        reason: "「joined」keyword"
+      - spec: "(空状態) まだコメントがありません"
+        decision: { Language: JP, Style: placeholder, State: Default }
+        reason: "空状態 keyword"
+      - spec: "[tap to retry] 送信失敗"
+        decision: { Language: JP, Style: Failed, State: Default }
+        reason: "「失敗」keyword"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('9bfdd016f553fee5ceacc20db3a0d56aca3473a9');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.Style === 'SingleLine' && p.State === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library description には Style 8 個と書かれているが実 Library に "Join"
+      が追加 9 個。description 古い可能性、最新 Library を確認。
+  - severity: MUST
+    rule: |
+      27 / 36 sparse — 一部 combo (e.g. EN+SingleLine+LongPress / EN+placeholder+
+      LongPress / EN+NG+LongPress / EN+Small Gift+LongPress 等) 存在しない。
+      存在しない combo を指定すると instance 生成失敗。
+  - severity: SHOULD
+    rule: |
+      Gift Style 3 種 (Small / Special / Premium) は内部 Gift image が
+      schema 05/06/07 (Image Small/Medium/Big Gift) と関連する可能性あり。
+      Hori 確認推奨。
+  - severity: SHOULD
+    rule: |
+      placeholder と Join は他 Style と異なり User icon を持たない (Join は
+      Hand Shake icon、placeholder は icon 無し)。

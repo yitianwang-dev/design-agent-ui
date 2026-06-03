@@ -1,0 +1,171 @@
+# ============================================================
+# Schema PJ — SingleLiveViewerHeader (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 視聴画面 (Viewer) のヘッダー。Exclusive Content・Option Menu を
+# Boolean で表示切り替え。LiveBadge + Creator 情報 + Tool ボタン (Exit + Menu)
+# を統合した上部 fixed component。
+#
+# Runtime requirements: v0.5+ with variants.combinations
+# ============================================================
+
+meta:
+  name: SingleLiveViewerHeader
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "1b3fd0fd6140dc4e89301bdb222273ca7f456bf6"
+  library_description_raw: |
+    【用途 / Usage】
+    Live視聴画面のヘッダー。Exclusive Content・Option MenuをBooleanで表示切り替え。
+    Header on Live viewer screen.
+    【使用画面 / Used in】
+    Live視聴画面（Viewer） / Live viewer screen
+    【State】
+    State: Default
+  description: |
+    Live 視聴画面 (Viewer) の上部 header。LiveBadge + ExclusiveContentBadge
+    + Creator info (icon + name + follow) + Tool buttons (Close + Menu) を
+    1 つの component に統合。
+  screen_usage:
+    - "Live 視聴画面 (Viewer)"
+  dependencies:
+    - "LiveBadge (schema 11, nested instance — State=LIve default)"
+    - "exclusiveContentBadge (inner instance — UnlockIcon + UnlockText '解放中')"
+    - "creator-name-follow (inner instance — type=LiveViewer)"
+    - "LivefollowSettings (inner follow button)"
+    - "SideTool - ExitButton (Close × button)"
+    - "SideTool - OptionMenuButton (Menu Dots button)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "SingleLiveViewerHeader": 1
+    implemented: full
+    notes: |
+      1 variant only (State=Default)。Exclusive Content / Option Menu の
+      Boolean toggle が将来追加される可能性あり (description 注記)。
+  review_status: ai-draft
+
+components:
+  - id: SingleLiveViewerHeader
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "1b3fd0fd6140dc4e89301bdb222273ca7f456bf6"
+
+    variants:
+      combinations:
+        - { State: Default }
+
+    container:
+      node_type: COMPONENT
+      name_template: "State=${State}"
+      size:
+        value: { width: 402, height: 139 }
+
+    children:
+      - id: Information
+        node_type: FRAME
+        name: Information
+        size: { width: 1, height: 22 }   # auto-layout hug, width 1 displayed in tree
+        children:
+          - id: LiveBadge
+            node_type: INSTANCE
+            ref:
+              key: "06e24908301644775e2c93cd4cb8e333cc0ac3a9"
+              schema: 11
+            default_variant: { State: "LIve", Language: JP }
+            size: { width: 76, height: 22 }
+            description: "Nested LiveBadge instance (State=LIve default、視聴者数 1.0K)"
+
+          - id: exclusiveContentBadge
+            node_type: INSTANCE
+            name: exclusiveContentBadge
+            size: { width: 62, height: 18 }
+            description: "Membership unlock 状態 badge: UnlockIcon + UnlockText '解放中'"
+            children:
+              - { id: UnlockIcon, ref: "Membership_unlock_outline (12×12)" }
+              - { id: UnlockText, type: TEXT, font_size: 10, characters: "解放中" }
+
+      - id: Frame_1321321736
+        node_type: FRAME
+        name: "Frame 1321321736"
+        size: { width: 290, height: 139 }
+        description: "Right-side container holding HostInfo + Tool buttons"
+        children:
+          - id: HostInfo
+            node_type: FRAME
+            size: { width: 189, height: 28 }
+            children:
+              - id: creator_name_follow
+                node_type: INSTANCE
+                name: "creator-name-follow"
+                ref:
+                  key: "d4920240f99d3d2367512a1d8d5f5ffb84f54397"
+                default_variant: { type: LiveViewer }
+                size: { width: 185, height: 28 }
+                description: |
+                  Creator info (User icon + User name) + LivefollowSettings
+                  (follow button + "フォローする" text)
+
+          - id: Tool
+            node_type: FRAME
+            name: Tool
+            size: { width: 40, height: 96 }
+            description: "縦 2 個の 40×40 Tool ボタン (close + menu)"
+            children:
+              - id: SideTool_ExitButton
+                node_type: INSTANCE
+                name: "SideTool - ExitButton"
+                size: { width: 40, height: 40 }
+                inner:
+                  - { name: "Sub text", type: TEXT, characters: "ハッシュタグ" }
+                  - { name: Icon, contains: "Xmark close (21×21)" }
+              - id: SideTool_OptionMenuButton
+                node_type: INSTANCE
+                name: "SideTool - OptionMenuButton"
+                size: { width: 40, height: 40 }
+                inner:
+                  - { name: "Sub text", type: TEXT, characters: "ハッシュタグ" }
+                  - { name: Icon, contains: "Menu Dots (21×21)" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    SingleLiveViewerHeader は LiveBadge + exclusiveContentBadge +
+    creator-name-follow + Tool buttons を内包。これら全部 instance 内部で
+    レンダリングされる。外側に複製禁止。
+  elements_rendered_internally:
+    - "LiveBadge (nested, LIve + Watcher count)"
+    - "exclusiveContentBadge (UnlockIcon + '解放中' text)"
+    - "creator-name-follow (User icon + name + follow button)"
+    - "SideTool - ExitButton (close × icon)"
+    - "SideTool - OptionMenuButton (menu dots icon)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  no_state_variant_yet: |
+    現状 State=Default のみ。description 注記「Exclusive Content・Option
+    Menu を Boolean で表示切り替え」とあるが、現時点では variant に
+    実装されていない。
+  default_variant:
+    State: Default
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('1b3fd0fd6140dc4e89301bdb222273ca7f456bf6');
+    const variant = set.children.find(v => v.variantProperties?.State === 'Default') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Library description「Exclusive Content・Option Menu を Boolean で
+      表示切り替え」と書かれているが、現時点で variant property に
+      Boolean が無い。将来追加される可能性あり、定期 re-inspect 推奨。
+  - severity: SHOULD
+    rule: |
+      Information frame の displayed width が 1 (auto-layout HUG、内部
+      children で実 width 確定)。親 frame で width を固定しない。
+  - severity: NICE
+    rule: |
+      Sub text "ハッシュタグ" が Tool button 内に隠れて存在する (sample data)。
+      実際の visible text は Icon のみ。

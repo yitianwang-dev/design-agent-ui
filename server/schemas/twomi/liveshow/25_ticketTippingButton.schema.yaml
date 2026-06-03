@@ -1,0 +1,241 @@
+# ============================================================
+# Schema PJ — TicketTippingButton (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Send TicketTipping Bottom Sheet 内のギフト選択 button。Type で
+# ギフトサイズ (Small 5 / Medium 10 / Large 20)、State で選択・残高不足を
+# 切替。Language=JP は h53、EN は h112 (text 長さで layout 倍化)。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: TicketTippingButton
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "66b1593ffbc45c8c4db6d12220f9b758642f9785"
+  library_description_raw: |
+    【用途 / Usage】
+    ギフト選択ボタン。TypeでギフトサイズをStateで選択・残高不足を切り替える。
+    Gift selection button.
+    【State】
+    Type: Small / Medium / Large｜State: Default / Selected / Insufficient｜Language: JP / EN
+  description: |
+    Send TicketTipping Bottom Sheet (key 7d63d8a4...) 内に並ぶ 3 個のギフト
+    選択 button。Type が tip 額決定 (Small=5 / Medium=10 / Large=20 枚)、
+    State で interaction (default / 選択中 / 残高不足) 切替。JP variant は
+    h53 (compact)、EN は h112 (text 長くなった分 layout 高さ倍化)。
+  screen_usage:
+    - "Send TicketTipping Bottom Sheet (key 7d63d8a4...) 内"
+  dependencies:
+    - "Ticker Bold (Ticket icon、Small/Medium で 18×18、Large で 24×24 TicketIcon20 wrapper)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "TicketTippingButton": 18
+    implemented: full
+    notes: |
+      18 variants = Type (Small / Medium / Large) × State (Default / Selected /
+      Insufficient) × Language (JP / EN)。
+      JP h52-53 / EN h112 (text 長い為)。全 width 118。
+  review_status: ai-draft
+
+components:
+  - id: TicketTippingButton
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "66b1593ffbc45c8c4db6d12220f9b758642f9785"
+
+    variants:
+      combinations:
+        # JP (h52/53)
+        - { Language: JP, Type: Small,  State: Default }
+        - { Language: JP, Type: Small,  State: Selected }
+        - { Language: JP, Type: Small,  State: Insufficient }
+        - { Language: JP, Type: Medium, State: Default }
+        - { Language: JP, Type: Medium, State: Selected }
+        - { Language: JP, Type: Medium, State: Insufficient }
+        - { Language: JP, Type: Large,  State: Default }
+        - { Language: JP, Type: Large,  State: Selected }
+        - { Language: JP, Type: Large,  State: Insufficient }
+        # EN (h112)
+        - { Language: EN, Type: Small,  State: Default }
+        - { Language: EN, Type: Small,  State: Selected }
+        - { Language: EN, Type: Small,  State: Insufficient }
+        - { Language: EN, Type: Medium, State: Default }
+        - { Language: EN, Type: Medium, State: Selected }
+        - { Language: EN, Type: Medium, State: Insufficient }
+        - { Language: EN, Type: Large,  State: Default }
+        - { Language: EN, Type: Large,  State: Selected }
+        - { Language: EN, Type: Large,  State: Insufficient }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Type=${Type}, State=${State}"
+      size:
+        by_variant:
+          - { when: { Language: JP, Type: Small,  State: Default },     value: { width: 118, height: 52 } }
+          - { when: { Language: JP, Type: Small,  State: Selected },    value: { width: 118, height: 53 } }
+          - { when: { Language: JP, Type: Small,  State: Insufficient}, value: { width: 118, height: 53 } }
+          - { when: { Language: JP, Type: Medium },                     value: { width: 118, height: 53 } }
+          - { when: { Language: JP, Type: Large },                      value: { width: 118, height: 53 } }
+          - { when: { Language: EN },                                    value: { width: 118, height: 112 } }
+
+    children:
+      - id: tipping_or_ticket_wrapper
+        node_type: FRAME
+        name_by_type:
+          - { when: { Type: Small },  value: "Tipping" }
+          - { when: { Type: Medium }, value: "Tipping" }
+          - { when: { Type: Large },  value: "Ticket" }
+        size: { width: 102, height: 24 }
+        description: "上段: ticket icon + ✕ count text"
+        children:
+          - id: ticket_icon
+            node_type: INSTANCE
+            name_by_type:
+              - { when: { Type: Small },  value: "Ticker Bold (18×18 direct)" }
+              - { when: { Type: Medium }, value: "Ticker Bold (18×18 direct)" }
+              - { when: { Type: Large },  value: "TicketIcon20 wrapper (26×24) > Ticker Bold (24×24)" }
+            size_by_type:
+              - { when: { Type: Small },  value: { width: 18, height: 18 } }
+              - { when: { Type: Medium }, value: { width: 18, height: 18 } }
+              - { when: { Type: Large },  value: { width: 26, height: 24 } }
+          - id: count_text
+            node_type: TEXT
+            name_by_type:
+              - { when: { Type: Small },  value: "x5" }
+              - { when: { Type: Medium }, value: "x10" }
+              - { when: { Type: Large },  value: "x20" }
+            font_size: 10
+            characters_by_type:
+              - { when: { Type: Small },  value: "✕ 5" }
+              - { when: { Type: Medium }, value: "✕ 10" }
+              - { when: { Type: Large },  value: "✕ 20" }
+
+      - id: GiftInformation
+        node_type: FRAME
+        name: GiftInformation
+        size: { width: 102, height: 13 }
+        description: "下段: ticket 枚数表示"
+        children:
+          - id: GiftPrice
+            node_type: TEXT
+            font_size: 13
+            characters_by_type_language:
+              - { when: { Type: Small,  Language: JP }, value: "5枚" }
+              - { when: { Type: Medium, Language: JP }, value: "10枚" }
+              - { when: { Type: Large,  Language: JP }, value: "20枚" }
+              - { when: { Type: Small,  Language: EN }, value: "5 tickets (推定)" }
+              - { when: { Type: Medium, Language: EN }, value: "10 tickets (推定)" }
+              - { when: { Type: Large,  Language: EN }, value: "20 tickets (推定)" }
+
+      # Insufficient state (Large only) wraps Image around Tipping/Ticket
+      - id: image_wrapper_insufficient_large_only
+        node_type: FRAME
+        name: Image
+        present_in: { Type: Large, State: Insufficient }
+        description: "Large+Insufficient で Image wrapper が追加される (内部に Ticket frame)"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Button は Ticket icon + count text + GiftPrice を内部レンダリング。
+    DO NOT add external icon / text。Variant 経由で全部切替。
+  elements_rendered_internally:
+    - "Tipping/Ticket frame (Small/Medium='Tipping'、Large='Ticket')"
+    - "Ticker Bold icon (Small/Medium 18×18、Large 24×24 in TicketIcon20)"
+    - "Count text (✕ 5 / ✕ 10 / ✕ 20)"
+    - "GiftInformation > GiftPrice (5枚 / 10枚 / 20枚)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Type:
+      "「5 tickets」「small tip」「low tier」": Small
+      "「10 tickets」「medium tip」「mid tier」 or default": Medium
+      "「20 tickets」「max tip」「large」「premium」": Large
+    State:
+      "「default」「not selected」 or default": Default
+      "「selected」「currently chosen」「highlighted」": Selected
+      "「insufficient」「greyed out」「not enough balance」": Insufficient
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    Language: JP
+    Type: Medium
+    State: Default
+
+  common_scenarios:
+    "tip_sheet_default_3_options":
+      description: "Send sheet 開いた default — 3 個 button (Small/Medium/Large)、全部 Default state"
+      composition:
+        - { Type: Small,  State: Default }
+        - { Type: Medium, State: Default }
+        - { Type: Large,  State: Default }
+    "tip_sheet_medium_selected":
+      description: "User が Medium tier (10 ticket) を選択中"
+      composition:
+        - { Type: Small,  State: Default }
+        - { Type: Medium, State: Selected }
+        - { Type: Large,  State: Default }
+    "tip_sheet_insufficient_balance":
+      description: "残高 < 20、Large が grey out"
+      composition:
+        - { Type: Small,  State: Default }
+        - { Type: Medium, State: Default }
+        - { Type: Large,  State: Insufficient }
+
+  default_decision_logic:
+    rules:
+      - if: "spec に「5 tickets」「small」"
+        → { Type: Small }
+      - if: "spec に「20」「max」「premium」"
+        → { Type: Large }
+      - if: "spec に「10」 or default"
+        → { Type: Medium }
+      - if: "spec に「selected」「currently chosen」"
+        → { State: Selected }
+      - if: "spec に「insufficient」「not enough」"
+        → { State: Insufficient }
+      - else: { State: Default }
+
+  selection_examples:
+    - spec: "Sheet default: 3 個 button 横並び"
+      decision: "3 instances: Small/Medium/Large all State=Default"
+    - spec: "User selected 10 ticket option (Medium highlight)"
+      decision: { Type: Medium, State: Selected, Language: JP }
+    - spec: "User has only 8 tickets, Large (20) is greyed out"
+      decision: { Type: Large, State: Insufficient, Language: JP }
+
+  used_inside: "Send TicketTipping Bottom Sheet (key 7d63d8a4...) 内 3 button row"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('66b1593ffbc45c8c4db6d12220f9b758642f9785');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.Language === 'JP' && p.Type === 'Medium' && p.State === 'Default';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      EN variant は h112 (JP h53 の 2 倍以上)。spec で button 高さ 53 想定して
+      EN variant を配置すると layout 崩れる。auto-layout で HUG にすれば対応。
+  - severity: SHOULD
+    rule: |
+      Library に同名で **BK_TicketTippingButton** (key 27c26ecb..., BK = backup?)
+      も存在する。本 schema は main の方を選択 (66b1593f)。BK は旧版または
+      バックアップの可能性、Hori 確認推奨。
+  - severity: NICE
+    rule: |
+      Type=Large のみ Ticket icon が 24×24 + TicketIcon20 wrapper。
+      Small/Medium は 18×18 direct。
+  - severity: NICE
+    rule: |
+      Large+Insufficient のみ Image wrapper が追加 (Tipping/Ticket を内包)。
+      他の variant にはこの追加 wrapper なし。

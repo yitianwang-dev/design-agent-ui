@@ -1,0 +1,159 @@
+# ============================================================
+# Schema PJ — LIveCommentField (single-component-set)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Live 視聴画面の comment 入力 field。State で Placeholder (空、tap 前) /
+# Input (typing 中、Send button 表示) を切替。Language で placeholder
+# / 入力 sample 文を切替。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: LIveCommentField
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "a413564765846dd2e331ae152b8b8779eb86bab5"
+  library_description_raw: |
+    【用途 / Usage】
+    Live視聴画面のコメント入力フィールド。
+    Live viewer comment input field.
+    【State】
+    State: Placeholder / Input｜Language: JP / EN
+  description: |
+    Live 視聴画面の下部 SingleLiveViewerBottom (schema 19) 内に組み込まれる
+    comment input field。State=Placeholder は default 表示 (「コメントを送る」
+    grey text)、State=Input は typing 中 (実 text + Send button 表示)。
+    ⚠️ Library 内 name "LIveCommentField" は typo (Live ではなく LIve)。
+  screen_usage:
+    - "Live 視聴画面 (Viewer) — SingleLiveViewerBottom 内の comment 入力"
+  dependencies:
+    - "Send Toggle (Input state 時に表示される送信 button、Plain icon)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "LIveCommentField": 4
+    implemented: full
+    notes: |
+      4 variants = State (Placeholder / Input) × Language (JP / EN)。
+      全部 266×40 (高さ統一)。Input state は Send Toggle button 追加で
+      内部 PlaceHolder text の width が 250 → 226 に縮小。
+  review_status: ai-draft
+
+components:
+  - id: LIveCommentField
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "a413564765846dd2e331ae152b8b8779eb86bab5"
+
+    variants:
+      combinations:
+        - { State: Placeholder, Language: JP }
+        - { State: Placeholder, Language: EN }
+        - { State: Input, Language: JP }
+        - { State: Input, Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "State=${State}, Language=${Language}"
+      size:
+        value: { width: 266, height: 40 }
+
+    children:
+      - id: Type_bar
+        node_type: FRAME
+        name: Type bar
+        size: { width: 266, height: 40 }
+        children:
+          - id: PlaceHolder
+            node_type: TEXT
+            name: PlaceHolder
+            font_size: 13
+            characters:
+              by_variant:
+                - { when: { State: Placeholder, Language: JP }, value: "コメントを送る" }
+                - { when: { State: Placeholder, Language: EN }, value: "Write a comment…" }
+                - { when: { State: Input,       Language: JP }, value: "こんにちは|" }
+                - { when: { State: Input,       Language: EN }, value: "Hello!! |" }
+            width_by_state:
+              - { when: { State: Placeholder }, value: 250 }
+              - { when: { State: Input },       value: 226 }
+
+          - id: Send_Toggle
+            node_type: INSTANCE
+            name: "Send Toggle"
+            present_in_states: [Input]
+            size: { width: 24, height: 24 }
+            description: "送信 button、Input state のみ表示。Outline/Messages, Conversation/Plain icon"
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Type bar wrapper + PlaceHolder text + (Input state のみ) Send Toggle button。
+    DO NOT add external input field / send button.
+  elements_rendered_internally:
+    - "Type bar frame (266×40)"
+    - "PlaceHolder text (font 13, characters per State+Language)"
+    - "Send Toggle button (Input state のみ、24×24)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    State:
+      "「placeholder」「default」「空状態」「tap 前」 or default": Placeholder
+      "「typing」「入力中」「user is typing」「Send button visible」": Input
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+  default_variant:
+    State: Placeholder
+    Language: JP
+
+  common_scenarios:
+    "default_empty_field":
+      description: "通常の comment field (空、tap 前)"
+      variant: { State: Placeholder, Language: JP }
+    "user_typing":
+      description: "ユーザーが入力中 (caret blink、Send button 表示)"
+      variant: { State: Input, Language: JP }
+
+  default_decision_logic:
+    rules:
+      - if: "spec が「typing」「user typed」「input visible」"
+        → { State: Input }
+      - else: { State: Placeholder }
+
+  selection_examples:
+    - spec: "Live 視聴画面の comment field (default)"
+      decision: { State: Placeholder, Language: JP }
+    - spec: "User typing 'Hello!!' with Send button"
+      decision: { State: Input, Language: EN }
+
+  used_inside: |
+    SingleLiveViewerBottom (schema 19) 内 Action frame に nested instance
+    として配置。単独配置よりも親 component 経由が typical。
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('a413564765846dd2e331ae152b8b8779eb86bab5');
+    const variant = set.children.find(v => {
+      const p = v.variantProperties || {};
+      return p.State === 'Placeholder' && p.Language === 'JP';
+    }) || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 内 name "LIveCommentField" は Live (正) ではなく LIve (typo)。
+      search や reference 時は exact spelling を使う。
+  - severity: SHOULD
+    rule: |
+      Input state の PlaceHolder text "こんにちは|" / "Hello!! |" は sample。
+      末尾 "|" は caret 表現 (typing cursor)。実 spec text に override する場合
+      caret も含めて override するか別表現にする。
+  - severity: NICE
+    rule: |
+      State=Input 時に PlaceHolder text width が 250 → 226 に縮小 (Send Toggle
+      24px 分占有)。auto-layout で自動調整される、自前で width 設定不要。

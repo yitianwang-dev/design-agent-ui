@@ -1,0 +1,104 @@
+# ============================================================
+# Schema PJ — Image Big Gift (single-component)
+# ============================================================
+# Generated: 2026-06-03
+#
+# Big ギフト画像。Size variant で Origin / H52 を切替。
+# Image Medium Gift (schema 05) と同パターン、サイズだけ大きい。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Image Big Gift
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "82ccfdf971bfee2aa7226df9897c08626b673931"
+  library_description_raw: |
+    【用途 / Usage】
+    Bigギフト画像。
+    Big gift image.
+    【State】
+    Size: Origin / H52
+  description: |
+    Big ギフト画像 component。Live tipping / premium gift 表示で使用。
+    Size で Origin (フル) / H52 (小サイズ) を切替。Medium / Small シリーズと
+    並列の bigger tier。
+    Big gift image — premium gift tier showcase.
+  screen_usage:
+    - "Live 視聴画面 — premium tipping animation"
+    - "Send TicketTipping Bottom Sheet — premium option preview"
+  dependencies: []
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Image Big Gift": 2
+    implemented: full
+    notes: |
+      2 variants = Size (Origin 482×422 / H52 59×52)。
+      Medium Gift (schema 05) と同構造、寸法が大きい。
+  review_status: ai-draft
+
+components:
+  - id: Image Big Gift
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "82ccfdf971bfee2aa7226df9897c08626b673931"
+
+    variants:
+      combinations:
+        - { Size: Origin }
+        - { Size: H52 }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Size=${Size}"
+      size:
+        by_variant:
+          - { when: { Size: Origin }, value: { width: 482, height: 422 } }
+          - { when: { Size: H52 },    value: { width: 59,  height: 52 } }
+
+    children:
+      - id: Image
+        node_type: RECTANGLE
+        name: Image
+        description: "Image fill (raster gift artwork)"
+        size:
+          by_variant:
+            - { when: { Size: Origin }, value: { width: 482, height: 422 } }
+            - { when: { Size: H52 },    value: { width: 59,  height: 52 } }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _warning: |
+    Image Big Gift is a single raster image. The instance renders the
+    gift image internally per Size variant. DO NOT add external image
+    / wrapper layers.
+  elements_rendered_internally:
+    - "Image rectangle (raster fill)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Size:
+      "「Origin」「premium tier」「full showcase」 or default": Origin
+      "「H52」「inline」「list small」": H52
+  default_variant:
+    Size: Origin
+  use_origin_when: "Premium tip / プレミアムギフト アニメーション"
+  use_h52_when: "List / comment feed inline (Premium ギフト ミニ表示)"
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('82ccfdf971bfee2aa7226df9897c08626b673931');
+    const variant = set.children.find(v => v.variantProperties?.Size === 'Origin') || set.defaultVariant;
+    const instance = variant.createInstance();
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: SHOULD
+    rule: |
+      Origin は 482×422 と大きい。Live 視聴画面 (W402) より幅広なので
+      フル配置だと画面はみ出る。中央配置 + scale 縮小 or H52 利用を検討。
+  - severity: NICE
+    rule: |
+      Gift tier シリーズ: Image Small Gift / Image Medium Gift / Image Big Gift
+      の 3 段階。tipping 額に応じて使い分ける想定。
