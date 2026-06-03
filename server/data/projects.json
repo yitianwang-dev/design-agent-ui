@@ -6,12 +6,6 @@
   },
   "projects": [
     {
-      "id": "default",
-      "name": "(unscoped — current page, all schemas)",
-      "description": "No project — output stays on Figma currentPage and all schemas / dict entries are loaded. Use when iterating or testing.",
-      "_is_fallback": true
-    },
-    {
       "id": "TicketGift",
       "name": "Ticket Gift (Live Tipping)",
       "owner": "Hori-OP-JP",

@@ -23,6 +23,13 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: '必須パラメータが不足しています' });
   }
 
+  // PR #30: project is now mandatory. Output goes to a dedicated Figma page
+  // named after the project — no more silent fallback to currentPage clutter
+  // (Hori 2026-06-03 follow-up request).
+  if (!projectName || projectName.trim() === '' || projectName === 'default') {
+    return res.status(400).json({ error: 'Project is required. Pick one from the dropdown or create a new project name.' });
+  }
+
   if (!(await checkDailyLimit())) {
     return res.status(429).json({ error: `1日の上限（${DAILY_LIMIT}件）に達しました。明日以降にお試しください。` });
   }

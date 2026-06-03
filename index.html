@@ -570,12 +570,12 @@
            populated from /projects (server/data/projects.json). "Custom..."
            lets users type a new project name. Blank value = current page. -->
       <div class="field">
-        <label>Project</label>
+        <label>Project <span style="color:var(--error)">*</span></label>
         <select id="project-select" onchange="onProjectChange()">
           <option value="">— Select a project —</option>
         </select>
         <input type="text" id="project-name-custom" placeholder="Type a new project name" style="display:none; margin-top:8px;">
-        <div class="input-hint" id="project-hint">All screens with the same project land on one dedicated Figma page (auto-created).</div>
+        <div class="input-hint" id="project-hint">Required. All screens with the same project land on one dedicated Figma page (auto-created). Pick existing or "+ Create new project…".</div>
       </div>
       <div class="field">
         <label>Screen name <span style="color:var(--error)">*</span></label>
@@ -851,14 +851,14 @@ async function submitJob() {
       ? (projectCustom?.value || '').trim()
       : projectSel.value;
   }
-  // Skip 'default' sentinel — scaffold treats it the same as blank
-  if (projectName === 'default') projectName = '';
   const screenName = document.getElementById('screen-name').value.trim();
   const specUrl = document.getElementById('spec-url').value.trim();
   const specText = document.getElementById('spec-text').value.trim();
   const figmaRefUrl = document.getElementById('figma-ref-url').value.trim();
 
   if (!userId) { alert('Please enter your email address'); return; }
+  // PR #30: project mandatory (Hori 2026-06-03 — avoid currentPage clutter)
+  if (!projectName) { alert('Please pick a project (or create a new one).\n\nEvery screen needs to be assigned to a project so the Figma file stays organized.'); return; }
   if (!screenName) { alert('Please enter a screen name'); return; }
   if (!/^[a-z][a-zA-Z0-9]*$/.test(screenName)) { alert('Invalid screen name format.\n\nUse camelCase starting with a lowercase letter.\ne.g. packageSelect / homeFeed / settingsTop\n\nNo spaces, symbols, or non-ASCII characters.'); return; }
   if (!selectedType) { alert('Please select a screen type'); return; }
