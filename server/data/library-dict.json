@@ -1110,6 +1110,199 @@
           "_why": "二重表示 bug の典型。testLiveTippingWatch 2026-06-02 で再現した。"
         }
       ]
+    },
+
+    {
+      "_added_in": "PR #27 (2026-06-03)",
+      "_added_reason": "2026-06-03 F3 (sheetInsufficientState) agent generation で agent が sendTicketTippingBottomSheet を import した上で、外側に custom sheetHeader (残数 12) / 追加 ticketTippingButton (5枚 重複) / 独立 ticketShortageNotificationPill を sibling として描画 → 三重表示 bug。Library 自身が State=NotEnoughTickets variant で alert を内部 render することを agent が知らなかった。",
+      "name": "sendTicketTippingBottomSheet",
+      "component_key": "7d63d8a4ab426183b0a69f024f76ae8e3c2fe780",
+      "asset_type": "component_set",
+
+      "catalog_description": {
+        "usage_jp": "Live 視聴中のチケットギフト送信 bottom sheet。Default で 5/10/20 button 選択、NotEnoughTickets state で自動的に alert + greyed button + Buy CTA を表示。",
+        "usage_en": "Ticket gift bottom sheet during live viewing. Default shows 5/10/20 selection; NotEnoughTickets auto-renders alert + greyed buttons + Buy CTA."
+      },
+
+      "variants": {
+        "Language": ["JP", "EN"],
+        "State": ["Default", "NotEnoughTickets"]
+      },
+
+      "_variant_aliases": {
+        "State": {
+          "Default": "Balance sufficient — 3 TicketTippingButtons enabled, CTA shows 'Send Gift'",
+          "NotEnoughTickets": "Insufficient balance — 全 button 自動 greyed + 'チケットが足りません' alert 表示 + CTA changes to 'Buy Tickets' (Library が全部内部処理)"
+        }
+      },
+
+      "default_state": "Default",
+
+      "default_size": {
+        "_note": "Library master heights vary by State. Default=228, NotEnoughTickets includes alert so slightly taller. Do NOT resize.",
+        "width": 402,
+        "height": 228
+      },
+
+      "library_internal_elements": {
+        "_warning_to_agent": "Sheet imports 後、Handle / Header (Title + Close) / TicketDisplay (balance + add) / Select (3 TicketTippingButtons) / Alert (NotEnoughTickets のみ) / ButtonSection (CTA) は全部内部 render。外側に sheetHeader / 単独 ticketTippingButton / insufficientPrompt / purchaseButton 等の sibling を作るのは禁止（PR #27 で実証された三重表示 bug の原因）。",
+        "_correct_usage": "1) State 選択: spec が「insufficient / not enough / 不足 / 余額不足」を含めば State=NotEnoughTickets を選ぶ。\n2) variant.createInstance() のみ。\n3) Balance 表示の数字を override したい場合は instance 内部の text node を findOne で探して characters 書き換え。新しい frame を outside に作らない。",
+        "_incorrect_pattern_observed": "2026-06-03 F3 attempt (frame 2:7237): agent imported sendTicketTippingBottomSheet (228h) AND added sibling sheetHeader '残数 12' overlay at (0, 513), AND custom ticketTippingButton '20 ×5 insufficient' at (16, 626) on top of internal 5枚 button, AND independent ticketShortageNotificationPill at (21, 690). 全部 Library 内部が自前で render するもの。",
+        "elements_rendered_internally": [
+          "Handle (drag indicator)",
+          "Header (Title 'チケットギフト' + Close Circle)",
+          "TicketDisplay (current balance count + plus button)",
+          "Select (3 TicketTippingButtons: 5枚 / 10枚 / 20枚)",
+          "Alert (NotEnoughTickets state only — 'チケットが足りません' + 購入する CTA)",
+          "ButtonSection (CTA: 'Send Gift' default / 'Buy Tickets' for insufficient)"
+        ]
+      },
+
+      "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "State": {
+            "「default」「sufficient balance」「enough tickets」 or default": "Default",
+            "「insufficient」「not enough」「low balance」「buy more」「greyed」「不足」": "NotEnoughTickets"
+          },
+          "Language": {
+            "「日本語」「JP」 or default": "JP",
+            "「English」「EN」": "EN"
+          }
+        },
+        "default_variant": { "Language": "JP", "State": "Default" },
+        "do_not_duplicate_library_internals": {
+          "_critical": "Sheet を import した時点で 5/10/20 buttons / balance / alert / CTA は全部 Library 内部 render 済み。外側に sibling を作らない（§1.9 G）。",
+          "_correct_pattern": "Spec で「insufficient」signal を見たら State=NotEnoughTickets variant を選ぶだけ。Library が alert + greyed buttons + Buy CTA を一括で render する。",
+          "_incorrect_pattern": "Sheet instance を Default で import → 外側に red alert pill / 'チケット不足' text / 購入 button frame を sibling として並べる → 三重表示 + 位置ずれ + Library 内部 Alert と衝突。"
+        },
+        "common_scenarios": [
+          {
+            "scenario": "Viewer が 🎫 tap、十分な残数で sheet 開く",
+            "variant": { "Language": "JP", "State": "Default" }
+          },
+          {
+            "scenario": "Viewer の残数 < 20、20枚 tap で不足表示が出る",
+            "variant": { "Language": "JP", "State": "NotEnoughTickets" },
+            "_note": "Library が alert + 全 button greyed + 購入 CTA を内部で全部 handle。spec で「prompt 追加」「red bar」等を要求されても無視して NotEnoughTickets variant を選ぶだけ。"
+          }
+        ],
+        "safe_pattern": "const set = await figma.importComponentSetByKeyAsync('7d63d8a4ab426183b0a69f024f76ae8e3c2fe780');\nconst variant = set.children.find(v => v.variantProperties?.State === 'NotEnoughTickets' && v.variantProperties?.Language === 'JP') || set.defaultVariant;\nconst instance = variant.createInstance();\ninstance.x = 0; instance.y = 513;"
+      },
+
+      "related_components": {
+        "appears_on_screens": ["Live Stream / Watch (Viewer)"],
+        "appears_alongside": [
+          { "name": "singleLiveViewerBottom", "_relation": "Viewer screen の bottom bar — sheet open 時に y=513 で重なる" },
+          { "name": "TicketTippingButton", "_relation": "Sheet 内部の 5/10/20 button、外側に重複生成しない" }
+        ]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "Sheet import 後、Library 内部 render の要素（balance / 5/10/20 button / alert / CTA）を外側に sibling として作らない。spec で「red prompt 追加」と書かれても、State=NotEnoughTickets variant を選ぶことで Library が自動 render する。",
+          "_why": "PR #27 (2026-06-03) F3 agent run で実証: Library 内部 Alert と sibling alert pill が衝突 → 三重 layout バグ。"
+        },
+        {
+          "severity": "MUST",
+          "rule": "「Insufficient」「不足」「not enough」spec キーワードを見たら必ず State=NotEnoughTickets variant を選ぶ。State=Default のまま外側で button を greyed にしようとしない。",
+          "_why": "Library 自前で全 button greyed + alert + CTA 変更を一括 handle する。手動で grey にすると Library 内部の Default 表示が残って残骸 button が見える。"
+        }
+      ]
+    },
+
+    {
+      "_added_in": "PR #27 (2026-06-03)",
+      "_added_reason": "2026-06-03 F3 で agent が singleLiveViewerBottom (Library 105h) を import した上、同じ y=769 に custom commentInputField + custom ticketButton を sibling として追加 → 底部 bar が三重 stack。LiveCommentField と TicketTippingButton が instance 内部 render される旨を明示。",
+      "name": "singleLiveViewerBottom",
+      "component_key": "d75ef2ffd3c2497a6bc5af0f6af2420513ff9b17",
+      "asset_type": "component_set",
+
+      "catalog_description": {
+        "usage_jp": "Live 視聴画面の下部 fixed control。Comment field + Join button + TicketTipping button + EmojiList を内部 render。State で 4 mode 切替 (Default/Reaction/Archive/Comment)。",
+        "usage_en": "Bottom fixed control of Live viewer screen. Renders comment field + join button + tip button + emoji list internally."
+      },
+
+      "variants": {
+        "State": ["Default", "Reaction", "Archive", "Comment"]
+      },
+
+      "_variant_aliases": {
+        "State": {
+          "Default": "通常 viewer mode — Comment field + Join + TicketTip + EmojiList all visible",
+          "Reaction": "Reaction overlay 表示 — EmojiList を ReactionImage に置換、pulse animation",
+          "Archive": "録画再生 mode — Playback controls + SeekBar、Comment field 非表示",
+          "Comment": "Keyboard 展開 mode — Comment field 拡大、tip button 非表示、iOS keyboard 表示"
+        }
+      },
+
+      "default_state": "Default",
+
+      "default_size": {
+        "_note": "State により高さが大きく変わる。Default=262 (with EmojiList) / Reaction=185 / Archive=105 / Comment=409 (with keyboard).",
+        "width": 402,
+        "height": 105,
+        "_height_by_state": { "Default": 262, "Reaction": 185, "Archive": 105, "Comment": 409 }
+      },
+
+      "library_internal_elements": {
+        "_warning_to_agent": "Instance import 後、LIveCommentField (comment 入力欄) / TicketTippingButton (🎫 button) / EmojiList / Join button は全部内部 render。外側に commentInputField / ticketButton / tipButton 等の sibling を作らない。",
+        "_correct_usage": "createInstance() のみ。Comment placeholder や tip button のアイコンを変えたい場合は、instance 内部 node を findOne で探して text/visible 書き換え。新しい frame を sibling で作らない。",
+        "_incorrect_pattern_observed": "2026-06-03 F3 attempt (frame 2:7237): singleLiveViewerBottom (Library, y=769, 402×105) + sibling commentInputField (y=769, 294×40) + sibling ticketButton (x=354 y=769, 40×40) — 全部同じ y で stacked、底部 bar が三層に重なった。",
+        "elements_rendered_internally": [
+          "Background (Default/Reaction/Archive)",
+          "EmojiList (Default only) / ReactionImage (Reaction only)",
+          "ButtonSection > Action > LIveCommentField (comment 入力欄)",
+          "ButtonSection > Action > Ghost Smile (decorative icon)",
+          "ButtonSection > Action > TicketTippingButton (🎫 tip button)",
+          "PanelSection (Archive only): Playback controls + SeekBar",
+          "Keyboard (always present, only Comment state 展開)"
+        ]
+      },
+
+      "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "State": {
+            "「default」「通常 viewer 画面」 or default": "Default",
+            "「reaction」「反応中」「emoji pulse animation」": "Reaction",
+            "「archive」「録画再生」「playback」": "Archive",
+            "「comment 入力中」「keyboard expanded」「typing」": "Comment"
+          }
+        },
+        "default_variant": { "State": "Default" },
+        "do_not_duplicate_library_internals": {
+          "_critical": "Bottom bar の comment input / 🎫 button / Join button / EmojiList は全部 Library 内部 render 済み。spec で「comment input + tip button」と書かれても、singleLiveViewerBottom 一つを import するだけで両方が visible になる。",
+          "_correct_pattern": "createInstance() のみ。\nconst variant = set.children.find(v => v.variantProperties?.State === 'Default') || set.defaultVariant;\nconst instance = variant.createInstance();\ninstance.x = 0; instance.y = 802;",
+          "_incorrect_pattern": "singleLiveViewerBottom instance + 別 frame commentInputField sibling + 別 frame ticketButton sibling を同じ y に並べる → 三重 stack バグ。"
+        },
+        "common_scenarios": [
+          {
+            "scenario": "Live viewer 通常画面の bottom bar",
+            "variant": { "State": "Default" },
+            "_position": "x:0, y:802 (canvas 402×874 の底端)"
+          }
+        ],
+        "safe_pattern": "const set = await figma.importComponentSetByKeyAsync('d75ef2ffd3c2497a6bc5af0f6af2420513ff9b17');\nconst variant = set.children.find(v => v.variantProperties?.State === 'Default') || set.defaultVariant;\nconst instance = variant.createInstance();\ninstance.x = 0; instance.y = 802;"
+      },
+
+      "related_components": {
+        "appears_on_screens": ["Live Stream / Watch (Viewer)"],
+        "appears_alongside": [
+          { "name": "sendTicketTippingBottomSheet", "_relation": "🎫 tap で sheet が y=513 で開く（bottom bar の上に重なる）" }
+        ]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "Instance import 後、外側に commentInputField / ticketButton / 🎫 button frame 等の sibling を作らない。Library 内部に既に全部含まれている。",
+          "_why": "PR #27 (2026-06-03) F3 で三層 stack バグ実証。"
+        },
+        {
+          "severity": "SHOULD",
+          "rule": "Position は y=802 推奨 (canvas h=874 の場合)。EmojiList が State=Default で height 262 まで伸びるが、上部に空間が必要なので Default state でも y=802 で OK (EmojiList は右側 floating)。"
+        }
+      ]
     }
   ],
 
