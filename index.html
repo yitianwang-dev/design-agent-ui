@@ -565,13 +565,17 @@
         <div class="section-num">2</div>
         <div class="section-title">Project &amp; Screen Name</div>
       </div>
-      <!-- PR #28: Project name routes the generated screen to a dedicated
-           Figma page so multi-project outputs stay organized. Leave blank to
-           place on the file's current page (back-compat). -->
+      <!-- PR #28 / #29: Project routes the generated screen to a dedicated
+           Figma page so multi-project outputs stay organized. Dropdown is
+           populated from /projects (server/data/projects.json). "Custom..."
+           lets users type a new project name. Blank value = current page. -->
       <div class="field">
-        <label>Project name</label>
-        <input type="text" id="project-name" placeholder="e.g. TicketGift / LiveStreamRevamp">
-        <div class="input-hint">All screens with the same project name land on one dedicated page (auto-created). Blank = current page.</div>
+        <label>Project</label>
+        <select id="project-select" onchange="onProjectChange()">
+          <option value="">— Select a project —</option>
+        </select>
+        <input type="text" id="project-name-custom" placeholder="Type a new project name" style="display:none; margin-top:8px;">
+        <div class="input-hint" id="project-hint">All screens with the same project land on one dedicated Figma page (auto-created).</div>
       </div>
       <div class="field">
         <label>Screen name <span style="color:var(--error)">*</span></label>
@@ -838,7 +842,17 @@ function saveUserId() {
 async function submitJob() {
   const userId = document.getElementById('user-id').value.trim();
   const productId = document.getElementById('product-select').value;
-  const projectName = document.getElementById('project-name').value.trim();
+  // PR #29: project comes from dropdown OR custom text field (if "+ Create new" selected)
+  const projectSel = document.getElementById('project-select');
+  const projectCustom = document.getElementById('project-name-custom');
+  let projectName = '';
+  if (projectSel && projectSel.value) {
+    projectName = projectSel.value === '__custom__'
+      ? (projectCustom?.value || '').trim()
+      : projectSel.value;
+  }
+  // Skip 'default' sentinel — scaffold treats it the same as blank
+  if (projectName === 'default') projectName = '';
   const screenName = document.getElementById('screen-name').value.trim();
   const specUrl = document.getElementById('spec-url').value.trim();
   const specText = document.getElementById('spec-text').value.trim();
@@ -1045,8 +1059,56 @@ function saveProduct() {
 
 // ── INIT ────────────────────────────────────
 populateProductSelect();
+populateProjectSelect();   // PR #29: fetch /projects and fill dropdown
 selectTab('Home');
 document.getElementById('user-id').value = localStorage.getItem('da_userId') || '';
+
+// PR #29: load known projects from server registry, plus "Custom..." escape hatch.
+async function populateProjectSelect() {
+  const sel = document.getElementById('project-select');
+  if (!sel) return;
+  try {
+    const res = await fetch(`${API_BASE}/projects`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { projects } = await res.json();
+    // Reset
+    sel.innerHTML = '<option value="">— Select a project —</option>';
+    for (const p of projects) {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.is_fallback ? p.name : `${p.id} — ${p.name}`;
+      if (p.description) opt.title = p.description;
+      sel.appendChild(opt);
+    }
+    // Custom option for ad-hoc project names
+    const custom = document.createElement('option');
+    custom.value = '__custom__';
+    custom.textContent = '+ Create new project…';
+    sel.appendChild(custom);
+    // Restore last used
+    const last = localStorage.getItem('da_projectId');
+    if (last && [...sel.options].some(o => o.value === last)) sel.value = last;
+  } catch (err) {
+    console.warn('[projects] failed to load:', err);
+    // Fall back to plain text input
+    sel.style.display = 'none';
+    document.getElementById('project-name-custom').style.display = 'block';
+    document.getElementById('project-name-custom').placeholder = 'Project name (server offline)';
+  }
+}
+
+function onProjectChange() {
+  const sel = document.getElementById('project-select');
+  const custom = document.getElementById('project-name-custom');
+  if (sel.value === '__custom__') {
+    custom.style.display = 'block';
+    custom.focus();
+  } else {
+    custom.style.display = 'none';
+    custom.value = '';
+    if (sel.value) localStorage.setItem('da_projectId', sel.value);
+  }
+}
 
 // Seed Twomi as the default product; backfill libraryFileKey on existing entries if missing
 (function seedTwomi() {

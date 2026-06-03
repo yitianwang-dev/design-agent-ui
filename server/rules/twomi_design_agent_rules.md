@@ -539,6 +539,30 @@ spec が明示的に「Library にない / variant に存在しない overlay」
 
 ## 3. 画面構造ルール
 
+### 3.0 Project スコープ（PR #28 + PR #29、2026-06-03 Hori リクエスト）
+
+各画面は **project** に属する。Project は機能 / 取り組み単位（例: `TicketGift`, `LiveQualityUp`）であり、コンポーネントの所属ではない（コンポーネントは複数 project から使われ得る）。
+
+**動作**:
+1. **出力配置**（Phase 1）: agent は `projectName` と同名の Figma page を探し、無ければ自動作成して画面を配置。Page が project の物理的な箱になる。
+2. **Project registry**（Phase 2）: `server/data/projects.json` に既知 project を列挙。`/projects` API + UI dropdown で選択できる。新規 project は dropdown の "Create new project…" から自由文字列で追加可能。
+3. **Schema スコープ**（Phase 3、opt-in）: schema YAML の `meta.projects: [A, B]` で関与 project を宣言可能。宣言があれば一致する project のみ load、宣言なしは **全 project に load**（後方互換 — Library primitive はそのまま）。
+4. **Dict スコープ**: 現状 dict は project filter なし（全 entry が tier A 対象、ただし import された component 名でしか injection されないので空気代は実質ゼロ）。
+
+**Spec 提出時**:
+- UI で project を選ぶ（dropdown / Create new）
+- 空白は `default` = currentPage に配置 + 全 schema load（既存挙動）
+- project を選ぶと、画面は project page に行く + tagged schema が project に絞られる
+
+**新規 project を追加するとき**:
+1. `server/data/projects.json` に entry を足す（`id`, `name`, `description`, `owner` 必須、`uses_dict_components` 任意）
+2. 必要なら関連 schema YAML の `meta` に `projects: [新ProjectId]` を追加
+3. UI dropdown に自動反映（再 deploy 後）
+
+**注意**:
+- Project id は変更しない（出力 page 名と紐付くため、変えると過去の page が孤児化）
+- 同一 project に複数 screen を生成すると同 page 内で右に並ぶ（scaffold が maxRight + 50 で配置）
+
 ### 3.1 scaffold の使い分け
 
 3 種類の scaffold は `server/scaffolds/scaffold_{a,b,c}.js` にある。Step 4 では適切な scaffold を選んでから contentFrame を埋める。

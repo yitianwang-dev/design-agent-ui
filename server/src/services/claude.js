@@ -824,12 +824,15 @@ export async function generateFigmaScript(input) {
   // Step 2: Select relevant components for this screen (Haiku)
   const selectedComponents = await selectComponents(specContent, screenType, screenName, componentSets);
 
-  // Step 3: Load schema guidelines for selected components only
+  // Step 3: Load schema guidelines for selected components only.
+  // PR #29: pass projectName so schemas tagged with `meta.projects: [...]`
+  // are filtered to the current project (untagged schemas load for all).
   const schemaContent = await loadSchemasForComponents(
     product.id || 'twomi',
-    selectedComponents.map(c => c.name)
+    selectedComponents.map(c => c.name),
+    projectName
   );
-  console.log(`[schemas] ${schemaContent ? schemaContent.split('###').length - 1 : 0} schema(s) matched`);
+  console.log(`[schemas] ${schemaContent ? schemaContent.split('###').length - 1 : 0} schema(s) matched (project=${projectName || 'none'})`);
 
   // Step 3.5 (PR #14, 2026-06-01): look up each selected component in the
   // Library dictionary. Currently only 2 of 286 components are documented

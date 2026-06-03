@@ -1,0 +1,40 @@
+{
+  "_meta": {
+    "created": "2026-06-03",
+    "purpose": "Project registry for Twomi Design Agent. Each project = a feature/initiative with its own set of screens. Used to (1) route Figma output to a dedicated page (Phase 1, PR #28), (2) scope which schemas / library-dict entries get loaded at generation time (Phase 2-3, PR #29), (3) populate UI dropdown.",
+    "back_compat": "When a project is missing from this list, the agent still accepts it as a free-text value and treats it as untagged (loads all schemas / dict entries). Adding to this registry only enables strict scoping and dropdown autocomplete."
+  },
+  "projects": [
+    {
+      "id": "default",
+      "name": "(unscoped — current page, all schemas)",
+      "description": "No project — output stays on Figma currentPage and all schemas / dict entries are loaded. Use when iterating or testing.",
+      "_is_fallback": true
+    },
+    {
+      "id": "TicketGift",
+      "name": "Ticket Gift (Live Tipping)",
+      "owner": "Hori-OP-JP",
+      "description": "Live streaming tip-giving via tickets. Viewer taps 🎫, picks 5/10/20, avatar reacts, comment feed shows tip.",
+      "spec_doc_id": "1tIYCcwKgCQ_zjz3tCTOAdegffMPozZ77QTng7fvHcq8",
+      "uses_dict_components": [
+        "sendTicketTippingBottomSheet",
+        "singleLiveViewerBottom",
+        "LiveBadge for Home AvatarCard"
+      ],
+      "_note": "Created 2026-06-03 as part of Requester's Playbook Step 3 prototype task (CA-1xxx)"
+    },
+    {
+      "id": "LiveQualityUp",
+      "name": "Live Streaming Quality Up",
+      "owner": "Hori-OP-JP",
+      "description": "Overall live streaming UX improvements — avatar reactions, character bible voice tuning, viewer engagement. Parent initiative that TicketGift contributes to.",
+      "uses_dict_components": [
+        "sendTicketTippingBottomSheet",
+        "singleLiveViewerBottom",
+        "LiveBadge for Home AvatarCard"
+      ],
+      "_status": "in planning"
+    }
+  ]
+}

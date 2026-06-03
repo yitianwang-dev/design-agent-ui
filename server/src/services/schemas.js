@@ -39,7 +39,21 @@ async function collectSchemaFiles(rootDir) {
   return out.sort((a, b) => a.relpath.localeCompare(b.relpath));
 }
 
-export async function loadProductSchemas(productId) {
+// PR #29 (2026-06-03): optional `projectName` filter. When a schema's YAML
+// declares `meta.projects: [A, B]`, it loads only if projectName matches
+// A or B. Schemas with no `projects` field load for ALL projects
+// (back-compat — most components are project-agnostic Library primitives).
+function schemaMatchesProject(text, projectName) {
+  if (!projectName || projectName === 'default') return true;
+  // Quick textual check — avoid full YAML parse for ~150 schema files.
+  // Match the `projects:` array under `meta:`. If absent, treat as universal.
+  const m = text.match(/^\s*projects:\s*\[([^\]]*)\]/m);
+  if (!m) return true; // no scope declared → load
+  const declared = m[1].split(',').map(s => s.trim().replace(/['"]/g, ''));
+  return declared.includes(projectName);
+}
+
+export async function loadProductSchemas(productId, projectName) {
   const dir = join(SCHEMAS_DIR, productId);
   const files = await collectSchemaFiles(dir);
   if (files.length === 0) return '';
@@ -47,15 +61,16 @@ export async function loadProductSchemas(productId) {
   const contents = await Promise.all(
     files.map(async ({ abspath, relpath }) => {
       const text = await readFile(abspath, 'utf-8');
+      if (!schemaMatchesProject(text, projectName)) return null;
       return `### ${relpath}\n\`\`\`yaml\n${text}\n\`\`\``;
     })
   );
 
-  return contents.join('\n\n');
+  return contents.filter(Boolean).join('\n\n');
 }
 
 // 選定されたコンポーネント名に関連するスキーマだけを返す
-export async function loadSchemasForComponents(productId, componentNames) {
+export async function loadSchemasForComponents(productId, componentNames, projectName) {
   if (!componentNames.length) return '';
 
   const dir = join(SCHEMAS_DIR, productId);
@@ -67,6 +82,7 @@ export async function loadSchemasForComponents(productId, componentNames) {
   const matched = [];
   for (const { abspath, relpath } of files) {
     const text = await readFile(abspath, 'utf-8');
+    if (!schemaMatchesProject(text, projectName)) continue; // PR #29
     const textLower = text.toLowerCase();
     if (lowerNames.some(name => textLower.includes(name))) {
       matched.push(`### ${relpath}\n\`\`\`yaml\n${text}\n\`\`\``);
