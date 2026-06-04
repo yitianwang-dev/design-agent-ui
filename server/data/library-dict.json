@@ -1301,6 +1301,284 @@
           "rule": "Position は y=802 推奨 (canvas h=874 の場合)。EmojiList が State=Default で height 262 まで伸びるが、右側 floating なので問題なし。"
         }
       ]
+    },
+
+    {
+      "_added_in": "PR #31 (2026-06-04) — Shop component series",
+      "_added_reason": "Shop/PkgCard は Recommended badge (boolean) + SKU (icon + setName + description) + PriceSection が全部 instance 内部 render。agent が知らないと外側に独自 badge / 価格 frame を sibling として作って二重表示する典型パターン。schema 01 で documented、ここで dict 入口を加え Tier A injection で agent に guidance 与える。",
+      "name": "Shop/PkgCard",
+      "component_key": "565d4a478945cafc7fdadcd865d4ac90f89806aa",
+      "asset_type": "component_set",
+
+      "catalog_description": {
+        "usage_jp": "チケット購入画面のパッケージ選択カード。Set で枚数・金額切替、Recommended boolean で「おすすめ」badge ON/OFF。",
+        "usage_en": "Package selection card on ticket purchase screen. Switch quantity/price by Set, toggle Recommended badge."
+      },
+
+      "variants": {
+        "Language": ["JP", "EN"],
+        "Set": ["500", "1000", "2000"],
+        "Value": ["Default", "Pressed"]
+      },
+
+      "boolean_properties": {
+        "Recommended#2037:3": { "default": true, "description": "おすすめ / Recommended badge ON/OFF (top-right corner)" }
+      },
+
+      "_variant_aliases": {
+        "Set": {
+          "500":  "1 セット / 5枚 / ¥500 (lowest tier, JP)",
+          "1000": "2 セット / 10枚 / ¥1,000 (mid tier)",
+          "2000": "4 セット / 20枚 / ¥2,000 (highest tier, best value)"
+        },
+        "Value": {
+          "Default": "Resting state",
+          "Pressed": "Tap feedback (~3% shrink: 370→358.9, 104→100.88)"
+        }
+      },
+
+      "default_state": "Default",
+
+      "default_size": {
+        "_note": "Library master size. Default=370×104 / Pressed=358.9×100.88.",
+        "width": 370,
+        "height": 104
+      },
+
+      "library_internal_elements": {
+        "_guidance_to_agent": "Card import 後、Recommended badge / SKU (Ticker icon + SetName + Description) / PriceSection (¥金額) は全部内部 render。spec で「おすすめパック」「ticket icon 左側」「価格 右側」等が言及されても、card 1 instance を import するだけで全部 visible。",
+        "_recommended_pattern": "1) Spec の枚数キーワード (5枚/10枚/20枚) → Set 選択。2) 「おすすめ」「Recommended」 spec keyword → Recommended boolean (default true)。3) variant.createInstance() + setProperties({ 'Recommended#2037:3': bool })。",
+        "elements_rendered_internally": [
+          "Recommended badge (おすすめ / Recommended + sparkles icon, top-right) — controlled by Recommended boolean",
+          "SKU: Icon (Ticker Bold 32×32) + Information (SetNameText + DescriptionText)",
+          "PriceSection (Price text ¥N, right side)"
+        ]
+      },
+
+      "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "Set": {
+            "「500」「1セット」「5枚」「lowest」「cheapest」": "500",
+            "「1000」「2セット」「10枚」「mid tier」": "1000",
+            "「2000」「4セット」「20枚」「premium」「best value」": "2000"
+          },
+          "Language": {
+            "「日本語」「JP」 or default": "JP",
+            "「English」「EN」": "EN"
+          },
+          "Value": {
+            "「default」 or default": "Default",
+            "「pressed」「tap feedback」": "Pressed"
+          }
+        },
+        "spec_signal_to_boolean": {
+          "Recommended#2037:3": {
+            "「おすすめ」「recommended」「強調」 or default": true,
+            "「badge OFF」「plain」「no recommended」": false
+          }
+        },
+        "default_variant": { "Language": "JP", "Set": "500", "Value": "Default" },
+        "default_boolean": { "Recommended#2037:3": true },
+        "do_not_duplicate_library_internals": {
+          "_guidance": "Card に Recommended badge / Ticker icon / Set name / 価格 text すべて内蔵。spec で要求されても外側に sibling 追加不要。",
+          "_recommended": "createInstance() + setProperties() で完結。Set / Recommended で文字・badge 切替。",
+          "_avoid": "Card instance + 別 frame の おすすめ badge / 価格 label を sibling として並べる (二重表示)。"
+        },
+        "common_combinations": [
+          {
+            "scenario": "標準 Shop 画面 (3 card 縦並び、全おすすめ)",
+            "variants": [
+              { "Set": "500",  "Recommended": true },
+              { "Set": "1000", "Recommended": true },
+              { "Set": "2000", "Recommended": true }
+            ]
+          },
+          {
+            "scenario": "中段だけ強調 (best value 演出)",
+            "variants": [
+              { "Set": "500",  "Recommended": false },
+              { "Set": "1000", "Recommended": true  },
+              { "Set": "2000", "Recommended": false }
+            ]
+          }
+        ],
+        "safe_pattern": "const set = await figma.importComponentSetByKeyAsync('565d4a478945cafc7fdadcd865d4ac90f89806aa');\nconst variant = set.children.find(v =>\n  v.variantProperties?.Language === 'JP' &&\n  v.variantProperties?.Set === '500' &&\n  v.variantProperties?.Value === 'Default'\n) || set.defaultVariant;\nconst instance = variant.createInstance();\ninstance.setProperties({ 'Recommended#2037:3': true });"
+      },
+
+      "related_components": {
+        "appears_on_screens": ["Shop / チケット購入画面"],
+        "appears_alongside": [
+          { "name": "ticketSummarySection", "_relation": "Shop 画面 header 直下の現残高表示" },
+          { "name": "ticketPurchaseConfirmationDialog", "_relation": "PkgCard tap → 本 dialog で確認" },
+          { "name": "ticketShortageBottomSheet", "_relation": "Tier unlock 不足 → 「ショップへ」CTA → Shop → 本 card 表示" }
+        ]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "Library 注記「インスタンス上での文言変更禁止」— SetNameText / DescriptionText / Price / Title (Recommended badge) を override しない。Set / Language variant 切替でしか変更不可。"
+        },
+        {
+          "severity": "SHOULD",
+          "rule": "Text node 名が Set 別に番号付き (SetNameText1/2/3, DescriptionText1/2/3, Price1/2/3) — findOne で探す時は variant の Set 値依存の suffix に注意。"
+        }
+      ]
+    },
+
+    {
+      "_added_in": "PR #31 (2026-06-04) — Shop component series",
+      "_added_reason": "ticketShortageBottomSheet は内部に ticketSummarySection 構造を**複製**してある (Library instance 参照ではなく) — agent が schema 02 (ticketSummarySection) を別途追加すると残高表示が二重に出る典型 bug。「ショップへ」CTA + Tier N placeholder + close 含むので shadow-build 誘発しやすい。",
+      "name": "ticketShortageBottomSheet",
+      "component_key": "6f78ef826b4a33f8f1237b24ce8bebc0be318a45",
+      "asset_type": "component_set",
+
+      "catalog_description": {
+        "usage_jp": "Tier 限定 content unlock 試み時のチケット不足 bottom sheet。Tier N + 不足枚数 + 残高 + 「ショップへ」CTA。",
+        "usage_en": "Bottom sheet for ticket shortage when attempting to unlock Tier-locked content."
+      },
+
+      "variants": {
+        "Language": ["JP", "EN"]
+      },
+
+      "default_state": "Language=JP",
+
+      "default_size": {
+        "_note": "JP=402×333 / EN=402×330 (EN tier message 1 行短い)。",
+        "width": 402,
+        "height": 333
+      },
+
+      "library_internal_elements": {
+        "_guidance_to_agent": "Sheet import 後、Handle + Header (Title + Close) + Contents (Tier 提示 + 内蔵 ticketSummarySection + 「ショップへ」 button) + Home Indicator は全部内部 render。spec で「不足残高表示」「Shop button」「Close button」等が言及されても、本 sheet 1 instance で全部 visible。",
+        "_critical_no_double_summary": "⚠️ ticketSummarySection (schema 02 entry) は本 sheet 内部に複製版が含まれている。schema 02 の instance を本 sheet と同じ screen に sibling として追加すると残高表示が二重に出る。",
+        "_recommended_pattern": "1) Language 決定。2) variant.createInstance() → bottom-anchored modal (y = 874 - sheet.height)。3) Tier N / 不足N枚 は default placeholder のまま (実装時 app dynamic binding)。4) 背景 scrim rgba(0,0,0,0.5) を別 frame で追加。",
+        "elements_rendered_internally": [
+          "Handle (drag indicator 48×6)",
+          "Header: Title (チケットが足りません / Not enough tickets) + Close Circle",
+          "Contents > header_message (Tier N + 不足N枚 placeholder)",
+          "Contents > ticketSummarySection (内蔵: 所有チケット + Ticker icon + 残数 count)",
+          "Contents > Button Wrapper > Button (ショップへ / Go to Shop, Ghost Smile icons 含む)",
+          "Home Indicator (iOS 下部 Safe Area)"
+        ]
+      },
+
+      "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "Language": {
+            "「日本語」「JP」 or default": "JP",
+            "「English」「EN」": "EN"
+          }
+        },
+        "default_variant": { "Language": "JP" },
+        "trigger_context_disambiguation": {
+          "_critical": "本 sheet は Tier 限定 content unlock 文脈専用。Live tipping 中の不足は LiveShow schema 26 (sendTicketTippingBottomSheet) の State=NotEnoughTickets を使う。混同しない。",
+          "use_this_when": "spec が「Tier」「ExclusiveContent」「Unlock」「限定 content」「unlock Tier N」等を含む",
+          "use_sendTicketTippingBottomSheet_when": "spec が「Live 配信中」「tipping」「投げ銭」「ライブ中の購入」を含む"
+        },
+        "do_not_duplicate_library_internals": {
+          "_guidance": "Sheet に Tier 提示 / 残高 summary / Goto Shop button / Close すべて内蔵。spec で「balance display」「Shop button」要求されても外側に sibling 追加不要。",
+          "_recommended": "createInstance() で完結。ticketSummarySection (schema 02) を別途 import しないこと — 本 sheet 内部に複製版がある。",
+          "_avoid": "Sheet instance + ticketSummarySection instance を同じ screen に並べる (二重表示)。"
+        },
+        "safe_pattern": "const set = await figma.importComponentSetByKeyAsync('6f78ef826b4a33f8f1237b24ce8bebc0be318a45');\nconst variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;\nconst instance = variant.createInstance();\ninstance.x = 0; instance.y = 874 - instance.height;"
+      },
+
+      "related_components": {
+        "appears_on_screens": ["Tier unlock 試行画面 (ExclusiveContent)", "AvatarCard ExclusiveContentLock state からの trigger"],
+        "appears_alongside": [
+          { "name": "ticketSummarySection", "_relation": "⚠️ DO NOT add separately — already embedded in this sheet" },
+          { "name": "Shop/PkgCard", "_relation": "本 sheet の「ショップへ」CTA からの遷移先" },
+          { "name": "sendTicketTippingBottomSheet", "_relation": "別系統 (Live tipping 用) — 文脈で使い分け" }
+        ]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "ticketSummarySection (schema 02 entry) instance を本 sheet と同じ screen に sibling として追加禁止 — 残高表示が二重に出る (二重表示 bug、§1.9 G)。"
+        },
+        {
+          "severity": "MUST",
+          "rule": "本 sheet と LiveShow schema 26 sendTicketTippingBottomSheet NotEnoughTickets variant を混同しない (Tier unlock 文脈 vs Live tipping 文脈)。"
+        },
+        {
+          "severity": "MUST",
+          "rule": "Library 注記「インスタンス上での文言変更禁止」— Tier N / N枚 placeholder は app 側 dynamic binding、Figma 上は default のまま。"
+        }
+      ]
+    },
+
+    {
+      "_added_in": "PR #31 (2026-06-04) — Shop component series",
+      "_added_reason": "ticketPurchaseConfirmationDialog は modal で 3 行 summary (商品/枚数/金額) + 2 button を内部 render。agent が summary rows / button を sibling として追加する shadow-build 誘発しやすい。",
+      "name": "ticketPurchaseConfirmationDialog",
+      "component_key": "465b4b670bacf789f4851fcaf39233025d61057f",
+      "asset_type": "component_set",
+
+      "catalog_description": {
+        "usage_jp": "チケット購入確認 modal dialog。商品/枚数/金額の 3 行 summary + 購入する/キャンセル button。",
+        "usage_en": "Ticket purchase confirmation modal dialog. 3-row summary + Buy/Cancel buttons."
+      },
+
+      "variants": { "Language": ["JP", "EN"] },
+
+      "default_state": "Language=JP",
+
+      "default_size": {
+        "_note": "JP=270×328 / EN=270×311 (EN description 1 行で 17px 短い)。",
+        "width": 270,
+        "height": 328
+      },
+
+      "library_internal_elements": {
+        "_guidance_to_agent": "Dialog import 後、Title + 3 行 summary (商品/枚数/金額) + description + 2 button (購入する + キャンセル) は全部内部 render。spec で「金額確認」「購入 CTA」等が言及されても、本 dialog 1 instance を import するだけで全部 visible。",
+        "_recommended_pattern": "1) Language 決定。2) center on canvas: x=(W-270)/2, y=(H-height)/2。3) Library default = 1000 pack (2セット/10枚/¥1,000)。他 pack 表示する場合 app 側 dynamic binding (Figma instance text override 禁止)。4) Modal scrim rgba(0,0,0,0.5) を別 frame で追加。",
+        "elements_rendered_internally": [
+          "Container wrapper",
+          "dialogTitleText (チケットを購入しますか？ / Purchase tickets?)",
+          "purchaseSummarySection: 上下 Divider + 3 row (productRow / ticketCountRow / paymentAmountRow)",
+          "各 row: labelText + valueText (商品/枚数/金額)",
+          "descriptionText (App Store / Google Play 決済導線)",
+          "Action: 2 Dialog/Button item (購入する primary + キャンセル)"
+        ]
+      },
+
+      "agent_usage_hint": {
+        "spec_signal_to_variant": {
+          "Language": {
+            "「日本語」「JP」 or default": "JP",
+            "「English」「EN」": "EN"
+          }
+        },
+        "default_variant": { "Language": "JP" },
+        "do_not_duplicate_library_internals": {
+          "_guidance": "Dialog に summary 3 rows + buy/cancel buttons + description text すべて内蔵。spec で要求されても外側に sibling 追加不要。",
+          "_recommended": "createInstance() で完結。値は Library default のまま prototype OK。",
+          "_avoid": "Dialog instance + 別 frame の summary row / 購入 button を sibling として並べる (二重表示)。"
+        },
+        "safe_pattern": "const set = await figma.importComponentSetByKeyAsync('465b4b670bacf789f4851fcaf39233025d61057f');\nconst variant = set.children.find(v => v.variantProperties?.Language === 'JP') || set.defaultVariant;\nconst instance = variant.createInstance();\ninstance.x = (402 - 270) / 2; instance.y = (874 - instance.height) / 2;"
+      },
+
+      "related_components": {
+        "appears_on_screens": ["Shop / チケット購入画面 (PkgCard tap 後の確認 modal)"],
+        "appears_alongside": [
+          { "name": "Shop/PkgCard", "_relation": "本 dialog の trigger" },
+          { "name": "ticketSummarySection", "_relation": "同 Shop 画面 header 直下、本 dialog より上に表示" }
+        ]
+      },
+
+      "critical_caveats": [
+        {
+          "severity": "MUST",
+          "rule": "Library 注記「インスタンス上での文言変更禁止」— productRow_valueText / ticketCountRow_valueText / paymentAmountRow_valueText を override しない。Library default = 1000 pack。他 pack は app 側 binding。"
+        },
+        {
+          "severity": "MUST",
+          "rule": "Modal として overlay 配置時、背景 scrim (rgba(0,0,0,0.5)) frame を別途追加。本 dialog 自体は scrim を含まない。"
+        }
+      ]
     }
   ],
 

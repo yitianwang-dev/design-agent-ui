@@ -1,0 +1,342 @@
+# ============================================================
+# Schema PJ — ticketShortageBottomSheet (single-component-set)
+# ============================================================
+# Generated: 2026-06-04
+#
+# チケット不足時に表示するボトムシート。Tier 限定 content (例: ExclusiveContent
+# Unlock) を視聴しようとした時、残高が足りない場合に表示。
+# 「このティアN を解放するには あと N 枚必要です」の文言で Shop への CTA。
+#
+# vs sendTicketTippingBottomSheet (schema 26 LiveShow) State=NotEnoughTickets:
+# - 26 schema: Live 視聴 tipping 中の不足 → 「購入する」CTA → Shop
+# - 本 schema: Tier 限定 content unlock 試み時の不足 → 「ショップへ」CTA → Shop
+#   こっちは Tier N + 不足枚数 N の dynamic 表示で、より content-aware なメッセージ
+#
+# Runtime requirements: v0.5+ with variants.combinations
+# ============================================================
+
+meta:
+  name: ticketShortageBottomSheet
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "6f78ef826b4a33f8f1237b24ce8bebc0be318a45"
+  library_description_raw: |
+    【用途 / Usage】
+    チケット不足時に表示するボトムシート。
+    Bottom sheet shown when tickets are insufficient.
+    【使用画面 / Used in】
+    チケット購入が必要な操作時 / When ticket purchase is required
+    【State】
+    Language: JP / EN
+    【注意 / Notes】
+    インスタンス上での文言変更禁止。Do not edit text on instances.
+  description: |
+    Bottom sheet 402×W (JP 333 / EN 330)。Handle + Header (Title 「チケットが
+    足りません」 + Close Circle) + Contents (Tier N 提示 + 内蔵
+    ticketSummarySection (残高表示) + 「ショップへ」 CTA button) + Home Indicator
+    の構造。Tier 番号 N と不足枚数 N は dynamic content (Library default は N=N
+    placeholder のまま、app 側 binding 必要)。
+  screen_usage:
+    - "Tier 限定 content (ExclusiveContent Unlock) 視聴試み時、残高不足 → 本 sheet"
+    - "AvatarCard Use Case=ExclusiveContentLock tap → 本 sheet (購入 prompt + 自分の残高表示 + Shop 遷移)"
+    - "vs Live tipping insufficient → sendTicketTippingBottomSheet (LiveShow schema 26) NotEnoughTickets variant 使う、用途違うので混同注意"
+  dependencies:
+    - "Outline / Essentional, UI / Close Circle (内部 close icon)"
+    - "ticketSummarySection 構造 (Library 内蔵、schema 02 と同形だが instance ではなく内部複製)"
+    - "Ticker Bold (内部 icon for balance)"
+    - "Button instance (Ghost Smile icons + 「ショップへ」/「Go to Shop」text)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "ticketShortageBottomSheet": 2
+    implemented: full
+    notes: |
+      2 variants (Language JP / EN) のみ。
+      JP 402×333 / EN 402×330 (EN tier message が 2 行で揃うので 3px 短い)。
+      内部の Tier 番号 N と 不足枚数 N は Library default の placeholder、app
+      で dynamic 置換必要 (Figma instance での text override は禁止)。
+  review_status: ai-draft
+
+components:
+  - id: ticketShortageBottomSheet
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "6f78ef826b4a33f8f1237b24ce8bebc0be318a45"
+
+    variants:
+      combinations:
+        - { Language: JP }
+        - { Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+      size:
+        by_variant:
+          - { when: { Language: JP }, value: { width: 402, height: 333 } }
+          - { when: { Language: EN }, value: { width: 402, height: 330 } }
+
+    children:
+
+      - id: Handle
+        node_type: RECTANGLE
+        name: Handle
+        size: { width: 48, height: 6 }
+        position: { x: 177, y: 3.76 }
+        description: "Drag indicator (上部 grab handle)"
+
+      - id: Header
+        node_type: FRAME
+        name: Header
+        size: { width: 402, height: 24 }
+        position: { x: 0, y: 24 }
+        children:
+          - id: Header_Title
+            node_type: TEXT
+            font_size: 17
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "チケットが足りません" }
+                - { when: { Language: EN }, value: "Not enough tickets" }
+          - id: CloseCircle
+            node_type: INSTANCE
+            name: "Outline / Essentional, UI / Close Circle"
+            size: { width: 24, height: 24 }
+            position: { x: 362, y: 0 }
+
+      - id: Contents
+        node_type: FRAME
+        name: Contents
+        size_by_variant:
+          - { when: { Language: JP }, value: { width: 402, height: 227 } }
+          - { when: { Language: EN }, value: { width: 402, height: 224 } }
+        position: { x: 0, y: 60 }
+        children:
+
+          - id: header_message
+            node_type: FRAME
+            name: header
+            size_by_variant:
+              - { when: { Language: JP }, value: { width: 370, height: 48 } }
+              - { when: { Language: EN }, value: { width: 370, height: 45 } }
+            position: { x: 16, y: 16 }
+            children:
+              - id: tier_message_Title
+                node_type: TEXT
+                _note: |
+                  Tier 番号 N と不足枚数 N は dynamic placeholder。
+                  実装時は app 側で binding (e.g. Tier 2 / あと 5 枚)。
+                  Library default = ティアN / Tier N、あと 1 枚 / 1 more ticket。
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "このティアN を解放するには あと 1 枚必要です" }
+                    - { when: { Language: EN }, value: "You need 1 more ticket \nto unlock Tier N." }
+
+          - id: ticketSummarySection
+            node_type: FRAME
+            name: ticketSummarySection
+            size: { width: 370, height: 80 }
+            position_by_variant:
+              - { when: { Language: JP }, value: { x: 16, y: 80 } }
+              - { when: { Language: EN }, value: { x: 16, y: 77 } }
+            description: |
+              ⚠️ Library 内蔵 (instance ではなく、ticketSummarySection schema 02
+              と同形の structure を本 sheet 内部に複製してある)。修正/置換は
+              本 sheet を override するしかなく、schema 02 instance を sibling
+              として追加してはいけない（二重表示）。
+            children:
+              - id: Frame_1
+                node_type: FRAME
+                size: { width: 338, height: 48 }
+                position: { x: 16, y: 16 }
+                children:
+                  - id: balance_labelText
+                    node_type: TEXT
+                    font_size: 13
+                    position: { x: 8, y: 17.5 }
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "所有チケット" }
+                        - { when: { Language: EN }, value: "Tickets owned:" }
+                  - id: ticketCount
+                    node_type: FRAME
+                    size_by_variant:
+                      - { when: { Language: JP }, value: { width: 50, height: 32 } }
+                      - { when: { Language: EN }, value: { width: 87, height: 32 } }
+                    position_by_variant:
+                      - { when: { Language: JP }, value: { x: 280, y: 8 } }
+                      - { when: { Language: EN }, value: { x: 243, y: 8 } }
+                    children:
+                      - id: Icon
+                        node_type: FRAME
+                        size: { width: 18, height: 18 }
+                        position: { x: 0, y: 7 }
+                        children:
+                          - id: Ticker_Bold
+                            node_type: INSTANCE
+                            name: "Ticker Bold"
+                            size: { width: 18, height: 18 }
+                      - id: countText
+                        node_type: TEXT
+                        font_size: 15
+                        position: { x: 26, y: 8.5 }
+                        _note: "Library default placeholder = 3枚 / 3 tickets。app dynamic binding."
+                        characters:
+                          by_variant:
+                            - { when: { Language: JP }, value: "3枚" }
+                            - { when: { Language: EN }, value: "3 tickets" }
+
+          - id: Button_Wrapper
+            node_type: FRAME
+            name: "Button Wrapper"
+            size: { width: 370, height: 51 }
+            position_by_variant:
+              - { when: { Language: JP }, value: { x: 16, y: 176 } }
+              - { when: { Language: EN }, value: { x: 16, y: 173 } }
+            children:
+              - id: cta_button
+                node_type: INSTANCE
+                name: Button
+                size: { width: 370, height: 51 }
+                font_size: 16
+                description: |
+                  Primary CTA: 「ショップへ」/「Go to Shop」。Button instance に
+                  Ghost Smile decorative icons が 2 つ (左右) 既に含まれている。
+                  外部から icon を追加しないこと。
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "ショップへ" }
+                    - { when: { Language: EN }, value: "Go to Shop" }
+
+      - id: Home_Indicator
+        node_type: FRAME
+        name: "Home Indicator"
+        size: { width: 402, height: 34 }
+        position_by_variant:
+          - { when: { Language: JP }, value: { x: 0, y: 299 } }
+          - { when: { Language: EN }, value: { x: 0, y: 296 } }
+        description: "iOS Home Indicator (Bottom Safe Area)"
+        children:
+          - id: home_bar
+            node_type: RECTANGLE
+            size: { width: 148, height: 5 }
+            position: { x: 275, y: 21 }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _guidance_to_agent: |
+    Sheet import 後、Handle + Header (Title + Close) + Contents (Tier 提示 +
+    内蔵 ticketSummarySection + Goto Shop button) + Home Indicator は全部
+    内部 render。spec で「不足残高表示」「Shop button」「Close button」等が
+    言及されても、本 sheet 1 instance を import するだけで全部 visible。
+  _critical_no_double_summary: |
+    ⚠️ ticketSummarySection は本 sheet 内部に複製版が含まれている。schema 02
+    の ticketSummarySection instance を本 sheet の sibling として追加すると
+    残高表示が二重に出る (典型 bug)。本 sheet を使う screen では schema 02
+    を別途追加しない。
+  _recommended_pattern: |
+    1) Language を spec から決定。
+    2) variant.createInstance() → bottom-anchored modal (y=541 for 874 canvas,
+       sheet height 333 → bottom at 874)。
+    3) Tier 番号 N / 不足枚数 N は Library default のまま prototype OK、
+       実装時 app 側 dynamic binding。
+    4) 背景に scrim (rgba(0,0,0,0.5)) frame を別途追加 (sheet 自体は scrim
+       を含まない)。
+  elements_rendered_internally:
+    - "Handle (drag indicator 48×6)"
+    - "Header: Title (チケットが足りません / Not enough tickets) + Close Circle"
+    - "Contents > header_message: tier 解放案内 Title (ティアN, 不足N 枚 placeholder)"
+    - "Contents > ticketSummarySection (内蔵: 所有チケット + Ticker icon + count)"
+    - "Contents > Button Wrapper > Button (ショップへ / Go to Shop, Ghost Smile icons 含む)"
+    - "Home Indicator (iOS 下部 Safe Area handle)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+
+  default_variant:
+    Language: JP
+
+  trigger_context:
+    description: |
+      本 sheet は **Tier 限定 content unlock 試み時**の不足表示。Live tipping
+      中の不足 (sendTicketTippingBottomSheet NotEnoughTickets variant) とは
+      用途分離。spec の文脈を読んで適切な component を選ぶ:
+    rules:
+      - if: "spec が「Tier」「ExclusiveContent」「Unlock」「限定 content」等を含む"
+        → "use ticketShortageBottomSheet (本 schema)"
+      - if: "spec が「Live 配信中」「tipping」「投げ銭」中の不足"
+        → "use sendTicketTippingBottomSheet (LiveShow schema 26) State=NotEnoughTickets"
+
+  common_scenarios:
+    "exclusive_content_unlock_insufficient":
+      description: |
+        Other 画面で ExclusiveContentLock state の avatar / content tap →
+        Tier 2 unlock 要求 → 残高不足 → 本 sheet 表示。
+      variant: { Language: JP }
+      position: { x: 0, y: 541 }
+      modal_overlay_recommended: true
+    "en_tier_unlock_insufficient":
+      description: "EN viewer 同 (height -3px since tier message wraps 1 line)"
+      variant: { Language: EN }
+      position: { x: 0, y: 544 }
+
+  selection_examples:
+    - spec: "Show insufficient ticket sheet for Tier 2 unlock, JP"
+      decision: { Language: JP }
+      _note: "Library default 値で十分 (Tier N / 1枚 placeholder)。実装時 Tier 2 / 不足枚数の dynamic binding。"
+    - spec: "EN locale Tier 1 unlock insufficient"
+      decision: { Language: EN }
+
+  related_components:
+    - "ticketSummarySection (schema 02) — DO NOT add separately, 本 sheet 内部に複製済み"
+    - "Shop/PkgCard (schema 01) — 本 sheet の「ショップへ」CTA からの遷移先"
+    - "ticketPurchaseConfirmationDialog (schema 03) — Shop → PkgCard tap → confirm dialog"
+    - "sendTicketTippingBottomSheet (LiveShow schema 26) NotEnoughTickets variant — Live tipping 不足、文脈で使い分け"
+    - "ExclusiveContent-FAN / AvatarCard ExclusiveContentLock — 本 sheet を trigger する content"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('6f78ef826b4a33f8f1237b24ce8bebc0be318a45');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP')
+      || set.defaultVariant;
+    const instance = variant.createInstance();
+    // Bottom-anchored modal — typical 402×874 canvas:
+    instance.x = 0;
+    instance.y = 874 - instance.height;  // sticks to bottom
+    // Add semi-transparent scrim background separately if rendering as overlay.
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 注記「インスタンス上での文言変更禁止」— tier_message_Title /
+      countText / Header_Title 等の文言を override しない。Tier N / N枚 の
+      dynamic 値は app 側 binding (componentProperties / live data)、Figma 上
+      は default placeholder のまま。
+  - severity: MUST
+    rule: |
+      ⚠️ ticketSummarySection は本 sheet 内部に複製済み。schema 02 の instance
+      を本 sheet と同じ screen に sibling として追加禁止 — 残高表示が二重に
+      出る (二重表示 bug、§1.9 G)。
+  - severity: MUST
+    rule: |
+      本 sheet と LiveShow schema 26 sendTicketTippingBottomSheet
+      NotEnoughTickets variant を混同しない。
+      - 本 sheet: Tier 限定 content unlock 文脈、CTA「ショップへ」
+      - schema 26: Live tipping 中文脈、CTA「購入する」(Buy Tickets)
+      Spec の文脈 keyword で判別。
+  - severity: SHOULD
+    rule: |
+      Modal として overlay 配置時、背景に scrim (rgba(0,0,0,0.5)) frame を
+      別途追加。本 sheet 自体は scrim を含まない。
+  - severity: SHOULD
+    rule: |
+      Bottom-anchored 配置時、Home Indicator (h=34, iOS Safe Area) が sheet
+      下端に含まれている。Canvas h=874 → instance.y = 541 (JP) / 544 (EN)。
+  - severity: NICE
+    rule: |
+      JP と EN で container 高さが違う (333 vs 330)。auto-layout 親に置く時
+      は注意。

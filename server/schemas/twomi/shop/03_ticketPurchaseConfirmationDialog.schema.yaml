@@ -1,0 +1,304 @@
+# ============================================================
+# Schema PJ — ticketPurchaseConfirmationDialog (single-component-set)
+# ============================================================
+# Generated: 2026-06-04
+#
+# チケット購入確認ダイアログ。Shop/PkgCard 選択 → 本 dialog で
+# 「商品・枚数・金額」確認 → 「購入する」で App Store / Google Play
+# 決済画面に遷移、「キャンセル」で戻る。
+#
+# Library defaults: 1000 pack (2セット / チケット10枚 / ¥1,000)。
+# 実装時は user 選択した PkgCard に応じて 3 つの valueText を dynamic
+# binding (Figma instance override は禁止)。
+#
+# Runtime requirements: v0.5+ with variants.combinations
+# ============================================================
+
+meta:
+  name: ticketPurchaseConfirmationDialog
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "465b4b670bacf789f4851fcaf39233025d61057f"
+  library_description_raw: |
+    【用途 / Usage】
+    チケット購入確認ダイアログ。
+    Ticket purchase confirmation dialog.
+    【使用画面 / Used in】
+    チケット購入画面 / Ticket purchase screen
+    【State】
+    Language: JP / EN
+    【注意 / Notes】
+    インスタンス上での文言変更禁止。Do not edit text on instances.
+  description: |
+    Modal dialog 270×W (JP 328 / EN 311 — EN description が 1 行なので 17px
+    短い)。 Title + 3 行 summary row (productRow / ticketCountRow /
+    paymentAmountRow) + 決済導線 description + 2 button (購入する/キャンセル
+    縦並び)。Master §4.3 dialog 使い分け原則: 課金は重大決定 = dialog で stop。
+  screen_usage:
+    - "チケット購入画面 (Shop) — PkgCard tap → 本 dialog 表示"
+    - "Live 視聴中 SendTicketTippingBottomSheet NotEnoughTickets → 「購入する」CTA → Shop → PkgCard tap → 本 dialog"
+  dependencies:
+    - "Dialog/Button item — primary CTA + Cancel の 2 button instance"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "ticketPurchaseConfirmationDialog": 2
+    implemented: full
+    notes: |
+      2 variants (Language JP / EN) のみ。
+      JP 270×328 / EN 270×311 (EN description 1 行のため -17px)。
+      Boolean / Pack-size property なし → 全 pack 共通 dialog、values
+      は app 側 dynamic binding（Library text override 禁止）。
+  review_status: ai-draft
+
+components:
+  - id: ticketPurchaseConfirmationDialog
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "465b4b670bacf789f4851fcaf39233025d61057f"
+
+    variants:
+      combinations:
+        - { Language: JP }
+        - { Language: EN }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}"
+      size:
+        by_variant:
+          - { when: { Language: JP }, value: { width: 270, height: 328 } }
+          - { when: { Language: EN }, value: { width: 270, height: 311 } }
+
+    children:
+      - id: Container
+        node_type: FRAME
+        name: Container
+        size_by_variant:
+          - { when: { Language: JP }, value: { width: 270, height: 328 } }
+          - { when: { Language: EN }, value: { width: 270, height: 311 } }
+        children:
+
+          - id: dialogTitleText
+            node_type: TEXT
+            font_size: 17
+            position: { x: 16, y: 16 }
+            size: { width: 238, height: 22 }
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "チケットを購入しますか？" }
+                - { when: { Language: EN }, value: "Purchase tickets?" }
+
+          - id: purchaseSummarySection
+            node_type: FRAME
+            name: purchaseSummarySection
+            size: { width: 238, height: 120 }
+            position: { x: 16, y: 46 }
+            description: "3 行 (商品 / 枚数 / 金額) を上下 divider で挟んだ summary block"
+            children:
+              - id: Divider_top
+                node_type: LINE
+                position: { x: 0, y: 8 }
+                size: { width: 238, height: 0 }
+
+              - id: productRow
+                node_type: FRAME
+                name: productRow
+                size: { width: 238, height: 24 }
+                position: { x: 0, y: 16 }
+                children:
+                  - id: productRow_labelText
+                    node_type: TEXT
+                    font_size: 13
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "商品" }
+                        - { when: { Language: EN }, value: "Product" }
+                  - id: productRow_valueText
+                    node_type: TEXT
+                    font_size: 15
+                    _note: "Library default = 1000 pack (2セット / 2 set)。dynamic binding で user 選択 PkgCard に置換。"
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "2セット" }
+                        - { when: { Language: EN }, value: "2 set" }
+
+              - id: ticketCountRow
+                node_type: FRAME
+                name: ticketCountRow
+                size: { width: 238, height: 24 }
+                position: { x: 0, y: 48 }
+                children:
+                  - id: ticketCountRow_labelText
+                    node_type: TEXT
+                    font_size: 13
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "チケット枚数" }
+                        - { when: { Language: EN }, value: "Tickets" }
+                  - id: ticketCountRow_valueText
+                    node_type: TEXT
+                    font_size: 15
+                    _note: "Library default = 10枚 / 10 tickets。dynamic binding。"
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "10枚" }
+                        - { when: { Language: EN }, value: "10 tickets" }
+
+              - id: paymentAmountRow
+                node_type: FRAME
+                name: paymentAmountRow
+                size: { width: 238, height: 24 }
+                position: { x: 0, y: 80 }
+                children:
+                  - id: paymentAmountRow_labelText
+                    node_type: TEXT
+                    font_size: 13
+                    characters:
+                      by_variant:
+                        - { when: { Language: JP }, value: "お支払い金額" }
+                        - { when: { Language: EN }, value: "Amount" }
+                  - id: paymentAmountRow_valueText
+                    node_type: TEXT
+                    font_size: 15
+                    _note: "Library default = ¥1,000 (both lang)。dynamic binding。"
+                    characters: "¥1,000"
+
+              - id: Divider_bottom
+                node_type: LINE
+                position: { x: 0, y: 112 }
+                size: { width: 238, height: 0 }
+
+          - id: descriptionText
+            node_type: TEXT
+            font_size: 11
+            _note: "JP は 2 行 wrap (h=34) / EN は 1 行 (h=17)。container 高さ差の原因。"
+            position_by_variant:
+              - { when: { Language: JP }, value: { x: 68,  y: 174 } }
+              - { when: { Language: EN }, value: { x: 9.5, y: 174 } }
+            size_by_variant:
+              - { when: { Language: JP }, value: { width: 134, height: 34 } }
+              - { when: { Language: EN }, value: { width: 251, height: 17 } }
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "App Store / Google Play の 決済画面に進みます。" }
+                - { when: { Language: EN }, value: "You'll go to the App Store / Google Play checkout." }
+
+          - id: Action
+            node_type: FRAME
+            name: Action
+            size: { width: 238, height: 96 }
+            position_by_variant:
+              - { when: { Language: JP }, value: { x: 16, y: 216 } }
+              - { when: { Language: EN }, value: { x: 16, y: 199 } }
+            description: "縦並び 2 button (購入する / キャンセル)"
+            children:
+              - id: button_buy
+                node_type: INSTANCE
+                name: "Dialog/Button item"
+                size: { width: 238, height: 44 }
+                position: { x: 0, y: 0 }
+                font_size: 16
+                _note: "Primary CTA — Library variant が color / weight 自動 (typically blue/bold)"
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "購入する" }
+                    - { when: { Language: EN }, value: "Buy" }
+              - id: button_cancel
+                node_type: INSTANCE
+                name: "Dialog/Button item"
+                size: { width: 238, height: 44 }
+                position: { x: 0, y: 52 }
+                font_size: 16
+                characters:
+                  by_variant:
+                    - { when: { Language: JP }, value: "キャンセル" }
+                    - { when: { Language: EN }, value: "Cancel" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _guidance_to_agent: |
+    Dialog import 後、Title + 3 行 summary + description + 2 button は全部
+    内部 render。spec で「金額確認」「購入 CTA」「Cancel button」等が言及
+    されても、本 dialog 1 instance を import するだけで全部 visible。
+  _recommended_pattern: |
+    1) Language を spec から決定。
+    2) variant.createInstance() → modal layer (z 順序最前)。
+    3) Center on canvas: instance.x = (W - 270) / 2, y = (H - height) / 2。
+    4) Values (2セット / 10枚 / ¥1,000) は Library default のまま prototype
+       OK。実装時 app 側で user 選択 PkgCard データを bind。
+  elements_rendered_internally:
+    - "Container wrapper"
+    - "dialogTitleText (チケットを購入しますか？ / Purchase tickets?)"
+    - "purchaseSummarySection > 上下 Divider + 3 row (productRow / ticketCountRow / paymentAmountRow)"
+    - "各 row: labelText + valueText (商品/枚数/金額 ⇔ Product/Tickets/Amount)"
+    - "descriptionText (App Store / Google Play 決済導線)"
+    - "Action > 2 Dialog/Button item (購入する/Buy primary + キャンセル/Cancel)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+
+  default_variant:
+    Language: JP
+
+  common_scenarios:
+    "purchase_confirmation_overlay":
+      description: |
+        Shop/PkgCard tap → 確認 dialog 表示。背景は 50% opacity scrim 推奨、
+        dialog は center 配置 (modal layer)。
+      variant: { Language: JP }
+      modal_overlay_recommended: true
+    "en_purchase_confirmation":
+      description: "EN viewer 同 (height -17px since description fits 1 line)"
+      variant: { Language: EN }
+
+  selection_examples:
+    - spec: "Show purchase confirm dialog for 1000 ticket pack, JP"
+      decision: { Language: JP }
+      _note: "Default values (2セット / 10枚 / ¥1,000) match 1000 pack — no binding needed."
+    - spec: "Same dialog for 500 pack EN"
+      decision: { Language: EN }
+      _note: "Values still default 1000 — binding/text override needed for 500 pack values (1セット / 5枚 / ¥500). Library forbids text override; consider variant request to Hori."
+
+  related_components:
+    - "Shop/PkgCard (schema 01) — 本 dialog の trigger"
+    - "ticketSummarySection (schema 02) — 同 Shop 画面 header 直下、本 dialog より上に表示される現在残高"
+    - "AppStore Dialog - Purchase-Success (Library reference-only) — 購入完了後の成功画面 (OS native)"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('465b4b670bacf789f4851fcaf39233025d61057f');
+    const variant = set.children.find(v => v.variantProperties?.Language === 'JP')
+      || set.defaultVariant;
+    const instance = variant.createInstance();
+    // Center as modal — typical 402×874 canvas:
+    instance.x = (402 - 270) / 2;  // = 66
+    instance.y = (874 - instance.height) / 2;  // center vertically
+    // Add semi-transparent scrim background separately if rendering as overlay.
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 注記「インスタンス上での文言変更禁止」— productRow_valueText /
+      ticketCountRow_valueText / paymentAmountRow_valueText を override しない。
+      Library default は 1000 pack。他 pack で表示する場合は app 側 binding
+      (componentProperties / live data) で処理、Figma static prototype では
+      1000 pack の値で代表させる。
+  - severity: MUST
+    rule: |
+      Modal として overlay 配置時、背景に scrim (rgba(0,0,0,0.5) 等) frame を
+      別途追加。本 dialog 自体は scrim を含まない。
+  - severity: SHOULD
+    rule: |
+      JP と EN で container 高さが違う (328 vs 311)。auto-layout 親に置く時
+      は注意、絶対配置で center するなら instance.height を読んで動的に y
+      計算。
+  - severity: NICE
+    rule: |
+      Primary CTA「購入する」は Dialog/Button item の variant 自動で
+      強調表示 (typically Apple-style blue bold)。Cancel は通常 weight。
+      手動 color/weight override 不要。

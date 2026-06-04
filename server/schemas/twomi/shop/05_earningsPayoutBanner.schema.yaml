@@ -1,0 +1,222 @@
+# ============================================================
+# Schema PJ — Earnings Payout Banner (single-component-set)
+# ============================================================
+# Generated: 2026-06-04
+#
+# 収益の支払い完了・失敗を通知するバナー。Creator 向け収益管理画面の上部
+# に常駐 (notification banner)。State で「入金完了」「支払い失敗」を切替、
+# 失敗時は user に詳細確認を促す。Close button で dismiss 可能。
+#
+# ⚠️ Library に類似名 component `earnings / PayoutBanner`
+# (key: 232115f604e2733f45fd1bddf014c78a03b5f03b) が存在するが
+# 「削除対象 / To be deleted」と Library description にマーク済み。
+# 必ず本 schema の "Earnings Payout Banner" (key 060ddbc4...) を使用する。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Earnings Payout Banner
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "060ddbc40edefdafaf39730b6a76e86f4ca18d17"
+  library_description_raw: |
+    【用途 / Usage】
+    収益の支払い完了・失敗を通知するバナー。
+    Banner notifying earnings payout completion or failure.
+    【使用画面 / Used in】
+    収益管理画面 / Earnings management screen
+    【State】
+    State: Payout Completed / Payment Failed｜Language: JP / EN
+    【注意 / Notes】
+    インスタンス上での文言変更禁止。Do not edit text on instances.
+  description: |
+    Compact notification banner 369×58 (全 variant 同 size)。Hero (TitleText
+    + Close button) + Description の 2 段構造、小さめの font (Title 11 /
+    Description 9)。Creator Studio / 収益管理画面の上部に sticky 表示推奨。
+  screen_usage:
+    - "Creator 収益管理画面 (Earnings management screen) — 画面 top に sticky banner として常駐"
+    - "Creator Studio Top — payout イベント発生後の通知"
+    - "通常は dismiss 可能 (Close button)、解消後は非表示"
+  dependencies:
+    - "Stroke/Delete-1--Streamline-Flex.svg (内部 close icon 12×12)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Earnings Payout Banner": 4
+    implemented: full
+    notes: |
+      4 variants = Language (JP / EN) × State (Payout Completed / Payment Failed)。
+      全 variant 369×58 size 統一。¥金額は Library default placeholder
+      (¥12,400)、実装時 app 側 dynamic binding 必要。Description は両 state
+      とも同じ「詳細をご確認ください / Please check the details」(将来 state 別
+      に変わる可能性あり)。
+  review_status: ai-draft
+
+components:
+  - id: Earnings Payout Banner
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "060ddbc40edefdafaf39730b6a76e86f4ca18d17"
+
+    variants:
+      combinations:
+        - { Language: JP, State: "Payout Completed" }
+        - { Language: JP, State: "Payment Failed" }
+        - { Language: EN, State: "Payout Completed" }
+        - { Language: EN, State: "Payment Failed" }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, State=${State}"
+      size:
+        value: { width: 369, height: 58 }
+
+    children:
+
+      - id: Hero
+        node_type: FRAME
+        name: Hero
+        size: { width: 313, height: 16 }
+        position: { x: 28, y: 11 }
+        children:
+          - id: TitleText
+            node_type: TEXT
+            font_size: 11
+            size: { width: 295, height: 16 }
+            _note: "Library default ¥金額は placeholder (¥12,400)、app dynamic binding。"
+            characters:
+              by_variant:
+                - { when: { Language: JP, State: "Payout Completed" }, value: "¥12,400 が入金されました" }
+                - { when: { Language: EN, State: "Payout Completed" }, value: "¥12,400 has been received" }
+                - { when: { Language: JP, State: "Payment Failed"   }, value: "お支払いに問題が発生しました" }
+                - { when: { Language: EN, State: "Payment Failed"   }, value: "Couldn’t process your payment" }
+
+          - id: Close
+            node_type: FRAME
+            name: Close
+            size: { width: 12, height: 12 }
+            position: { x: 301, y: 2 }
+            children:
+              - id: close_icon
+                node_type: INSTANCE
+                name: "Stroke/Delete-1--Streamline-Flex.svg"
+                size: { width: 12, height: 12 }
+                description: "× close icon, dismiss banner action"
+
+      - id: Description
+        node_type: FRAME
+        name: Description
+        size: { width: 313, height: 12 }
+        position: { x: 28, y: 35 }
+        children:
+          - id: DescriptionText
+            node_type: TEXT
+            font_size: 9
+            size: { width: 313, height: 12 }
+            _note: "両 state で同じ文言 (将来 state 別に変わる可能性あり)。"
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "詳細をご確認ください" }
+                - { when: { Language: EN }, value: "Please check the details" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _guidance_to_agent: |
+    Banner import 後、Hero (Title + Close) + Description は全部内部 render。
+    spec で「金額表示」「close button」「詳細リンク文」等が言及されても、
+    本 component 1 instance を import するだけで全部 visible。
+  _recommended_pattern: |
+    1) Spec の文脈で State 決定 (入金完了 → Payout Completed / 失敗 → Payment Failed)。
+    2) Language を spec から決定。
+    3) createInstance() → 収益画面 top に sticky 配置 (位置例: x=16, y=110、
+       Header 直下)。
+    4) ¥金額は Library default (¥12,400) のまま prototype OK。実装時 app
+       側で実 payout 金額を bind。
+  elements_rendered_internally:
+    - "Hero > TitleText (¥金額 + 状態文 / Couldn’t process your payment etc.)"
+    - "Hero > Close (× dismiss icon 12×12)"
+    - "Description > DescriptionText (詳細をご確認ください / Please check the details)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+    State:
+      "「入金完了」「payout completed」「received」「成功」 or default": "Payout Completed"
+      "「失敗」「failed」「エラー」「problem」「Couldn’t」": "Payment Failed"
+
+  default_variant:
+    Language: JP
+    State: "Payout Completed"
+
+  do_not_use_legacy: |
+    ⚠️ Library に類似名 `earnings / PayoutBanner` (key 232115f604e2733f45fd1bddf014c78a03b5f03b)
+    が存在するが「削除対象 / To be deleted」とマーク済み。新規 spec では
+    必ず本 schema (Earnings Payout Banner, key 060ddbc4...) を使う。
+    Hori が legacy component を削除しても壊れない実装にすること。
+
+  common_scenarios:
+    "payout_completed_jp":
+      description: "Creator の payout 入金完了通知、収益画面 top に表示"
+      variant: { Language: JP, State: "Payout Completed" }
+      position: { x: 16, y: 110 }
+    "payment_failed_jp":
+      description: "支払い失敗、user に詳細確認促す"
+      variant: { Language: JP, State: "Payment Failed" }
+      position: { x: 16, y: 110 }
+    "en_locale_payout":
+      description: "EN viewer 同 (両 state)"
+      variant: { Language: EN, State: "Payout Completed" }
+
+  selection_examples:
+    - spec: "Show '入金完了' banner with ¥12,400, JP"
+      decision: { Language: JP, State: "Payout Completed" }
+      _note: "Library default 値で十分 (¥12,400 placeholder)。"
+    - spec: "Payment failure notice for EN creator"
+      decision: { Language: EN, State: "Payment Failed" }
+
+  related_components:
+    - "Creator Studio Top / 収益管理画面 — 本 banner を sticky 表示する screen"
+    - "earnings / PayoutBanner — ⚠️ 削除対象、使わない"
+    - "earnings / SectionWrapper — ⚠️ 同じく削除対象"
+    - "RestorePurchases Dialog — 別系統 (購入復元、Account Settings)"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('060ddbc40edefdafaf39730b6a76e86f4ca18d17');
+    const variant = set.children.find(v =>
+      v.variantProperties?.Language === 'JP' &&
+      v.variantProperties?.State === 'Payout Completed'
+    ) || set.defaultVariant;
+    const instance = variant.createInstance();
+    instance.x = 16; instance.y = 110;
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 注記「インスタンス上での文言変更禁止」— TitleText (¥金額含む) /
+      DescriptionText を override しない。¥金額は app 側 dynamic binding、
+      Figma instance では Library default のまま。
+  - severity: MUST
+    rule: |
+      ⚠️ 類似名 `earnings / PayoutBanner` (key 232115f604e2733f45fd1bddf014c78a03b5f03b)
+      は「削除対象」マーク済み。Catalog 選択時に名前が似ているからといって誤選択しない。
+      正しい component_key は 060ddbc40edefdafaf39730b6a76e86f4ca18d17。
+  - severity: SHOULD
+    rule: |
+      Banner は「dismiss 可能 (Close button)」設計 — interaction prototype で
+      close tap → banner 消去のフローを spec で想定すること。Static frame
+      では Close button visible のまま OK。
+  - severity: NICE
+    rule: |
+      Title font 11 / Description font 9 と非常に小さい — モバイル narrow
+      width 想定。Web 用に大きく転用する場合は Library 側で別 component 化
+      が必要 (Hori 確認)。
+  - severity: NICE
+    rule: |
+      "Couldn't" は smart quote ('U+2019, RIGHT SINGLE QUOTATION MARK) — 通常
+      の ASCII apostrophe (' U+0027) と異なる。text override する場合に
+      character mismatch に注意。

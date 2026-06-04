@@ -1,0 +1,293 @@
+# ============================================================
+# Schema PJ — Shop / PkgCard (single-component-set)
+# ============================================================
+# Generated: 2026-06-04
+#
+# チケット購入画面のパッケージ選択カード。Set で枚数・金額を切替、
+# Value (Default/Pressed) で押下状態、Recommended (Boolean) で「おすすめ」
+# バッジ表示を制御。12 variants × Recommended boolean = 24 effective states。
+#
+# Usage flow: viewer がチケット不足で SendTicketTippingBottomSheet の
+# 「購入する」CTA タップ → Shop / チケット購入画面に遷移 → 本 card を縦に
+# 3 つ並べて (500 / 1000 / 2000) 選択させる。Set 別に 1セット (5枚) /
+# 2セット (10枚) / 4セット (20枚) と段階的にお得になる。
+#
+# Runtime requirements: v0.5+ with variants.combinations + by_variant
+# ============================================================
+
+meta:
+  name: Shop/PkgCard
+  library_source:
+    file_key: CPe64VQc7petbZawTE6J8o
+    component_set_node_id: "565d4a478945cafc7fdadcd865d4ac90f89806aa"
+  library_description_raw: |
+    【用途 / Usage】
+    チケット購入画面のパッケージ選択カード。Setで枚数・金額を切り替える。
+    Package selection card on ticket purchase screen.
+    【使用画面 / Used in】
+    Shop / チケット購入画面 / Ticket purchase screen
+    【State】
+    Set: 500 / 1000 / 2000｜Value: Default / Pressed｜Recommended: Boolean｜Language: JP / EN
+    【注意 / Notes】
+    インスタンス上での文言変更禁止。Do not edit text on instances.
+  description: |
+    1 行 1 パッケージ card (370×104 Default / ~358.9×100.88 Pressed)。
+    左に Ticker icon、中央に SetName + Description、右に Price、上部右に
+    Recommended badge (「おすすめ」/ "Recommended")。Set 別に内部 text node
+    が SetNameText1/2/3 と Price1/2/3 と異なるため、外部から findOne で
+    探す場合は Set 値依存の番号サフィックスに注意。
+  screen_usage:
+    - "チケット購入画面 / Shop ticket purchase screen — 3 card 縦並び (500 / 1000 / 2000)"
+    - "「チケットが足りません」 alert からの遷移先 — SendTicketTippingBottomSheet (schema 26) NotEnoughTickets state からの purchase CTA"
+  dependencies:
+    - "Ticker Bold (内部 icon instance — ticket 図形 32×32 vector)"
+    - "Recommended badge (内部 instance — sparkles_rectangle_stack + おすすめ text)"
+  runtime_version: v0.5
+  coverage:
+    total_variants:
+      "Shop/PkgCard": 12
+    implemented: full
+    notes: |
+      12 variants = Language (JP/EN) × Set (500/1000/2000) × Value (Default/Pressed)。
+      + Recommended (Boolean property) で badge ON/OFF → 実質 24 表示状態。
+      Default 370×104 / Pressed ~358.9×100.88 (~3% shrink で押下フィードバック)。
+  review_status: ai-draft
+
+components:
+  - id: Shop/PkgCard
+    source:
+      library_file_key: CPe64VQc7petbZawTE6J8o
+      component_set_node_id: "565d4a478945cafc7fdadcd865d4ac90f89806aa"
+
+    variants:
+      combinations:
+        - { Language: JP, Set: "500",  Value: Default }
+        - { Language: JP, Set: "500",  Value: Pressed }
+        - { Language: JP, Set: "1000", Value: Default }
+        - { Language: JP, Set: "1000", Value: Pressed }
+        - { Language: JP, Set: "2000", Value: Default }
+        - { Language: JP, Set: "2000", Value: Pressed }
+        - { Language: EN, Set: "500",  Value: Default }
+        - { Language: EN, Set: "500",  Value: Pressed }
+        - { Language: EN, Set: "1000", Value: Default }
+        - { Language: EN, Set: "1000", Value: Pressed }
+        - { Language: EN, Set: "2000", Value: Default }
+        - { Language: EN, Set: "2000", Value: Pressed }
+
+    boolean_properties:
+      - { name: "Recommended#2037:3", type: BOOLEAN, default: true }
+
+    container:
+      node_type: COMPONENT
+      name_template: "Language=${Language}, Set=${Set}, Value=${Value}"
+      size:
+        by_variant:
+          - { when: { Value: Default }, value: { width: 370,    height: 104 } }
+          - { when: { Value: Pressed }, value: { width: 358.9, height: 100.88 } }
+
+    children:
+      - id: Recommended
+        node_type: INSTANCE
+        name: Recommended
+        size: { width: 144.8, height: 18 }
+        position: { x: 216, y: 14 }
+        visible_when_boolean: "Recommended#2037:3 = true"
+        children:
+          - id: Title
+            node_type: TEXT
+            font_size: 10
+            characters:
+              by_variant:
+                - { when: { Language: JP }, value: "おすすめ" }
+                - { when: { Language: EN }, value: "Recommended" }
+          - id: illustration
+            node_type: GROUP
+            description: "sparkles アイコン (3 vector)"
+
+      - id: SKU
+        node_type: FRAME
+        name: SKU
+        size: { width: 272, height: 40 }
+        position: { x: 16, y: 32 }
+        children:
+          - id: Icon
+            node_type: FRAME
+            size: { width: 32, height: 32 }
+            children:
+              - id: Ticker_Bold
+                node_type: INSTANCE
+                name: "Ticker Bold"
+                size: { width: 32, height: 32 }
+                description: "Ticket icon (vector 27.8×21.3 inside)"
+
+          - id: Information
+            node_type: FRAME
+            size: { width: 238, height: 40 }
+            position: { x: 48, y: 0 }
+            children:
+              - id: SetNameText
+                node_type: TEXT
+                font_size: 15
+                _node_name_by_set:
+                  "500":  "SetNameText1"
+                  "1000": "SetNameText2"
+                  "2000": "SetNameText3"
+                characters:
+                  by_variant:
+                    - { when: { Language: JP, Set: "500"  }, value: "1セット" }
+                    - { when: { Language: JP, Set: "1000" }, value: "2セット" }
+                    - { when: { Language: JP, Set: "2000" }, value: "4セット" }
+                    - { when: { Language: EN, Set: "500"  }, value: "1 set" }
+                    - { when: { Language: EN, Set: "1000" }, value: "2 sets" }
+                    - { when: { Language: EN, Set: "2000" }, value: "4 sets" }
+
+              - id: DescriptionText
+                node_type: TEXT
+                font_size: 11
+                _node_name_by_set:
+                  "500":  "DescriptionText1"
+                  "1000": "DescriptionText2"
+                  "2000": "DescriptionText3"
+                characters:
+                  by_variant:
+                    - { when: { Language: JP, Set: "500"  }, value: "チケット5枚" }
+                    - { when: { Language: JP, Set: "1000" }, value: "チケット10枚" }
+                    - { when: { Language: JP, Set: "2000" }, value: "チケット20枚" }
+                    - { when: { Language: EN, Set: "500"  }, value: "5 tickets" }
+                    - { when: { Language: EN, Set: "1000" }, value: "10 tickets" }
+                    - { when: { Language: EN, Set: "2000" }, value: "20 tickets" }
+
+      - id: PriceSection
+        node_type: FRAME
+        name: PriceSection
+        size: { width: 56, height: 24 }
+        position: { x: 298, y: 40 }
+        children:
+          - id: Price
+            node_type: TEXT
+            font_size: 24
+            _node_name_by_set:
+              "500":  "Price1"
+              "1000": "Price2"
+              "2000": "Price3"
+            characters:
+              by_variant:
+                - { when: { Set: "500"  }, value: "¥500" }
+                - { when: { Set: "1000" }, value: "¥1,000" }
+                - { when: { Set: "2000" }, value: "¥2,000" }
+
+# ─── Library internal elements (do not duplicate externally) ─
+library_internal_elements:
+  _guidance_to_agent: |
+    Card import 後、Recommended badge / SKU (Icon + Information) / PriceSection
+    は全部内部 render。spec で「おすすめパック」「ticket icon 左側」「価格
+    右側」等が言及されても、card 1 instance を import するだけで全部 visible。
+    Recommended badge を OFF にしたい場合のみ Boolean property を false に。
+  _recommended_pattern: |
+    1) Spec が「500 ticket pack」「5枚パック」を含めば Set=500 を選ぶ。
+    2) Recommended ON/OFF は spec の「おすすめ」「Recommended」キーワード or
+       「強調表示」指定で決定。デフォルトは true (badge 表示)。
+    3) Pressed state は user interaction での tap feedback、static prototype
+       では Default のみで十分。
+  elements_rendered_internally:
+    - "Recommended badge (おすすめ / Recommended + sparkles icon)"
+    - "SKU: Icon (Ticker Bold) + Information (SetNameText + DescriptionText)"
+    - "PriceSection (Price text ¥N)"
+
+# ─── Agent usage hint ────────────────────────────────────────
+agent_usage_hint:
+  spec_signal_to_variant:
+    Language:
+      "「日本語」「JP」 or default": JP
+      "「English」「EN」": EN
+    Set:
+      "「500」「1セット」「5枚」「lowest tier」「cheapest」": "500"
+      "「1000」「2セット」「10枚」「mid tier」": "1000"
+      "「2000」「4セット」「20枚」「highest tier」「premium pack」": "2000"
+    Value:
+      "「default」「resting」 or default": Default
+      "「pressed」「tap feedback」「user is pressing」": Pressed
+
+  spec_signal_to_boolean:
+    "Recommended#2037:3":
+      "「おすすめ」「recommended」「強調」「badge ON」 or default": true
+      "「badge OFF」「no badge」「plain」": false
+
+  default_variant:
+    Language: JP
+    Set: "500"
+    Value: Default
+
+  default_boolean:
+    "Recommended#2037:3": true
+
+  common_scenarios:
+    "ticket_purchase_screen_3_pack_grid":
+      description: |
+        Shop / チケット購入画面の標準パターン。3 つの PkgCard を縦に並べる:
+        1 つ目 Set=500 (デフォルト Recommended=true → おすすめ badge 表示)
+        2 つ目 Set=1000 (Recommended=true)
+        3 つ目 Set=2000 (Recommended=true)
+        または 1 つだけ "おすすめ" badge を強調する場合: Set=1000 (中段)
+        だけ Recommended=true、他は false。
+      variants:
+        - { Language: JP, Set: "500",  Value: Default }
+        - { Language: JP, Set: "1000", Value: Default }
+        - { Language: JP, Set: "2000", Value: Default }
+    "single_recommended_highlight":
+      description: |
+        中段だけおすすめ badge を強調表示するパターン (best value 演出)
+      variants:
+        - { Language: JP, Set: "500",  Value: Default, _boolean: { "Recommended#2037:3": false } }
+        - { Language: JP, Set: "1000", Value: Default, _boolean: { "Recommended#2037:3": true  } }
+        - { Language: JP, Set: "2000", Value: Default, _boolean: { "Recommended#2037:3": false } }
+
+  selection_examples:
+    - spec: "Show 3 ticket packs (500/1000/2000) JP, all with おすすめ badge"
+      decisions:
+        - { Language: JP, Set: "500",  Value: Default, Recommended: true }
+        - { Language: JP, Set: "1000", Value: Default, Recommended: true }
+        - { Language: JP, Set: "2000", Value: Default, Recommended: true }
+    - spec: "Highlight only the 1000 pack as recommended"
+      decisions:
+        - { Set: "500",  Recommended: false }
+        - { Set: "1000", Recommended: true }
+        - { Set: "2000", Recommended: false }
+
+  related_components:
+    - "sendTicketTippingBottomSheet (schema 26) NotEnoughTickets state — 購入 CTA から本 card に遷移"
+    - "headMenu / closeButton — Shop 画面の Header に置く戻る button"
+    - "Dialog/Button item or 確認 CTA — purchase confirmation"
+
+  safe_pattern: |
+    const set = await figma.importComponentSetByKeyAsync('565d4a478945cafc7fdadcd865d4ac90f89806aa');
+    const variant = set.children.find(v =>
+      v.variantProperties?.Language === 'JP' &&
+      v.variantProperties?.Set === '500' &&
+      v.variantProperties?.Value === 'Default'
+    ) || set.defaultVariant;
+    const instance = variant.createInstance();
+    // Recommended boolean toggle (default true). Set false to hide badge.
+    instance.setProperties({ 'Recommended#2037:3': true });
+    instance.x = 16; instance.y = 140;
+
+# ─── Caveats ─────────────────────────────────────────────────
+critical_caveats:
+  - severity: MUST
+    rule: |
+      Library 注記「インスタンス上での文言変更禁止」— SetNameText / DescriptionText /
+      Price / Title (Recommended badge) の文言を override しない。Set / Language
+      variant 切替でしか変更不可。
+  - severity: SHOULD
+    rule: |
+      Text node 名が Set 別に番号付き (SetNameText1/2/3, DescriptionText1/2/3,
+      Price1/2/3) — findOne で探す時は variant の Set 値依存の suffix に注意。
+  - severity: SHOULD
+    rule: |
+      Pressed variant はサイズが ~3% 縮小 (370→358.9, 104→100.88) で押下
+      フィードバック表現。Static prototype では Default のみで十分、Pressed
+      は interaction prototype で必要時のみ。
+  - severity: NICE
+    rule: |
+      3 card 縦並びパターンでは padding 12-16px 推奨。Shop 画面 402 width に
+      対して card 370 width = 左右 16px margin が標準。
