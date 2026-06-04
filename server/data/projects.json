@@ -7,16 +7,27 @@
   "projects": [
     {
       "id": "TicketGift",
-      "name": "Ticket Gift (Live Tipping)",
+      "name": "Ticket Gift (Task 1 — Library sheet modifications)",
       "owner": "Hori-OP-JP",
-      "description": "Live streaming tip-giving via tickets. Viewer taps 🎫, picks 5/10/20, avatar reacts, comment feed shows tip.",
+      "description": "Task 1: modify sendTipBottomSheet Library component (a-d changes). Holds F1/F2 reference frames.",
+      "spec_doc_id": "1tIYCcwKgCQ_zjz3tCTOAdegffMPozZ77QTng7fvHcq8",
+      "_note": "Created 2026-06-03"
+    },
+    {
+      "id": "Task2-TicketGift",
+      "name": "Ticket Gift (Task 2 — Code prototype)",
+      "owner": "Hori-OP-JP",
+      "description": "Task 2: build code prototype for live tipping flow. Frames live on dedicated Task2-TicketGift page. Uses sendTicketTippingBottomSheet (current Library, not legacy) + Shop ticket purchase components.",
       "spec_doc_id": "1tIYCcwKgCQ_zjz3tCTOAdegffMPozZ77QTng7fvHcq8",
       "uses_dict_components": [
         "sendTicketTippingBottomSheet",
         "singleLiveViewerBottom",
+        "Shop/PkgCard",
+        "ticketShortageBottomSheet",
+        "ticketPurchaseConfirmationDialog",
         "LiveBadge for Home AvatarCard"
       ],
-      "_note": "Created 2026-06-03 as part of Requester's Playbook Step 3 prototype task (CA-1xxx)"
+      "_note": "Created 2026-06-04 — covers Hori Playbook Step 3 prototype task"
     },
     {
       "id": "LiveQualityUp",
